@@ -4,11 +4,35 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
+bootloader = "0.9" # 不依赖任何C代码的基础BIOS引导加载程序
+volatile = "0.2.6"
+spin = "0.5.2"
+x86_64 = "0.14.2"
+uart_16550 = "0.2.0"
 
-# 使用cargo build编译时需要的配置
-[profile.dev]
-panic = "abort"  # 禁用panic时栈展开
+[dependencies.lazy_static]
+version = "1.0"
+features = ["spin_no_std"]
 
-# 使用cargo build --release编译时需要的配置
-[profile.release]
-panic = "abort"  # 禁用panic时栈展开
+# # 使用cargo build编译时需要的配置
+# [profile.dev]
+# panic = "abort"  # 禁用panic时栈展开
+
+# # 使用cargo build --release编译时需要的配置
+# [profile.release]
+# panic = "abort"  # 禁用panic时栈展开
+
+[package.metadata.bootimage]
+# isa-debug-exit设备采用端口映射I/O的方式工作，iobase指定设备占用的端口地址，iosize指定设备占用的端口大小
+# 当向iobase指定的端口写入value时，会导致QEMU以退出状态(value << 1) | 1退出
+# 将输出重定向到标准输出，使用-serial stdio参数
+# 使用-display none参数禁用显示，避免QEMU启动时显示图形界面
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio",
+"-display", "none"]
+# 将指定的退出代码映射为0退出码
+test-success-exit-code = 33  # 0x10 << 1 | 1 = 0x21
+test-timeout = 120  # 测试超时时间，单位为秒
+
+[[test]]
+# name = "should_panic"
+# harness = false
