@@ -33,6 +33,6 @@ test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "st
 test-success-exit-code = 33  # 0x10 << 1 | 1 = 0x21
 test-timeout = 120  # 测试超时时间，单位为秒
 
-[[test]]
+# [[test]]
 # name = "should_panic"
 # harness = false
