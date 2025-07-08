@@ -2,10 +2,10 @@
 #![no_main]  // 禁用入口函数
 
 #![feature(custom_test_frameworks)]
-#![test_runner(rustOS::test_runner)]
+#![test_runner(NimlothOS::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use rustOS::{println};
+use NimlothOS::{println};
 
 #[unsafe(no_mangle)]  // 禁用名称重整
 pub extern "C" fn _start() -> ! {  // 使用C语言的调用约定
@@ -34,7 +34,7 @@ fn panic(info: &PanicInfo) -> ! {
 #[cfg(test)]  // 在测试模式下用serial_println替代println
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    rustOS::test_panic_handler(info)
+    NimlothOS::test_panic_handler(info)
 }
 
 
