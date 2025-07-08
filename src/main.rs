@@ -14,8 +14,18 @@ pub extern "C" fn _start() -> ! {  // 使用C语言的调用约定
 
     println!("Hello World{}", "!");
 
+    NimlothOS::init();
+
+    // x86_64::instructions::interrupts::int3();
+
+    unsafe {
+        *(0xdeadbeef as *mut u8) = 42;
+    };
+
     #[cfg(test)]
     test_main();
+
+    println!("It did not crash! yeeeeee");
 
     loop{}
 }
