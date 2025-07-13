@@ -32,6 +32,7 @@ fn panic(info: &PanicInfo) -> ! {
     NimlothOS::test_panic_handler(info)
 }
 
+// TODO: 恢复成正常代码
 lazy_static! {
     static ref TEST_IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
@@ -48,6 +49,7 @@ fn init_test_idt() {
     TEST_IDT.load();
 }
 
+// TODO: 恢复成正常代码
 extern "x86-interrupt" fn test_double_fault_handler(
     _stack_frame: InterruptStackFrame, 
     _error_code: u64) {

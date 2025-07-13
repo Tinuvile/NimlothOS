@@ -16,18 +16,12 @@ pub extern "C" fn _start() -> ! {  // 使用C语言的调用约定
 
     NimlothOS::init();
 
-    // x86_64::instructions::interrupts::int3();
-
-    unsafe {
-        *(0xdeadbeef as *mut u8) = 42;
-    };
-
     #[cfg(test)]
     test_main();
 
     println!("It did not crash! yeeeeee");
 
-    loop{}
+    NimlothOS::hlt_loop();
 }
 
 
@@ -38,7 +32,7 @@ use core::panic::PanicInfo;
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop{}
+    NimlothOS::hlt_loop();
 }
 
 #[cfg(test)]  // 在测试模式下用serial_println替代println
