@@ -12,17 +12,15 @@ use core::panic::PanicInfo;
 entry_point!(main);
 
 fn main(_boot_info: &'static BootInfo) -> ! {
+    use x86_64::VirtAddr;
     use NimlothOS::allocator;
     use NimlothOS::memory::{self, BootInfoFrameAllocator};
-    use x86_64::VirtAddr;
 
     NimlothOS::init();
 
     let phys_mem_offset = VirtAddr::new(_boot_info.physical_memory_offset);
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_allocator = unsafe { 
-        BootInfoFrameAllocator::init(&_boot_info.memory_map) 
-    };
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&_boot_info.memory_map) };
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("Heap initialization failed");
 
@@ -67,4 +65,14 @@ fn many_boxes() {
         let x = Box::new(i);
         assert_eq!(*x, i);
     }
+}
+
+#[test_case]
+fn many_boxes_long_lived() {
+    let long_lived = Box::new(1);
+    for i in 0..HEAP_SIZE {
+        let x = Box::new(i);
+        assert_eq!(*x, i);
+    }
+    assert_eq!(*long_lived, 1);
 }
