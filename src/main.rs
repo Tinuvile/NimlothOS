@@ -5,21 +5,51 @@
 #![test_runner(NimlothOS::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use NimlothOS::{println};
+use NimlothOS::println;
+use bootloader::{BootInfo, entry_point};
 
-#[unsafe(no_mangle)]  // 禁用名称重整
-pub extern "C" fn _start() -> ! {  // 使用C语言的调用约定
-    // 因为链接器会寻找一个名为_start的函数，所以这个函数就是入口点
-    // 默认命名为_start
+extern crate alloc;
+
+use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
+use x86_64::VirtAddr;
+
+entry_point!(kernel_main);
+
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    use NimlothOS::allocator;
+    use NimlothOS::memory::{self, BootInfoFrameAllocator};
 
     println!("Hello World{}", "!");
 
     NimlothOS::init();
 
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe { 
+        BootInfoFrameAllocator::init(&boot_info.memory_map) 
+    };
+
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("Heap initialization failed");
+
+    let heap_value = Box::new(41);
+    println!("heap_value at {:p}", heap_value);
+
+    let mut vec = Vec::new();
+    for i in 0..500 {
+        vec.push(i);
+    }
+    println!("vec at {:p}", vec.as_slice());
+
+    let reference_counted = Rc::new(vec![1, 2, 3]);
+    let clone_reference = reference_counted.clone();
+    println!("current reference count is {}", Rc::strong_count(&reference_counted));
+    core::mem::drop(clone_reference);
+    println!("reference count is {} now", Rc::strong_count(&reference_counted));
+
     #[cfg(test)]
     test_main();
 
-    println!("It did not crash! yeeeeee");
+    println!("It did not crash!");
 
     NimlothOS::hlt_loop();
 }

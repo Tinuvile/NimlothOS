@@ -9,6 +9,10 @@ pub mod vga_buffer;
 pub mod serial;
 pub mod interrupts;
 pub mod gdt;
+pub mod memory;
+pub mod allocator;
+
+extern crate alloc;
 
 use core::panic::PanicInfo;
 
@@ -73,10 +77,14 @@ pub fn hlt_loop() -> ! {
 
 
 // test code
+#[cfg(test)]
+use bootloader::{BootInfo, entry_point};
 
 #[cfg(test)]
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
+entry_point!(test_kernel_main);
+
+#[cfg(test)]
+fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init();
     test_main();
     hlt_loop();
