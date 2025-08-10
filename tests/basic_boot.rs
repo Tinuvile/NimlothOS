@@ -19,7 +19,6 @@ fn panic(info: &PanicInfo) -> ! {
     NimlothOS::test_panic_handler(info)
 }
 
-
 #[test_case]
 fn test_println() {
     println!("test_println output");
