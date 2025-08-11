@@ -5,3 +5,14 @@ authors = ["NimlothOS"]
 edition = "2024"
 
 [dependencies]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[[bin]]
+name = "NimlothOS"
+test = false
+bench = false
