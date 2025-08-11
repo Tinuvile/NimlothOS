@@ -1,0 +1,7 @@
+[package]
+name = "NimlothOS"
+version = "0.1.0"
+authors = ["NimlothOS"]
+edition = "2024"
+
+[dependencies]
