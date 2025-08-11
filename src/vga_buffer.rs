@@ -146,6 +146,7 @@ impl fmt::Write for Writer {
     }
 }
 
+// TODO：`lazy_static` 是较早期的用法，现在的Rust可以找找更好的解决方案
 use lazy_static::lazy_static;
 use spin::Mutex;
 lazy_static! {
