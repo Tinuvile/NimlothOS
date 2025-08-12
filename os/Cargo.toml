@@ -1,5 +1,5 @@
 [package]
-name = "NimlothOS"
+name = "os"
 description = "A simple operating system written in Rust"
 version = "0.1.0"
 authors = ["Jason Zhang <tinuvile@outlook.com>"]
@@ -8,3 +8,6 @@ repository = "https://github.com/tinuvile/NimlothOS"
 readme = "README.md"
 
 [dependencies]
+
+[profile.release]
+debug = true

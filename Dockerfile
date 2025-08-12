@@ -1,3 +1,6 @@
+# TODO: 暂时不使用 Docker 环境，因为目前在本地开发
+# 如果后续需要容器化开发环境，可以取消注释使用此文件
+
 # syntax=docker/dockerfile:1
 
 # Stage 1 Build QEMU

@@ -6,13 +6,10 @@
 **/target/
 **/Cargo.lock
 
-os/src/link_app.S
-os/src/linker.ld
-os/last-*
-os/.gdb_history
-os/virt.out
 tools/
 pushall.sh
 .vscode/*.log
 
 /qemu-7.0.0
+/riscv-binutils-gdb-riscv-binutils-2.36.1
+/build
