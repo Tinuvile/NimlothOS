@@ -2,3 +2,5 @@
 **/*.rs.bk
 
 .vscode
+
+/qemu-7.0.0

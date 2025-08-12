@@ -1,18 +1,10 @@
 [package]
 name = "NimlothOS"
+description = "A simple operating system written in Rust"
 version = "0.1.0"
-authors = ["NimlothOS"]
+authors = ["Jason Zhang <tinuvile@outlook.com>"]
 edition = "2024"
+repository = "https://github.com/tinuvile/NimlothOS"
+readme = "README.md"
 
 [dependencies]
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
-
-[[bin]]
-name = "NimlothOS"
-test = false
-bench = false
