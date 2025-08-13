@@ -1,19 +1,22 @@
 #![no_std]
 #![no_main]
 
+mod console;
 mod lang_items;
+mod sbi;
 
 use core::arch::global_asm;
 global_asm!(include_str!("entry.asm"));
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn rust_main() -> ! {
     clear_bss();
-    loop {}
+    println!("Hello, world!");
+    panic!("Shutdown machine!");
 }
 
 fn clear_bss() {
-    extern "C" {
+    unsafe extern "C" {
         fn sbss();
         fn ebss();
     }
