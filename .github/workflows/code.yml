@@ -17,21 +17,9 @@ jobs:
           toolchain: ${{ env.rust_toolchain }}
           components: rust-src, llvm-tools-preview
           target: riscv64gc-unknown-none-elf
-          default: true
-          override: true
-      - name: Debug toolchain setup
-        run: |
-          echo "=== Root directory ==="
-          rustup show
-          echo "=== OS directory ==="
-          cd os
-          rustup show
-          which cargo
-          cargo --version
       - name: Build doc
         run: |
           cd os
-          rustup show
           cargo doc --no-deps --verbose -Z build-std=core,alloc
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
