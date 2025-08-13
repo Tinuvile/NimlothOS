@@ -1,69 +1,21 @@
-RustSBI运行在Machine特权级，
+首先介绍一下几个概念。
 
-```bash
-tinuvile@LAPTOP-7PVP3HH3:~/NimlothOS/os$ cargo build --release
-warning: constant `SBI_CONSOLE_GETCHAR` is never used
- --> src/sbi.rs:7:7
-  |
-7 | const SBI_CONSOLE_GETCHAR: usize = 2;
-  |       ^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `#[warn(dead_code)]` on by default
+SBI是RISC-V Supervisor Binary Interface的缩写，OpenSBI是RISC-V官方用C语言开发的SBI参考实现，RustSBI是用Rust实现的SBI。
 
-warning: constant `SBI_CLEAR_IPI` is never used
- --> src/sbi.rs:8:7
-  |
-8 | const SBI_CLEAR_IPI: usize = 3;
-  |       ^^^^^^^^^^^^^
+机器在上电以后，会从ROM中读取代码，然后引导整个计算机软硬件系统的启动，而整个启动过程分为多个阶段，目前通用的多阶段引导模型是：
 
-warning: constant `SBI_SEND_IPI` is never used
- --> src/sbi.rs:9:7
-  |
-9 | const SBI_SEND_IPI: usize = 4;
-  |       ^^^^^^^^^^^^
+ROM -> LOADER -> RUNTIME -> BOOTLOADER -> OS
 
-warning: constant `SBI_REMOTE_FENCE_I` is never used
-  --> src/sbi.rs:10:7
-   |
-10 | const SBI_REMOTE_FENCE_I: usize = 5;
-   |       ^^^^^^^^^^^^^^^^^^
+Loader进行内存初始化，并加载Runtime和BootLoader程序，同时LOADER也是一段程序，常见的LOADER有BIOS和UEFI。
 
-warning: constant `SBI_REMOTE_SFENCE_VMA` is never used
-  --> src/sbi.rs:11:7
-   |
-11 | const SBI_REMOTE_SFENCE_VMA: usize = 6;
-   |       ^^^^^^^^^^^^^^^^^^^^^
+Runtime固件程序是为了提供运行时服务，它是对硬件最基础的抽象，对OS提供服务。SBI就是RISC-V架构的Runtime规范。
 
-warning: constant `SBI_REMOTE_SFENCE_VMA_ASID` is never used
-  --> src/sbi.rs:12:7
-   |
-12 | const SBI_REMOTE_SFENCE_VMA_ASID: usize = 7;
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+BootLoader要进行文件系统引导、网卡引导、操作系统启动配置项设置、操作系统加载等，常见的BootLoader包括GRUB、U-Boot、LinuxBoot等。
 
-warning: `os` (bin "os") generated 6 warnings
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.01s
-tinuvile@LAPTOP-7PVP3HH3:~/NimlothOS/os$ rust-objcopy --strip-all target/riscv64gc-unknown-none-elf/release/os -O binary target/riscv64gc-unknown-none-elf/release/os.bin
-tinuvile@LAPTOP-7PVP3HH3:~/NimlothOS/os$ qemu-system-riscv64 -machine virt -nographic -bios ../bootloader/rus
-tsbi-qemu.bin -device loader,file=target/riscv64gc-unknown-none-elf/release/os.bin,addr=0x80200000
-[rustsbi] RustSBI version 0.3.1, adapting to RISC-V SBI v1.0.0
-.______       __    __      _______.___________.  _______..______   __
-|   _  \     |  |  |  |    /       |           | /       ||   _  \ |  |
-|  |_)  |    |  |  |  |   |   (----`---|  |----`|   (----`|  |_)  ||  |
-|      /     |  |  |  |    \   \       |  |      \   \    |   _  < |  |
-|  |\  \----.|  `--'  |.----)   |      |  |  .----)   |   |  |_)  ||  |
-| _| `._____| \______/ |_______/       |__|  |_______/    |______/ |__|
-[rustsbi] Implementation     : RustSBI-QEMU Version 0.2.0-alpha.2
-[rustsbi] Platform Name      : riscv-virtio,qemu
-[rustsbi] Platform SMP       : 1
-[rustsbi] Platform Memory    : 0x80000000..0x88000000
-[rustsbi] Boot HART          : 0
-[rustsbi] Device Tree Region : 0x87e00000..0x87e0107e
-[rustsbi] Firmware Address   : 0x80000000
-[rustsbi] Supervisor Address : 0x80200000
-[rustsbi] pmp01: 0x00000000..0x80000000 (-wr)
-[rustsbi] pmp02: 0x80000000..0x80200000 (---)
-[rustsbi] pmp03: 0x80200000..0x88000000 (xwr)
-[rustsbi] pmp04: 0x88000000..0x00000000 (-wr)
-Hello, world!
-Paniced at src/main.rs:15:Shutdown machine!
-```
+不过BIOS和UEFI的大部分实现都是Loader、Runtime、BootLoader三合一的。
+
+在[rustsbi/rustsbi](https://github.com/rustsbi/rustsbi)的`sbi_rt`部分封装了调用SBI服务的接口，不过这里我使用的是新版本的RustSBI，接口是自己写的，详见`sbi.rs`文件。
+
+然后在`console`文件中实现了`core::fmt::Write trait`的一些方法和`print!`、`println!`宏。
+
+错误处理在`lang_item.rs`中。

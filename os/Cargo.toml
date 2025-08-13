@@ -9,6 +9,7 @@ readme = "README.md"
 
 [dependencies]
 rustsbi = { version = "0.4.0", features = ["machine"] }
+log = "0.4"
 
 [profile.release]
 debug = true

@@ -1,5 +1,5 @@
 #[allow(unused)]
-// legacy extensions: ignore fid
+// legacy扩展EID
 const SBI_SET_TIMER: usize = 0;
 const SBI_CONSOLE_PUTCHAR: usize = 1;
 const SBI_CONSOLE_GETCHAR: usize = 2;
@@ -8,6 +8,7 @@ const SBI_SEND_IPI: usize = 4;
 const SBI_REMOTE_FENCE_I: usize = 5;
 const SBI_REMOTE_SFENCE_VMA: usize = 6;
 const SBI_REMOTE_SFENCE_VMA_ASID: usize = 7;
+const SBI_SHUTDOWN: usize = 8;
 
 #[derive(Debug, Clone, Copy)]
 pub struct SbiRet {
@@ -15,15 +16,18 @@ pub struct SbiRet {
     pub value: usize,
 }
 
-// system reset extension
+// 系统复位扩展EID
 const SRST_EXTENSION: usize = 0x53525354;
+// FID
 const SBI_SYSTEM_RESET: usize = 0;
+
 #[repr(usize)]
 enum SystemResetType {
     Shutdown = 0,
     ColdReboot = 1,
     WarmReboot = 2,
 }
+
 #[repr(usize)]
 enum SystemResetReason {
     NoReason = 0,
