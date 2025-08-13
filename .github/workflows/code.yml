@@ -19,8 +19,20 @@ jobs:
           target: riscv64gc-unknown-none-elf
           default: true
           override: true
+      - name: Debug toolchain setup
+        run: |
+          echo "=== Root directory ==="
+          rustup show
+          echo "=== OS directory ==="
+          cd os
+          rustup show
+          which cargo
+          cargo --version
       - name: Build doc
-        run: cd os && cargo doc --no-deps --verbose -Z build-std=core,alloc
+        run: |
+          cd os
+          rustup show
+          cargo doc --no-deps --verbose -Z build-std=core,alloc
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
