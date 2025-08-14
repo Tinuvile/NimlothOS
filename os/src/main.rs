@@ -1,10 +1,18 @@
 #![no_std]
 #![no_main]
 
+mod batch;
 mod console;
 mod lang_items;
 mod log;
 mod sbi;
+mod sync;
+mod syscall;
+mod trap;
+
+#[cfg(feature = "board_qemu")]
+#[path = "board/qemu.rs"]
+mod board;
 
 use core::arch::global_asm;
 

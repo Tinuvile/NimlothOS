@@ -8,6 +8,12 @@ edition = "2024"
 [dependencies]
 rustsbi = { version = "0.4.0", features = ["machine"] }
 log = "0.4"
+riscv = { git = "https://github.com/rcore-os/riscv", features = ["inline-asm"] }
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+
+[features]
+board_qemu = []
+board_k210 = []
 
 [profile.release]
 debug = true

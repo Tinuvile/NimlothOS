@@ -4,28 +4,28 @@ MODE := release
 KERNEL_ELF := target/$(TARGET)/$(MODE)/os
 KERNEL_BIN := $(KERNEL_ELF).bin
 DISASM_TMP := target/$(TARGET)/$(MODE)/asm
-# TODO: 暂时注释掉用户空间相关配置，因为没有 ../user 目录
-# FS_IMG := ../user/target/$(TARGET)/$(MODE)/fs.img
-# APPS := ../user/src/bin/*
-
-# BOARD
-BOARD := qemu
-SBI ?= rustsbi
-BOOTLOADER := ../bootloader/$(SBI)-$(BOARD).bin
-
-# GUI
-GUI ?= off
-ifeq ($(GUI), off)
-	GUI_OPTION := -display none
-endif
 
 # Building mode argument
 ifeq ($(MODE), release)
 	MODE_ARG := --release
 endif
 
+# BOARD
+BOARD ?= qemu
+SBI ?= rustsbi
+BOOTLOADER := ../bootloader/$(SBI)-$(BOARD).bin
+K210_BOOTLOADER_SIZE := 131072
+
 # KERNEL ENTRY
-KERNEL_ENTRY_PA := 0x80200000
+ifeq ($(BOARD), qemu)
+	KERNEL_ENTRY_PA := 0x80200000
+else ifeq ($(BOARD), k210)
+	KERNEL_ENTRY_PA := 0x80020000
+endif
+
+# Run K210
+K210-SERIALPORT	= /dev/ttyUSB0
+K210-BURNER = ../tools/kflash.py
 
 # Binutils
 OBJDUMP := rust-objdump --arch-name=riscv64
@@ -34,35 +34,31 @@ OBJCOPY := rust-objcopy --binary-architecture=riscv64
 # Disassembly
 DISASM ?= -x
 
-# Run usertests or usershell
-TEST ?=
+build: env switch-check $(KERNEL_BIN)
 
-# TODO: 暂时去掉 fs-img 依赖，因为没有用户空间程序
-build: env $(KERNEL_BIN)
-# build: env $(KERNEL_BIN) fs-img 
+switch-check:
+ifeq ($(BOARD), qemu)
+	(which last-qemu) || (rm -f last-k210 && touch last-qemu && make clean)
+else ifeq ($(BOARD), k210)
+	(which last-k210) || (rm -f last-qemu && touch last-k210 && make clean)
+endif
 
 env:
 	(rustup target list | grep "riscv64gc-unknown-none-elf (installed)") || rustup target add $(TARGET)
-	cargo install cargo-binutils
+	cargo install cargo-binutils --vers =0.3.3
 	rustup component add rust-src
 	rustup component add llvm-tools-preview
 
 $(KERNEL_BIN): kernel
 	@$(OBJCOPY) $(KERNEL_ELF) --strip-all -O binary $@
 
-# TODO: 暂时注释掉文件系统镜像构建，因为没有用户空间程序
-# fs-img: $(APPS)
-# 	@cd ../user && make build TEST=$(TEST)
-# 	@rm -f $(FS_IMG)
-# 	@cd ../easy-fs-fuse && cargo run --release -- -s ../user/src/bin/ -t ../user/target/riscv64gc-unknown-none-elf/release/
-
-# $(APPS):
-
 kernel:
+	@cd ../user && make build
 	@echo Platform: $(BOARD)
 	@cp src/linker-$(BOARD).ld src/linker.ld
-	@cargo build --release
+	@cargo build $(MODE_ARG) --features "board_$(BOARD)"
 	@rm src/linker.ld
+
 
 clean:
 	@cargo clean
@@ -72,49 +68,40 @@ disasm: kernel
 
 disasm-vim: kernel
 	@$(OBJDUMP) $(DISASM) $(KERNEL_ELF) > $(DISASM_TMP)
-	@nvim $(DISASM_TMP)
+	@vim $(DISASM_TMP)
 	@rm $(DISASM_TMP)
 
 run: run-inner
 
-# TODO: 简化 QEMU 参数，只保留基本的内核调试功能
-QEMU_ARGS := -machine virt \
-			 -bios $(BOOTLOADER) \
-			 -serial stdio \
-			 $(GUI_OPTION) \
-			 -device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA)
-			 # TODO: 以下设备暂时注释掉，等有用户空间程序时再启用
-			 # -drive file=$(FS_IMG),if=none,format=raw,id=x0 \
-			 # -device virtio-blk-device,drive=x0 \
-			 # -device virtio-gpu-device \
-			 # -device virtio-keyboard-device \
-			 # -device virtio-mouse-device \
-			 # -device virtio-net-device,netdev=net0 \
-			 # -netdev user,id=net0,hostfwd=udp::6200-:2000,hostfwd=tcp::6201-:80
+	
 
-fdt:
-	@qemu-system-riscv64 -M 128m -machine virt,dumpdtb=virt.out
-	fdtdump virt.out
+run-inner: build
+ifeq ($(BOARD),qemu)
+	@qemu-system-riscv64 \
+		-machine virt \
+		-nographic \
+		-bios $(BOOTLOADER) \
+		-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA)
+else
+	(which $(K210-BURNER)) || (cd .. && git clone https://github.com/sipeed/kflash.py.git && mv kflash.py tools)
+	@cp $(BOOTLOADER) $(BOOTLOADER).copy
+	@dd if=$(KERNEL_BIN) of=$(BOOTLOADER).copy bs=$(K210_BOOTLOADER_SIZE) seek=1
+	@mv $(BOOTLOADER).copy $(KERNEL_BIN)
+	@sudo chmod 777 $(K210-SERIALPORT)
+	python3 $(K210-BURNER) -p $(K210-SERIALPORT) -b 1500000 $(KERNEL_BIN)
+	python3 -m serial.tools.miniterm --eol LF --dtr 0 --rts 0 --filter direct $(K210-SERIALPORT) 115200
+endif
 
-QEMU_NAME := qemu-system-riscv64
-qemu-version-check:
-	@sh scripts/qemu-ver-check.sh $(QEMU_NAME)
-
-run-inner: qemu-version-check build
-	@qemu-system-riscv64 $(QEMU_ARGS)
-
-debug: qemu-version-check build
+debug: build
 	@tmux new-session -d \
-		"qemu-system-riscv64 $(QEMU_ARGS) -s -S" && \
+		"qemu-system-riscv64 -machine virt -nographic -bios $(BOOTLOADER) -device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA) -s -S" && \
 		tmux split-window -h "riscv64-unknown-elf-gdb -ex 'file $(KERNEL_ELF)' -ex 'set arch riscv:rv64' -ex 'target remote localhost:1234'" && \
 		tmux -2 attach-session -d
 
-gdbserver: qemu-version-check build
-	@qemu-system-riscv64 $(QEMU_ARGS) -s -S
+gdbserver: build
+	@qemu-system-riscv64 -machine virt -nographic -bios $(BOOTLOADER) -device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA) -s -S
 
 gdbclient:
 	@riscv64-unknown-elf-gdb -ex 'file $(KERNEL_ELF)' -ex 'set arch riscv:rv64' -ex 'target remote localhost:1234'
 
-# TODO: 暂时去掉 fs-img 目标
-.PHONY: build env kernel clean disasm disasm-vim run-inner gdbserver gdbclient fdt qemu-version-check
-# .PHONY: build env kernel clean disasm disasm-vim run-inner fs-img gdbserver gdbclient fdt qemu-version-check
+.PHONY: build env kernel clean disasm disasm-vim run-inner switch-check gdbserver gdbclient
