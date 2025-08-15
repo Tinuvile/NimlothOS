@@ -1,4 +1,5 @@
 use crate::batch::run_next_app;
+use crate::println;
 use crate::syscall::syscall;
 use core::arch::global_asm;
 use riscv::register::{
@@ -26,7 +27,7 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
     let stval = stval::read();
     match scause.cause() {
         Trap::Exception(Exception::UserEnvCall) => {
-            cx.spec += 4;
+            cx.sepc += 4;
             cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
         }
         Trap::Exception(Exception::StoreFault) | Trap::Exception(Exception::StorePageFault) => {

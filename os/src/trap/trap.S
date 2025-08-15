@@ -1,8 +1,15 @@
-.marco SAVE_GP n
+.altmacro
+.macro SAVE_GP n
    sd x\n, \n*8(sp)
 .endm
+.macro LOAD_GP n
+    ld x\n, \n*8(sp)
+.endm
+    .section .text
+    .global __alltraps
+    .global __restore
+    .align 2
 
-.align 2
 __alltraps:
     # 交换 sscratch and sp(x2) 寄存器内容
     csrrw sp, sscratch, sp
@@ -28,10 +35,6 @@ __alltraps:
     # a0指向内核栈的栈指针，trap_handler从中获取cx参数
     mv a0, sp
     call trap_handler
-
-.marco LOAD_GP n
-    ld x\n, \n*8(sp)
-.endm
 
 __restore:
     mv sp, a0
