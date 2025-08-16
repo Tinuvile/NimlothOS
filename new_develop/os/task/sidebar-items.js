@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["TaskInfo"]};
+window.SIDEBAR_ITEMS = {"enum":["ExceptionType","TaskStatus"],"struct":["ExceptionInfo","SyscallStats","TaskInfo","TimeStats"]};
