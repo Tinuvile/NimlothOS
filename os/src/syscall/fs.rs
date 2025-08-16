@@ -1,4 +1,4 @@
-use crate::batch::run_next_app;
+use crate::batch::{end_timing, run_next_app, set_exit_code};
 use crate::print;
 
 const FD_STDOUT: usize = 1;
@@ -19,5 +19,9 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
 
 pub fn sys_exit(xstate: i32) -> ! {
     print!("[kernel] Application exited with code {}", xstate);
+
+    set_exit_code(xstate);
+    end_timing();
+
     run_next_app();
 }
