@@ -6,6 +6,7 @@ mod console;
 mod lang_items;
 mod log;
 mod sbi;
+mod stack_trace;
 mod sync;
 mod syscall;
 mod trap;
@@ -17,14 +18,18 @@ mod board;
 use core::arch::global_asm;
 
 global_asm!(include_str!("entry.asm"));
+global_asm!(include_str!("link_app.S"));
 
 #[unsafe(no_mangle)]
 pub fn rust_main() -> ! {
     clear_bss();
+    println!("Hello, world!");
 
+    trap::init();
+    batch::init();
     log::init();
 
-    sbi::shutdown();
+    batch::run_next_app();
 }
 
 fn clear_bss() {
