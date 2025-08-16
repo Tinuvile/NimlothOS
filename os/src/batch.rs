@@ -1,5 +1,6 @@
 use crate::println;
 use crate::sync::UPSafeCell;
+use crate::task::TaskInfo;
 use crate::trap::TrapContext;
 use core::arch::asm;
 use core::str;
@@ -10,6 +11,16 @@ const KERNEL_STACK_SIZE: usize = 4096 * 2;
 const MAX_APP_NUM: usize = 16;
 const APP_BASE_ADDRESS: usize = 0x80400000;
 const APP_SIZE_LIMIT: usize = 0x20000;
+
+const APP_NAMES: &[&str] = &[
+    "00_hello_world",
+    "01_store_fault",
+    "02_power",
+    "03_priv_inst",
+    "04_priv_csr",
+    "05_printstack_test",
+    "06_taskinfo_test",
+];
 
 #[repr(align(4096))]
 struct KernelStack {
@@ -103,6 +114,19 @@ impl AppManager {
     pub fn move_to_next_app(&mut self) {
         self.current_app += 1;
     }
+
+    pub fn get_current_task_info(&self) -> TaskInfo {
+        let task_id = self.current_app;
+        let task_name = if task_id > 0 && task_id - 1 < APP_NAMES.len() {
+            APP_NAMES[task_id - 1]
+        } else if task_id == 0 {
+            "not_started"
+        } else {
+            "unknown"
+        };
+
+        TaskInfo::new(task_id, task_name)
+    }
 }
 
 lazy_static! {
@@ -153,4 +177,8 @@ pub fn run_next_app() -> ! {
         )) as *const _ as usize);
     }
     panic!("Unreachable in batch::run_current_app!");
+}
+
+pub fn get_current_task_info() -> TaskInfo {
+    APP_MANAGER.exclusive_access().get_current_task_info()
 }

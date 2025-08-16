@@ -1,3 +1,4 @@
+use crate::exit;
 use core::panic::PanicInfo;
 
 #[panic_handler]
@@ -8,5 +9,6 @@ fn panic_handler(panic_info: &PanicInfo) -> ! {
     } else {
         println!("Paniced: {}", err);
     }
+    exit(-1);
     loop {}
 }

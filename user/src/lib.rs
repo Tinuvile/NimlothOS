@@ -9,6 +9,20 @@ pub mod console;
 mod lang_items;
 mod syscall;
 
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct TaskInfo {
+    pub task_id: usize,
+    pub task_name: [u8; 32],
+}
+
+impl TaskInfo {
+    pub fn get_name(&self) -> &str {
+        let end = self.task_name.iter().position(|&c| c == 0).unwrap_or(32);
+        core::str::from_utf8(&self.task_name[..end]).unwrap_or("invalid")
+    }
+}
+
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.entry")]
 pub extern "C" fn _start() -> ! {
@@ -39,4 +53,15 @@ pub fn write(fd: usize, buf: &[u8]) -> isize {
 
 pub fn exit(exit_code: i32) -> isize {
     sys_exit(exit_code)
+}
+
+pub fn get_taskinfo() -> TaskInfo {
+    let mut ti = TaskInfo {
+        task_id: 0,
+        task_name: [0; 32],
+    };
+
+    sys_get_taskinfo(&mut ti as *mut TaskInfo as *mut u8);
+
+    ti
 }

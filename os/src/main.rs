@@ -9,6 +9,7 @@ mod sbi;
 mod stack_trace;
 mod sync;
 mod syscall;
+mod task;
 mod trap;
 
 #[cfg(feature = "board_qemu")]
