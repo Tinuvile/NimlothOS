@@ -7,12 +7,14 @@
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">const </span>SYSCALL_WRITE: usize = <span class="number">64</span>;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">const </span>SYSCALL_EXIT: usize = <span class="number">93</span>;
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">const </span>SYSCALL_YIELD: usize = <span class="number">124</span>;
-<a href=#10 id=10 data-nosnippet>10</a>
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">pub fn </span>syscall(syscall_id: usize, args: [usize; <span class="number">3</span>]) -&gt; isize {
-<a href=#12 id=12 data-nosnippet>12</a>    <span class="kw">match </span>syscall_id {
-<a href=#13 id=13 data-nosnippet>13</a>        SYSCALL_WRITE =&gt; sys_write(args[<span class="number">0</span>], args[<span class="number">1</span>] <span class="kw">as </span><span class="kw-2">*const </span>u8, args[<span class="number">2</span>]),
-<a href=#14 id=14 data-nosnippet>14</a>        SYSCALL_EXIT =&gt; sys_exit(args[<span class="number">0</span>] <span class="kw">as </span>i32),
-<a href=#15 id=15 data-nosnippet>15</a>        SYSCALL_YIELD =&gt; sys_yield(),
-<a href=#16 id=16 data-nosnippet>16</a>        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unsupported syscall_id: {}"</span>, syscall_id),
-<a href=#17 id=17 data-nosnippet>17</a>    }
-<a href=#18 id=18 data-nosnippet>18</a>}</code></pre></div></section></main></body></html>
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">const </span>SYSCALL_GET_TIME: usize = <span class="number">169</span>;
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">pub fn </span>syscall(syscall_id: usize, args: [usize; <span class="number">3</span>]) -&gt; isize {
+<a href=#13 id=13 data-nosnippet>13</a>    <span class="kw">match </span>syscall_id {
+<a href=#14 id=14 data-nosnippet>14</a>        SYSCALL_WRITE =&gt; sys_write(args[<span class="number">0</span>], args[<span class="number">1</span>] <span class="kw">as </span><span class="kw-2">*const </span>u8, args[<span class="number">2</span>]),
+<a href=#15 id=15 data-nosnippet>15</a>        SYSCALL_EXIT =&gt; sys_exit(args[<span class="number">0</span>] <span class="kw">as </span>i32),
+<a href=#16 id=16 data-nosnippet>16</a>        SYSCALL_YIELD =&gt; sys_yield(),
+<a href=#17 id=17 data-nosnippet>17</a>        SYSCALL_GET_TIME =&gt; sys_get_time(),
+<a href=#18 id=18 data-nosnippet>18</a>        <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unsupported syscall_id: {}"</span>, syscall_id),
+<a href=#19 id=19 data-nosnippet>19</a>    }
+<a href=#20 id=20 data-nosnippet>20</a>}</code></pre></div></section></main></body></html>
