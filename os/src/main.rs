@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-mod batch;
 mod config;
 mod console;
 mod lang_items;
@@ -11,11 +10,8 @@ mod sbi;
 mod stack_trace;
 mod sync;
 mod syscall;
+mod task;
 mod trap;
-
-#[cfg(feature = "board_qemu")]
-#[path = "board/qemu.rs"]
-mod board;
 
 use core::arch::global_asm;
 
@@ -29,10 +25,10 @@ pub fn rust_main() -> ! {
     info!("[kernel] Hello, world!");
 
     trap::init();
-    batch::init();
     loader::load_apps();
+    task::run_first_task();
 
-    batch::run_next_app();
+    panic!("Unreachable in rust_main!");
 }
 
 fn clear_bss() {

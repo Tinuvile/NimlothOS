@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use user_lib::yield_;
+
 #[macro_use]
 extern crate user_lib;
 
@@ -14,6 +16,7 @@ fn main() -> i32 {
             print!("B");
         }
         println!(" [{}/{}]", i + 1, HEIGHT);
+        yield_();
     }
     println!("Test write_b OK!");
     0

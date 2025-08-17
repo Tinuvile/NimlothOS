@@ -1,4 +1,3 @@
-use crate::batch::{get_current_app_range, get_user_stack_range, run_next_app};
 use crate::{print, println};
 
 const FD_STDOUT: usize = 1;
@@ -38,9 +37,4 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
             panic!("Unsupported fd in sys_write: {}!", fd);
         }
     }
-}
-
-pub fn sys_exit(xstate: i32) -> ! {
-    print!("[kernel] Application exited with code {}", xstate);
-    run_next_app();
 }
