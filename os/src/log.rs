@@ -98,7 +98,6 @@ pub fn init() {
     });
 }
 
-/*
 #[macro_export]
 macro_rules! error {
     ($fmt: literal $(, $($arg: tt)+)?) => {
@@ -133,4 +132,3 @@ macro_rules! trace {
         $crate::println!("\u{1B}[90mTRACE {}\u{1B}[0m", format_args!($fmt $(, $($arg)+)?))
     };
 }
-*/

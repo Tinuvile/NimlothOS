@@ -1,3 +1,4 @@
+use crate::config::*;
 use crate::println;
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
@@ -5,41 +6,37 @@ use core::arch::asm;
 use core::str;
 use lazy_static::*;
 
-const USER_STACK_SIZE: usize = 4096 * 2;
-const KERNEL_STACK_SIZE: usize = 4096 * 2;
-const MAX_APP_NUM: usize = 16;
-const APP_BASE_ADDRESS: usize = 0x80400000;
-const APP_SIZE_LIMIT: usize = 0x20000;
-
 #[repr(align(4096))]
+#[derive(Clone, Copy)]
 struct KernelStack {
     data: [u8; KERNEL_STACK_SIZE],
 }
 
 #[repr(align(4096))]
+#[derive(Clone, Copy)]
 struct UserStack {
     data: [u8; USER_STACK_SIZE],
 }
 
-static KERNEL_STACK: KernelStack = KernelStack {
+static KERNEL_STACK: [KernelStack; MAX_APP_NUM] = [KernelStack {
     data: [0; KERNEL_STACK_SIZE],
-};
+}; MAX_APP_NUM];
 
-static USER_STACK: UserStack = UserStack {
+static USER_STACK: [UserStack; MAX_APP_NUM] = [UserStack {
     data: [0; USER_STACK_SIZE],
-};
+}; MAX_APP_NUM];
 
 impl KernelStack {
     fn get_sp(&self) -> usize {
         self.data.as_ptr() as usize + KERNEL_STACK_SIZE
     }
 
-    pub fn push_context(&self, cx: TrapContext) -> &'static mut TrapContext {
-        let cx_ptr = (self.get_sp() - core::mem::size_of::<TrapContext>()) as *mut TrapContext;
+    pub fn push_context(&self, trap_cx: TrapContext) -> &'static mut TrapContext {
+        let trap_cx_ptr = (self.get_sp() - core::mem::size_of::<TrapContext>()) as *mut TrapContext;
         unsafe {
-            *cx_ptr = cx;
+            *trap_cx_ptr = trap_cx;
         }
-        unsafe { cx_ptr.as_mut().unwrap() }
+        unsafe { trap_cx_ptr.as_mut().unwrap() }
     }
 }
 
@@ -68,40 +65,16 @@ impl AppManager {
         }
     }
 
-    unsafe fn load_app(&self, app_id: usize) {
-        unsafe {
-            if app_id >= self.num_app {
-                println!("All applications completed!");
-
-                #[cfg(feature = "board_qemu")]
-                use crate::board::QEMUExit;
-                #[cfg(feature = "board_qemu")]
-                crate::board::QEMU_EXIT_HANDLE.exit_success();
-
-                #[cfg(feature = "board_k210")]
-                panic!("All applications completed!");
-            }
-            println!("[kernel] Loading app_{} ...", app_id);
-
-            asm!("fence.i");
-
-            core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, APP_SIZE_LIMIT).fill(0);
-            let app_src = core::slice::from_raw_parts(
-                self.app_start[app_id] as *const u8,
-                self.app_start[app_id + 1] - self.app_start[app_id],
-            );
-            let app_dst =
-                core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, app_src.len());
-            app_dst.copy_from_slice(app_src);
-        }
-    }
-
     pub fn get_current_app(&self) -> usize {
         self.current_app
     }
 
     pub fn move_to_next_app(&mut self) {
         self.current_app += 1;
+    }
+
+    pub fn get_current_app_base(&self) -> usize {
+        APP_BASE_ADDRESS + self.current_app * APP_SIZE_LIMIT
     }
 
     pub fn get_current_app_range(&self) -> (usize, usize) {
@@ -115,8 +88,9 @@ impl AppManager {
             return (0, 0);
         }
 
+        let app_base = APP_BASE_ADDRESS + running_app_id * APP_SIZE_LIMIT;
         let app_size = self.app_start[running_app_id + 1] - self.app_start[running_app_id];
-        (APP_BASE_ADDRESS, APP_BASE_ADDRESS + app_size)
+        (app_base, app_base + app_size)
     }
 }
 
@@ -152,9 +126,23 @@ pub fn print_app_info() {
 pub fn run_next_app() -> ! {
     let mut app_manager = APP_MANAGER.exclusive_access();
     let current_app = app_manager.get_current_app();
-    unsafe {
-        app_manager.load_app(current_app);
+
+    if current_app >= app_manager.num_app {
+        println!("[kernel] All applications completed!");
+
+        #[cfg(feature = "board_qemu")]
+        use crate::board::QEMUExit;
+        #[cfg(feature = "board_qemu")]
+        crate::board::QEMU_EXIT_HANDLE.exit_success();
+
+        #[cfg(feature = "board_k210")]
+        panic!("All applications completed!");
     }
+
+    println!("[kernel] Loading app_{} ...", current_app);
+
+    let app_base = app_manager.get_current_app_base();
+
     app_manager.move_to_next_app();
     drop(app_manager);
 
@@ -162,12 +150,14 @@ pub fn run_next_app() -> ! {
         fn __restore(cx_addr: usize);
     }
     unsafe {
-        __restore(KERNEL_STACK.push_context(TrapContext::app_init_context(
-            APP_BASE_ADDRESS,
-            USER_STACK.get_sp(),
-        )) as *const _ as usize);
+        __restore(
+            KERNEL_STACK[current_app].push_context(TrapContext::app_init_context(
+                app_base,
+                USER_STACK[current_app].get_sp(),
+            )) as *const _ as usize,
+        );
     }
-    panic!("Unreachable in batch::run_current_app!");
+    panic!("Unreachable in batch::run_next_app!");
 }
 
 pub fn get_current_app_range() -> (usize, usize) {
@@ -175,5 +165,18 @@ pub fn get_current_app_range() -> (usize, usize) {
 }
 
 pub fn get_user_stack_range() -> (usize, usize) {
-    (USER_STACK.get_sp() - USER_STACK_SIZE, USER_STACK.get_sp())
+    let app_manager = APP_MANAGER.exclusive_access();
+    let current_app = if app_manager.current_app > 0 {
+        app_manager.current_app - 1
+    } else {
+        0
+    };
+    drop(app_manager);
+
+    if current_app < MAX_APP_NUM {
+        let stack_top = USER_STACK[current_app].get_sp();
+        (stack_top - USER_STACK_SIZE, stack_top)
+    } else {
+        (0, 0)
+    }
 }

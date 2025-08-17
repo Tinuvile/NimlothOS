@@ -4,6 +4,7 @@ use crate::{print, println};
 const FD_STDOUT: usize = 1;
 
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
+    /*
     let app_range = get_current_app_range();
     let user_stack_range = get_user_stack_range();
 
@@ -24,6 +25,7 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
         );
         sys_exit(-1);
     }
+    */
 
     match fd {
         FD_STDOUT => {

@@ -2,8 +2,10 @@
 #![no_main]
 
 mod batch;
+mod config;
 mod console;
 mod lang_items;
+mod loader;
 mod log;
 mod sbi;
 mod stack_trace;
@@ -23,11 +25,12 @@ global_asm!(include_str!("link_app.S"));
 #[unsafe(no_mangle)]
 pub fn rust_main() -> ! {
     clear_bss();
-    println!("Hello, world!");
+    log::init();
+    info!("[kernel] Hello, world!");
 
     trap::init();
     batch::init();
-    log::init();
+    loader::load_apps();
 
     batch::run_next_app();
 }
