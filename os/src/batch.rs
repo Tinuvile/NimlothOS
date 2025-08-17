@@ -88,8 +88,9 @@ impl AppManager {
             panic!("All applications completed!");
         }
 
-        if self.current_app > 0 && self.current_app - 1 < self.app_task_info.len() {
-            self.start_timing();
+        if app_id < self.app_task_info.len() {
+            let current_time = self.get_current_time();
+            self.app_task_info[app_id].start_timing(current_time);
         }
 
         println!("[kernel] Loading app_{} ...", app_id);
@@ -118,28 +119,36 @@ impl AppManager {
     }
 
     pub fn get_current_task_info(&self) -> TaskInfo {
-        let task_id = self.current_app;
-        let task_name = if task_id > 0 && task_id - 1 < app_names::APP_NAMES.len() {
-            app_names::APP_NAMES[task_id - 1]
-        } else if task_id == 0 {
-            "not_started"
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return TaskInfo::new(0, "not_started");
+        };
+
+        let task_name = if running_app_id < app_names::APP_NAMES.len() {
+            app_names::APP_NAMES[running_app_id]
         } else {
             "unknown"
         };
 
-        let mut task_info = TaskInfo::new(task_id, task_name);
-
-        if task_id > 0 && task_id - 1 < self.app_task_info.len() {
-            task_info = self.app_task_info[task_id - 1].clone();
+        if running_app_id < self.app_task_info.len() {
+            let mut task_info = self.app_task_info[running_app_id];
+            task_info.task_id = running_app_id;
+            return task_info;
         }
 
-        task_info
+        TaskInfo::new(running_app_id, task_name)
     }
 
     pub fn record_syscall(&mut self, syscall_id: usize) {
-        let current_app = self.current_app;
-        if current_app > 0 && current_app - 1 < self.app_task_info.len() {
-            self.app_task_info[current_app - 1].record_syscall(syscall_id);
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return;
+        };
+
+        if running_app_id < self.app_task_info.len() {
+            self.app_task_info[running_app_id].record_syscall(syscall_id);
         }
     }
 
@@ -150,33 +159,53 @@ impl AppManager {
         inst_addr: usize,
         inst_val: u32,
     ) {
-        let current_app = self.current_app;
-        if current_app > 0 && current_app - 1 < self.app_task_info.len() {
-            self.app_task_info[current_app - 1]
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return;
+        };
+
+        if running_app_id < self.app_task_info.len() {
+            self.app_task_info[running_app_id]
                 .record_exception(exc_type, fault_addr, inst_addr, inst_val);
         }
     }
 
     pub fn set_exit_code(&mut self, code: i32) {
-        let current_app = self.current_app;
-        if current_app > 0 && current_app - 1 < self.app_task_info.len() {
-            self.app_task_info[current_app - 1].set_exit_code(code);
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return;
+        };
+
+        if running_app_id < self.app_task_info.len() {
+            self.app_task_info[running_app_id].set_exit_code(code);
         }
     }
 
     pub fn start_timing(&mut self) {
-        let current_app = self.current_app;
-        if current_app > 0 && current_app - 1 < self.app_task_info.len() {
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return;
+        };
+
+        if running_app_id < self.app_task_info.len() {
             let current_time = self.get_current_time();
-            self.app_task_info[current_app - 1].start_timing(current_time);
+            self.app_task_info[running_app_id].start_timing(current_time);
         }
     }
 
     pub fn end_timing(&mut self) {
-        let current_app = self.current_app;
-        if current_app > 0 && current_app - 1 < self.app_task_info.len() {
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return;
+        };
+
+        if running_app_id < self.app_task_info.len() {
             let current_time = self.get_current_time();
-            self.app_task_info[current_app - 1].end_timing(current_time);
+            self.app_task_info[running_app_id].end_timing(current_time);
         }
     }
 
@@ -244,6 +273,21 @@ impl AppManager {
             println!("");
         }
         println!("=== End of Statistics ===");
+    }
+
+    pub fn get_current_app_range(&self) -> (usize, usize) {
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return (0, 0);
+        };
+
+        if running_app_id >= self.num_app {
+            return (0, 0);
+        }
+
+        let app_size = self.app_start[running_app_id + 1] - self.app_start[running_app_id];
+        (APP_BASE_ADDRESS, APP_BASE_ADDRESS + app_size)
     }
 }
 
@@ -333,4 +377,12 @@ pub fn set_exit_code(code: i32) {
 
 pub fn end_timing() {
     APP_MANAGER.exclusive_access().end_timing();
+}
+
+pub fn get_current_app_range() -> (usize, usize) {
+    APP_MANAGER.exclusive_access().get_current_app_range()
+}
+
+pub fn get_user_stack_range() -> (usize, usize) {
+    (USER_STACK.get_sp() - USER_STACK_SIZE, USER_STACK.get_sp())
 }

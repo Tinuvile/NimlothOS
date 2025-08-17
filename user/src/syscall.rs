@@ -1,4 +1,4 @@
-use core::arch::asm;
+use core::{arch::asm, unimplemented};
 
 const SYSCALL_WRITE: usize = 64;
 const SYSCALL_EXIT: usize = 93;
@@ -22,8 +22,9 @@ pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
     syscall(SYSCALL_WRITE, [fd, buffer.as_ptr() as usize, buffer.len()])
 }
 
-pub fn sys_exit(exit_code: i32) -> isize {
-    syscall(SYSCALL_EXIT, [exit_code as usize, 0, 0])
+pub fn sys_exit(exit_code: i32) -> ! {
+    syscall(SYSCALL_EXIT, [exit_code as usize, 0, 0]);
+    unreachable!()
 }
 
 pub fn sys_get_taskinfo(ti: *mut u8) -> isize {

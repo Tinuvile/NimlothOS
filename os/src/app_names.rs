@@ -8,4 +8,5 @@ pub const APP_NAMES: &[&str] = &[
     "05_printstack_test", 
     "06_taskinfo_test", 
     "07_comprehensive_test", 
+    "08_memory_test", 
 ];

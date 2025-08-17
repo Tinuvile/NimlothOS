@@ -3,7 +3,7 @@
     .section .data
     .global _num_app
 _num_app:
-    .quad 8
+    .quad 9
     .quad app_0_start
     .quad app_1_start
     .quad app_2_start
@@ -12,7 +12,8 @@ _num_app:
     .quad app_5_start
     .quad app_6_start
     .quad app_7_start
-    .quad app_7_end
+    .quad app_8_start
+    .quad app_8_end
 
     .section .data
     .global app_0_start
@@ -69,3 +70,10 @@ app_6_end:
 app_7_start:
     .incbin "../user/target/riscv64gc-unknown-none-elf/release/07_comprehensive_test.bin"
 app_7_end:
+
+    .section .data
+    .global app_8_start
+    .global app_8_end
+app_8_start:
+    .incbin "../user/target/riscv64gc-unknown-none-elf/release/08_memory_test.bin"
+app_8_end:
