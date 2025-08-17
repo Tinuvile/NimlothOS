@@ -103,6 +103,21 @@ impl AppManager {
     pub fn move_to_next_app(&mut self) {
         self.current_app += 1;
     }
+
+    pub fn get_current_app_range(&self) -> (usize, usize) {
+        let running_app_id = if self.current_app > 0 {
+            self.current_app - 1
+        } else {
+            return (0, 0);
+        };
+
+        if running_app_id >= self.num_app {
+            return (0, 0);
+        }
+
+        let app_size = self.app_start[running_app_id + 1] - self.app_start[running_app_id];
+        (APP_BASE_ADDRESS, APP_BASE_ADDRESS + app_size)
+    }
 }
 
 lazy_static! {
@@ -153,4 +168,12 @@ pub fn run_next_app() -> ! {
         )) as *const _ as usize);
     }
     panic!("Unreachable in batch::run_current_app!");
+}
+
+pub fn get_current_app_range() -> (usize, usize) {
+    APP_MANAGER.exclusive_access().get_current_app_range()
+}
+
+pub fn get_user_stack_range() -> (usize, usize) {
+    (USER_STACK.get_sp() - USER_STACK_SIZE, USER_STACK.get_sp())
 }
