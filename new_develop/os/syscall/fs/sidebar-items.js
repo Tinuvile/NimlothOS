@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["FD_STDOUT"],"fn":["sys_exit","sys_write"]};
+window.SIDEBAR_ITEMS = {"constant":["APP_BASE_ADDRESS","APP_SIZE_LIMIT","FD_STDOUT"],"fn":["sys_exit","sys_write"]};
