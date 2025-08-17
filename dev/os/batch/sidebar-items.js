@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["APP_BASE_ADDRESS","APP_SIZE_LIMIT","KERNEL_STACK_SIZE","MAX_APP_NUM","USER_STACK_SIZE"],"fn":["get_current_app_range","get_user_stack_range","init","print_app_info","run_next_app"],"static":["KERNEL_STACK","USER_STACK"],"struct":["APP_MANAGER","AppManager","KernelStack","UserStack"]};
