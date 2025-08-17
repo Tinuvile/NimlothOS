@@ -1,3 +1,3 @@
-var srcIndex = new Map(JSON.parse('[["os",["",[["sync",[],["mod.rs","up.rs"]],["syscall",[],["fs.rs","mod.rs"]],["trap",[],["context.rs","mod.rs"]]],["batch.rs","config.rs","console.rs","lang_items.rs","loader.rs","log.rs","main.rs","sbi.rs","stack_trace.rs"]]]]'));
+var srcIndex = new Map(JSON.parse('[["os",["",[["sync",[],["mod.rs","up.rs"]],["syscall",[],["fs.rs","mod.rs","process.rs"]],["task",[],["context.rs","mod.rs","switch.rs","task.rs"]],["trap",[],["context.rs","mod.rs"]]],["config.rs","console.rs","lang_items.rs","loader.rs","log.rs","main.rs","sbi.rs","stack_trace.rs"]]]]'));
 createSrcSidebar();
-//{"start":36,"fragment_lengths":[225]}
+//{"start":36,"fragment_lengths":[285]}
