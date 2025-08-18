@@ -20,10 +20,10 @@ impl TaskContext {
 
     pub fn goto_restore(kstack_ptr: usize) -> Self {
         unsafe extern "C" {
-            fn __pre_restore();
+            fn __restore();
         }
         Self {
-            ra: __pre_restore as usize,
+            ra: __restore as usize,
             sp: kstack_ptr,
             s: [0; 12],
         }
