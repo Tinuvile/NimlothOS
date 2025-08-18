@@ -3,11 +3,14 @@
 #![feature(linkage)]
 
 use syscall::*;
+use task::{SyscallInfo, TaskInfo, TaskStatus};
 
 #[macro_use]
 pub mod console;
+pub mod config;
 mod lang_items;
 mod syscall;
+pub mod task;
 
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.entry")]
@@ -47,4 +50,8 @@ pub fn yield_() -> isize {
 
 pub fn get_time() -> isize {
     sys_get_time()
+}
+
+pub fn task_info(id: usize, ts: *mut TaskInfo) -> isize {
+    sys_task_info(id, ts)
 }
