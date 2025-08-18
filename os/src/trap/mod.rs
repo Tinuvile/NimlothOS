@@ -1,5 +1,5 @@
 use crate::syscall::syscall;
-use crate::task::run_next_task;
+use crate::task::exit_current_and_run_next;
 use crate::timer::set_next_trigger;
 use crate::{println, task::suspend_current_and_run_next};
 use core::arch::global_asm;
@@ -42,15 +42,14 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
                 "[kernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.",
                 stval, cx.sepc
             );
-            run_next_task();
+            exit_current_and_run_next();
         }
         Trap::Exception(Exception::IllegalInstruction) => {
             println!(
                 "[kernel] IllegalInstruction in application, bad instruction = {:#x}, kernel killed it.",
                 cx.sepc
             );
-            panic!("[kernel] Cannot continue!")
-            // run_next_task();
+            exit_current_and_run_next();
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
             set_next_trigger();
