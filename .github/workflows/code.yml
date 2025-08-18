@@ -21,6 +21,7 @@ jobs:
         run: |
           cd os
           cargo doc --no-deps --verbose -Z build-std=core,alloc
+          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0; url=dev/os/"></head><body>Redirecting to documentation...</body></html>' > target/riscv64gc-unknown-none-elf/doc/index.html
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -66,8 +67,6 @@ jobs:
           fi
           sudo make install
           qemu-system-riscv64 --version
-
-      # TODO: 暂时注释掉用户测试，因为没有用户空间程序
-      # - name: Run usertests
-      #   run: cd os && make run TEST=1
-      #   timeout-minutes: 10
+      - name: Run usertests
+        run: cd os && make run TEST=1
+        timeout-minutes: 10
