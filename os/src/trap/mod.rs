@@ -1,6 +1,6 @@
 use crate::syscall::syscall;
-use crate::task::exit_current_and_run_next;
-use crate::timer::set_next_trigger;
+use crate::task::{SWITCH_TIME_COUNT, SWITCH_TIME_START, exit_current_and_run_next};
+use crate::timer::{get_time_us, set_next_trigger};
 use crate::{println, task::suspend_current_and_run_next};
 use core::arch::global_asm;
 use riscv::register::{
@@ -69,3 +69,9 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
 }
 
 pub use context::TrapContext;
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn switch_cost(cx: &mut TrapContext) -> &mut TrapContext {
+    SWITCH_TIME_COUNT += get_time_us() - SWITCH_TIME_START;
+    cx
+}

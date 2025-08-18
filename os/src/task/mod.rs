@@ -1,7 +1,7 @@
 use crate::loader::{get_num_app, init_app_cx};
 use crate::println;
-use crate::task::switch::__switch;
-use crate::timer::get_time_ms;
+use crate::sbi::shutdown;
+use crate::timer::{get_time_ms, get_time_us};
 use crate::{config::MAX_APP_NUM, sync::UPSafeCell};
 use lazy_static::*;
 use task::{TaskControlBlock, TaskStatus};
@@ -78,6 +78,7 @@ impl TaskManager {
         let mut inner = self.inner.exclusive_access();
         let current_task = inner.current_task;
         inner.tasks[current_task].kernel_time += inner.refresh_stop_watch();
+        println!("task {} suspended", current_task);
         inner.tasks[current_task].task_status = TaskStatus::Ready;
     }
 
@@ -105,6 +106,7 @@ impl TaskManager {
         if let Some(next) = self.find_next_task() {
             let mut inner = self.inner.exclusive_access();
             let current = inner.current_task;
+            println!("task {} start", current);
             inner.tasks[next].task_status = TaskStatus::Running;
             inner.current_task = next;
             let current_task_cx_ptr = &mut inner.tasks[current].task_cx as *mut TaskContext;
@@ -114,14 +116,18 @@ impl TaskManager {
                 __switch(current_task_cx_ptr, next_task_cx_ptr);
             }
         } else {
-            panic!("All applications completed!");
+            println!("All applications completed!");
+
+            println!("task switch time: {} us", get_switch_time_count());
+
+            shutdown();
         }
     }
 
     fn user_time_start(&self) {
         let mut inner = self.inner.exclusive_access();
         let current = inner.current_task;
-        inner.tasks[current].user_time += inner.refresh_stop_watch();
+        inner.tasks[current].kernel_time += inner.refresh_stop_watch();
     }
 
     fn user_time_end(&self) {
@@ -163,4 +169,17 @@ pub fn user_time_start() {
 
 pub fn user_time_end() {
     TASK_MANAGER.user_time_end();
+}
+
+pub static mut SWITCH_TIME_START: usize = 0;
+pub static mut SWITCH_TIME_COUNT: usize = 0;
+
+unsafe fn __switch(current_task_cx_ptr: *mut TaskContext, next_task_cx_ptr: *const TaskContext) {
+    SWITCH_TIME_START = get_time_us();
+    switch::__switch(current_task_cx_ptr, next_task_cx_ptr);
+    SWITCH_TIME_COUNT += get_time_us() - SWITCH_TIME_START;
+}
+
+fn get_switch_time_count() -> usize {
+    unsafe { SWITCH_TIME_COUNT }
 }
