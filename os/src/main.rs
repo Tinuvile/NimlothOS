@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(alloc_error_handler)]
 
 #[macro_use]
 mod config;
@@ -7,6 +8,7 @@ mod console;
 mod lang_items;
 mod loader;
 mod log;
+mod mm;
 mod sbi;
 mod stack_trace;
 mod sync;
@@ -19,6 +21,8 @@ mod trap;
 mod board;
 
 use core::arch::global_asm;
+
+extern crate alloc;
 
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));

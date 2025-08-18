@@ -9,7 +9,10 @@ edition = "2024"
 rustsbi = { version = "0.4.0", features = ["machine"] }
 log = "0.4"
 riscv = { git = "https://github.com/rcore-os/riscv", features = ["inline-asm"] }
-lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
+buddy_system_allocator = "0.11.0"
+bitflags = "2.9"
+xmas-elf = "0.10"
 
 [profile.release]
 debug = true
