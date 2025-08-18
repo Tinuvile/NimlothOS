@@ -30,6 +30,7 @@ pub fn enable_timer_interrupt() {
 
 #[unsafe(no_mangle)]
 pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
+    crate::task::user_time_end();
     let scause = scause::read();
     let stval = stval::read();
     match scause.cause() {
@@ -63,6 +64,7 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
             );
         }
     }
+    crate::task::user_time_start();
     cx
 }
 
