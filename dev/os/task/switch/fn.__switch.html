@@ -1,4 +1,65 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `__switch` fn in crate `os`."><title>__switch in os::task::switch - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>task::<wbr>switch</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">task</a>::<wbr><a href="index.html">switch</a></div><h1>Function <span class="fn">__switch</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/task/switch.rs.html#7-10">Source</a> </span></div><pre class="rust item-decl"><code>pub unsafe extern &quot;C&quot; fn __switch(
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="执行任务上下文切换"><title>__switch in os::task::switch - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">__<wbr>switch</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#功能" title="功能">功能</a></li><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#safety" title="Safety">Safety</a></li><li><a href="#调用约定" title="调用约定">调用约定</a></li><li><a href="#实现细节" title="实现细节">实现细节</a></li><li><a href="#注意事项" title="注意事项">注意事项</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>task::<wbr>switch</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">task</a>::<wbr><a href="index.html">switch</a></div><h1>Function <span class="fn">__switch</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/task/switch.rs.html#66-69">Source</a> </span></div><pre class="rust item-decl"><code>pub unsafe extern &quot;C&quot; fn __switch(
     current_task_cx_ptr: *mut <a class="struct" href="../context/struct.TaskContext.html" title="struct os::task::context::TaskContext">TaskContext</a>,
     next_task_cx_ptr: *const <a class="struct" href="../context/struct.TaskContext.html" title="struct os::task::context::TaskContext">TaskContext</a>,
-)</code></pre></section></div></main></body></html>
+)</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>执行任务上下文切换</p>
+<p>这是任务调度的核心底层函数，负责保存当前任务的 CPU 寄存器状态
+并恢复目标任务的寄存器状态，实现任务间的切换。</p>
+<h3 id="功能"><a class="doc-anchor" href="#功能">§</a>功能</h3>
+<ol>
+<li><strong>保存当前上下文</strong>: 将当前任务的寄存器状态保存到 <code>current_task_cx_ptr</code> 指向的结构体</li>
+<li><strong>恢复目标上下文</strong>: 从 <code>next_task_cx_ptr</code> 指向的结构体恢复目标任务的寄存器状态</li>
+<li><strong>执行切换</strong>: 通过 <code>ret</code> 指令跳转到目标任务继续执行</li>
+</ol>
+<h3 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h3>
+<ul>
+<li><code>current_task_cx_ptr</code> - 指向当前任务上下文的可变指针，用于保存当前状态</li>
+<li><code>next_task_cx_ptr</code> - 指向目标任务上下文的只读指针，用于恢复目标任务状态</li>
+</ul>
+<h3 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h3>
+<p>这是一个 <code>unsafe</code> 函数，调用者必须确保：</p>
+<ul>
+<li>两个指针都指向有效的 <code>TaskContext</code> 结构体</li>
+<li><code>current_task_cx_ptr</code> 指向的内存可以安全写入</li>
+<li>调用时处于适当的执行环境（通常在内核态）</li>
+<li>目标任务的上下文是有效的，包含正确的栈指针和返回地址</li>
+</ul>
+<h3 id="调用约定"><a class="doc-anchor" href="#调用约定">§</a>调用约定</h3>
+<p>遵循 RISC-V C 调用约定：</p>
+<ul>
+<li><code>a0</code> 寄存器传递 <code>current_task_cx_ptr</code></li>
+<li><code>a1</code> 寄存器传递 <code>next_task_cx_ptr</code></li>
+<li>函数不返回到调用点，而是跳转到目标任务执行</li>
+</ul>
+<h3 id="实现细节"><a class="doc-anchor" href="#实现细节">§</a>实现细节</h3>
+<p>该函数在 <code>switch.S</code> 中用汇编语言实现，主要包含：</p>
+<ol>
+<li>
+<p><strong>保存阶段</strong>:</p>
+<ul>
+<li>保存返回地址 (<code>ra</code>) 到当前上下文</li>
+<li>保存栈指针 (<code>sp</code>) 到当前上下文</li>
+<li>保存所有被调用者保存寄存器 (<code>s0-s11</code>) 到当前上下文</li>
+</ul>
+</li>
+<li>
+<p><strong>恢复阶段</strong>:</p>
+<ul>
+<li>从目标上下文恢复返回地址 (<code>ra</code>)</li>
+<li>从目标上下文恢复所有被调用者保存寄存器 (<code>s0-s11</code>)</li>
+<li>从目标上下文恢复栈指针 (<code>sp</code>)</li>
+</ul>
+</li>
+<li>
+<p><strong>跳转阶段</strong>:</p>
+<ul>
+<li>执行 <code>ret</code> 指令跳转到目标任务的 <code>ra</code> 地址</li>
+</ul>
+</li>
+</ol>
+<h3 id="注意事项"><a class="doc-anchor" href="#注意事项">§</a>注意事项</h3>
+<ul>
+<li>此函数执行后不会返回到原调用点</li>
+<li>当前任务会在将来被重新调度时从此处恢复执行</li>
+<li>函数执行期间中断应该被禁用，避免调度状态不一致</li>
+</ul>
+</div></details></section></div></main></body></html>
