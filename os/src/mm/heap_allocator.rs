@@ -10,10 +10,9 @@
 //! - **最大块大小**: 2^32 = 4GB
 //! - **线程安全**: 使用 `LockedHeap` 保证多线程安全
 
-use core::ptr::addr_of_mut;
-
 use crate::config::KERNEL_HEAP_SIZE;
 use buddy_system_allocator::LockedHeap;
+use core::ptr::addr_of_mut;
 
 /// 全局堆分配器实例
 ///

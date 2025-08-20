@@ -12,7 +12,6 @@ mod syscall;
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.entry")]
 pub extern "C" fn _start() -> ! {
-    clear_bss();
     exit(main());
     panic!("unreachable after sys_exit!");
 }
@@ -21,16 +20,6 @@ pub extern "C" fn _start() -> ! {
 #[unsafe(no_mangle)]
 fn main() -> i32 {
     panic!("Cannot find main function!");
-}
-
-fn clear_bss() {
-    unsafe extern "C" {
-        safe fn start_bss();
-        safe fn end_bss();
-    }
-    (start_bss as usize..end_bss as usize).for_each(|a| unsafe {
-        (a as *mut u8).write_volatile(0);
-    });
 }
 
 pub fn write(fd: usize, buf: &[u8]) -> isize {
@@ -47,4 +36,8 @@ pub fn yield_() -> isize {
 
 pub fn get_time() -> isize {
     sys_get_time()
+}
+
+pub fn sbrk(size: i32) -> isize {
+    sys_sbrk(size)
 }

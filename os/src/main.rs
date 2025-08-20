@@ -4,30 +4,40 @@
 //!
 //! ## 主要特性
 //!
-//! - **任务调度**: 支持多任务协作式调度
-//! - **内存管理**: 包含动态堆内存分配器
-//! - **系统调用**: 提供基础的系统调用接口
-//! - **中断处理**: 支持时钟中断和系统调用
-//! - **应用程序加载**: 静态链接多个用户程序
+//! - **多任务支持**: 基于时间片轮转的抢占式多任务调度
+//! - **内存管理**: SV39 三级页表，支持虚拟内存和地址空间隔离
+//! - **系统调用**: 支持 write、exit、yield、get_time、sbrk 等系统调用
+//! - **陷阱处理**: 完整的异常、中断和系统调用处理机制
+//! - **应用加载**: 支持从内核镜像中加载多个用户应用程序
 //!
 //! ## 模块架构
 //!
-//! - [`task`] - 任务管理和调度
-//! - [`mm`] - 内存管理
-//! - [`syscall`] - 系统调用处理
-//! - [`trap`] - 中断和异常处理
-//! - [`loader`] - 应用程序加载器
-//! - [`timer`] - 时钟管理
-//! - [`console`] - 控制台输出
+//! - [`task`] - 任务管理和调度系统
+//! - [`mm`] - 内存管理系统（页表、页帧分配、地址空间）
+//! - [`syscall`] - 系统调用处理和分发
+//! - [`trap`] - 陷阱处理（异常、中断、系统调用）
+//! - [`loader`] - 应用程序加载和管理
+//! - [`timer`] - 时钟管理和定时中断
+//! - [`console`] - 控制台输入输出
+//! - [`sync`] - 同步原语（UPSafeCell 等）
+//! - [`config`] - 系统配置常量
+//! - [`sbi`] - SBI 接口封装
 //!
-//! ## 启动流程
+//! ## 系统架构
 //!
-//! 1. 清零 BSS 段
-//! 2. 初始化日志系统
-//! 3. 初始化中断处理
-//! 4. 加载用户应用程序
-//! 5. 启用时钟中断
-//! 6. 开始任务调度
+//! ```text
+//! ┌─────────────────────────────────────────────────────────────┐
+//! │                    User Applications                        │
+//! ├─────────────────────────────────────────────────────────────┤
+//! │                    System Calls                             │
+//! ├─────────────────────────────────────────────────────────────┤
+//! │  Task Mgmt  │  Memory Mgmt  │  Trap Handler │  Timer Mgmt   │
+//! ├─────────────────────────────────────────────────────────────┤
+//! │                   SBI Interface                             │
+//! ├─────────────────────────────────────────────────────────────┤
+//! │                   RISC-V Hardware                           │
+//! └─────────────────────────────────────────────────────────────┘
+//! ```
 
 #![no_std]
 #![no_main]
@@ -54,6 +64,7 @@ mod board;
 use core::arch::global_asm;
 
 extern crate alloc;
+extern crate bitflags;
 
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));
@@ -67,11 +78,12 @@ global_asm!(include_str!("link_app.S"));
 ///
 /// 1. [`clear_bss`] - 清零 BSS 段
 /// 2. [`log::init`] - 初始化日志系统
-/// 3. [`trap::init`] - 初始化中断处理
-/// 4. [`loader::load_apps`] - 加载所有用户应用程序
-/// 5. [`trap::enable_timer_interrupt`] - 启用时钟中断
-/// 6. [`timer::set_next_trigger`] - 设置第一次时钟中断
-/// 7. [`task::run_first_task`] - 开始执行第一个任务
+/// 3. [`mm::init`] - 初始化内存管理系统
+/// 4. [`mm::remap_test`] - 测试内存重映射功能
+/// 5. [`trap::init`] - 初始化陷阱处理系统
+/// 6. [`trap::enable_timer_interrupt`] - 启用时钟中断
+/// 7. [`timer::set_next_trigger`] - 设置第一次时钟中断
+/// 8. [`task::run_first_task`] - 开始执行第一个任务
 ///
 /// ## Panics
 ///
@@ -81,9 +93,10 @@ pub fn rust_main() -> ! {
     clear_bss();
     log::init();
     info!("[kernel] Hello, world!");
-
+    mm::init();
+    info!("[kernel] back to world!");
+    mm::remap_test();
     trap::init();
-    loader::load_apps();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
     task::run_first_task();

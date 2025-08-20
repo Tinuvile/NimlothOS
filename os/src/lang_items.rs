@@ -83,5 +83,5 @@ fn panic(info: &PanicInfo) -> ! {
     // unsafe { print_stack_trace() };
 
     // 安全关闭系统
-    shutdown();
+    shutdown(true);
 }

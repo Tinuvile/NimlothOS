@@ -26,9 +26,13 @@
 //!             +--- Ready (yield)
 //! ```
 
-use crate::loader::{get_num_app, init_app_cx};
+use crate::loader::{get_app_data, get_num_app};
+use crate::println;
+use crate::sbi::shutdown;
+use crate::sync::UPSafeCell;
 use crate::task::switch::__switch;
-use crate::{config::MAX_APP_NUM, sync::UPSafeCell};
+use crate::trap::TrapContext;
+use alloc::vec::Vec;
 use lazy_static::*;
 use task::{TaskControlBlock, TaskStatus};
 
@@ -66,7 +70,7 @@ pub struct TaskManagerInner {
     /// 所有任务的控制块数组
     ///
     /// 数组大小固定为 [`MAX_APP_NUM`]，每个槽位对应一个应用程序。
-    tasks: [TaskControlBlock; MAX_APP_NUM],
+    tasks: Vec<TaskControlBlock>,
 
     /// 当前正在运行的任务 ID
     ///
@@ -82,20 +86,13 @@ lazy_static! {
     ///
     /// ## 初始化过程
     ///
-    /// 1. 获取应用程序数量
-    /// 2. 为每个应用程序创建任务控制块
-    /// 3. 设置任务上下文指向陷阱恢复入口
-    /// 4. 将所有任务标记为就绪状态
-    /// 5. 设置第一个任务为当前任务
+    /// 待补充
     pub static ref TASK_MANAGER: TaskManager = {
         let num_app = get_num_app();
-        let mut tasks = [TaskControlBlock {
-            task_cx: TaskContext::zero_init(),
-            task_status: TaskStatus::Uninit,
-        }; MAX_APP_NUM];
-        for (i, task) in tasks.iter_mut().enumerate() {
-            task.task_cx = TaskContext::goto_restore(init_app_cx(i));
-            task.task_status = TaskStatus::Ready;
+        let mut tasks: Vec<TaskControlBlock> = Vec::new();
+        println!("init TaskManager, num_app: {}", num_app);
+        for i in 0..num_app {
+            tasks.push(TaskControlBlock::new(get_app_data(i), i));
         }
         TaskManager {
             num_app,
@@ -127,7 +124,7 @@ impl TaskManager {
     /// ## Panics
     ///
     /// 如果上下文切换意外返回，会触发 panic（正常情况下不应该发生）
-    fn run_first_task(&self) {
+    fn run_first_task(&self) -> ! {
         let mut inner = self.inner.exclusive_access();
         let task0 = &mut inner.tasks[0];
         task0.task_status = TaskStatus::Running;
@@ -135,7 +132,7 @@ impl TaskManager {
         drop(inner);
         let mut _unused = TaskContext::zero_init();
         unsafe {
-            __switch(&mut _unused as *mut TaskContext, next_task_cx_ptr);
+            __switch(&mut _unused as *mut _, next_task_cx_ptr);
         }
         panic!("unreachable in run_first_task!");
     }
@@ -216,8 +213,59 @@ impl TaskManager {
                 __switch(current_task_cx_ptr, next_task_cx_ptr);
             }
         } else {
-            panic!("All applications completed!");
+            println!("All applications completed!");
+            shutdown(false);
         }
+    }
+
+    /// 获取当前任务的用户地址空间标识符
+    ///
+    /// 返回当前正在运行任务的用户地址空间页表标识符，
+    /// 用于陷阱返回时切换到用户地址空间。
+    ///
+    /// ## Returns
+    ///
+    /// 当前任务的用户地址空间页表标识符（`satp` 寄存器值）
+    fn get_current_token(&self) -> usize {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].get_user_token()
+    }
+
+    /// 获取当前任务的陷阱上下文
+    ///
+    /// 返回当前正在运行任务的陷阱上下文的可变引用，
+    /// 用于系统调用处理和异常处理。
+    ///
+    /// ## Returns
+    ///
+    /// 当前任务陷阱上下文的可变引用
+    fn get_current_trap_cx(&self) -> &mut TrapContext {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].get_trap_cx()
+    }
+
+    /// 修改当前任务的程序断点
+    ///
+    /// 调整当前正在运行任务的堆大小，实现 `sbrk` 系统调用的功能。
+    /// 这是任务管理器级别的堆管理接口。
+    ///
+    /// ## Arguments
+    ///
+    /// * `size` - 堆大小的变化量（字节）
+    ///   - 正数：扩展堆空间
+    ///   - 负数：收缩堆空间
+    ///   - 零：查询当前断点位置
+    ///
+    /// ## Returns
+    ///
+    /// - `Some(old_brk)` - 成功时返回调整前的程序断点地址
+    /// - `None` - 失败时返回 None
+    pub fn change_current_program_brk(&self, size: i32) -> Option<usize> {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        inner.tasks[current].change_program_brk(size)
     }
 }
 
@@ -250,7 +298,7 @@ pub fn run_first_task() {
 /// - 时钟中断触发的抢占式调度
 /// - 任务主动让出 CPU 的协作式调度
 /// - 当前任务退出后的任务切换
-pub fn run_next_task() {
+fn run_next_task() {
     TASK_MANAGER.run_next_task();
 }
 
@@ -258,7 +306,7 @@ pub fn run_next_task() {
 ///
 /// 将当前运行任务的状态改为就绪状态，但不立即执行任务切换。
 /// 通常与 [`run_next_task`] 结合使用实现完整的任务调度。
-pub fn mark_current_suspended() {
+fn mark_current_suspended() {
     TASK_MANAGER.mark_current_suspended();
 }
 
@@ -266,7 +314,7 @@ pub fn mark_current_suspended() {
 ///
 /// 标记当前任务为已完成状态，该任务将不再被调度执行。
 /// 通常在任务正常结束或因错误终止时调用。
-pub fn mark_current_exited() {
+fn mark_current_exited() {
     TASK_MANAGER.mark_current_exited();
 }
 
@@ -311,4 +359,120 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+
+/// 获取当前任务的用户地址空间标识符
+///
+/// 返回当前正在运行任务的用户地址空间页表标识符的公共接口。
+/// 主要用于陷阱处理中的地址空间切换。
+///
+/// ## Returns
+///
+/// 当前任务的用户地址空间页表标识符（`satp` 寄存器值）
+///
+/// ## 使用场景
+///
+/// - **陷阱返回**: 在 `trap_return` 中切换回用户地址空间
+/// - **地址转换**: 需要访问用户地址空间时的页表切换
+/// - **调试工具**: 获取当前任务的地址空间信息
+///
+/// ## Examples
+///
+/// ```rust
+/// // 在陷阱返回中使用
+/// let user_satp = current_user_token();
+/// unsafe {
+///     satp::write(user_satp);
+///     asm!("sfence.vma");
+/// }
+/// ```
+pub fn current_user_token() -> usize {
+    TASK_MANAGER.get_current_token()
+}
+
+/// 获取当前任务的陷阱上下文
+///
+/// 返回当前正在运行任务的陷阱上下文可变引用的公共接口。
+/// 主要用于系统调用处理和异常处理中访问用户寄存器状态。
+///
+/// ## Returns
+///
+/// 当前任务陷阱上下文的可变引用，生命周期为 `'static`
+///
+/// ## 使用场景
+///
+/// - **系统调用处理**: 读取系统调用参数，设置返回值
+/// - **异常处理**: 访问触发异常时的寄存器状态
+/// - **信号处理**: 修改用户程序的执行上下文
+/// - **调试工具**: 检查和修改任务状态
+///
+/// ## Safety
+///
+/// 返回 `'static` 生命周期的引用，调用者需要确保在任务切换前
+/// 完成对陷阱上下文的所有访问。
+///
+/// ## Examples
+///
+/// ```rust
+/// // 在系统调用处理中使用
+/// let cx = current_trap_cx();
+/// let syscall_id = cx.x[17];        // 读取系统调用号
+/// let arg0 = cx.x[10];              // 读取第一个参数
+/// cx.x[10] = result as usize;       // 设置返回值
+/// ```
+pub fn current_trap_cx() -> &'static mut TrapContext {
+    TASK_MANAGER.get_current_trap_cx()
+}
+
+/// 修改当前任务的程序断点
+///
+/// 调整当前任务的堆大小的公共接口，实现 `sbrk` 系统调用。
+/// 这是用户程序动态内存管理的核心接口。
+///
+/// ## Arguments
+///
+/// * `size` - 堆大小的变化量（字节）
+///   - **正数**: 扩展堆空间，分配更多内存
+///   - **负数**: 收缩堆空间，释放内存
+///   - **零**: 查询当前程序断点位置
+///
+/// ## Returns
+///
+/// - `Some(old_brk)` - 成功时返回调整前的程序断点地址
+/// - `None` - 失败时返回 None，可能的原因：
+///   - 内存不足，无法分配新页面
+///   - 试图收缩到堆底部以下
+///   - 地址空间操作失败
+///
+/// ## 实现原理
+///
+/// 1. 委托给任务管理器的相应方法
+/// 2. 任务管理器找到当前任务
+/// 3. 调用任务控制块的堆管理方法
+/// 4. 底层通过内存集合进行实际的页面分配/释放
+///
+/// ## 使用场景
+///
+/// - **`sbrk` 系统调用**: 用户程序动态调整堆大小
+/// - **内存分配器**: `malloc`/`free` 的底层实现
+/// - **垃圾收集器**: 动态调整堆空间
+///
+/// ## Examples
+///
+/// ```rust
+/// // 扩展堆空间
+/// if let Some(old_brk) = change_program_brk(4096) {
+///     println!("Heap expanded from {:#x}", old_brk);
+/// } else {
+///     println!("Failed to expand heap");
+/// }
+///
+/// // 查询当前断点
+/// if let Some(current_brk) = change_program_brk(0) {
+///     println!("Current program break: {:#x}", current_brk);
+/// }
+/// ```
+#[allow(unused)]
+pub fn change_program_brk(size: i32) -> Option<usize> {
+    TASK_MANAGER.change_current_program_brk(size)
 }

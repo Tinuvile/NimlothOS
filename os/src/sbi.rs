@@ -178,41 +178,61 @@ pub fn console_putchar(c: usize) {
 
 /// 系统关闭
 ///
-/// 通过 SBI 系统复位扩展安全关闭系统。该函数会请求固件关闭系统，
-/// 正常情况下不会返回。
+/// 通过 SBI 系统复位扩展关闭系统。该函数会根据失败状态向固件发送
+/// 相应的关闭请求，正常情况下不会返回。
+///
+/// ## Arguments
+///
+/// * `failure` - 是否因为系统故障而关闭
+///   - `false`: 正常关闭，使用 `NoReason` 作为关闭原因
+///   - `true`: 异常关闭，使用 `SystemFailure` 作为关闭原因
 ///
 /// ## 关闭流程
 ///
-/// 1. 调用 SRST 扩展的系统复位函数
-/// 2. 指定复位类型为关闭 (`Shutdown`)
-/// 3. 指定复位原因为无特定原因 (`NoReason`)
-/// 4. 固件执行关闭操作
+/// 1. 根据 `failure` 参数确定关闭原因
+/// 2. 调用 SRST 扩展的系统复位函数
+/// 3. 指定复位类型为关闭 (`Shutdown`)
+/// 4. 指定相应的复位原因
+/// 5. 固件执行关闭操作
 ///
 /// ## Returns
 ///
 /// 该函数的返回类型为 `!`（never type），表示正常情况下不会返回。
-/// 如果 SBI 调用失败或固件不支持关闭功能，会触发 panic。
+/// 如果 SBI 调用失败或固件不支持关闭功能，会执行 `unreachable!()` 宏。
 ///
-/// ## Panics
+/// ## Behavior
 ///
-/// 如果系统未能正常关闭（SBI 调用返回），会触发 panic 以确保系统不会
-/// 处于未定义状态。
+/// - **正常关闭** (`failure = false`): 使用 `NoReason` 原因码
+/// - **故障关闭** (`failure = true`): 使用 `SystemFailure` 原因码
 ///
 /// ## Usage
 ///
 /// ```rust
-/// // 在 panic 处理程序中关闭系统
-/// shutdown(); // 此后不会执行到任何代码
+/// // 正常关闭系统
+/// shutdown(false);
+///
+/// // 在 panic 处理程序中因故障关闭系统
+/// shutdown(true);
 /// ```
-pub fn shutdown() -> ! {
-    let _ = sbi_call(
-        SRST_EXTENSION,
-        SBI_SYSTEM_RESET,
-        SystemResetType::Shutdown as usize,
-        SystemResetReason::NoReason as usize,
-        0,
-    );
-    panic!("It should have shutdown !")
+pub fn shutdown(failure: bool) -> ! {
+    if !failure {
+        let _ = sbi_call(
+            SRST_EXTENSION,
+            SBI_SYSTEM_RESET,
+            SystemResetType::Shutdown as usize,
+            SystemResetReason::NoReason as usize,
+            0,
+        );
+    } else {
+        let _ = sbi_call(
+            SRST_EXTENSION,
+            SBI_SYSTEM_RESET,
+            SystemResetType::Shutdown as usize,
+            SystemResetReason::SystemFailure as usize,
+            0,
+        );
+    }
+    unreachable!()
 }
 
 /// 设置时钟中断触发时间

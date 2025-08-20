@@ -2,7 +2,7 @@
 //!
 //! 实现与文件 I/O 相关的系统调用，目前主要支持向标准输出写入数据。
 
-use crate::{print, println};
+use crate::{mm::translated_byte_buffer, print, println, task::current_user_token};
 
 /// 标准输出文件描述符
 ///
@@ -25,21 +25,31 @@ const FD_STDOUT: usize = 1;
 /// - 成功时返回实际写入的字节数
 /// - 失败时返回负值错误码
 ///
+/// ## 实现原理
+///
+/// 1. **地址转换**: 使用 `translate_byte_buffer()` 将用户虚拟地址转换为内核可访问的物理地址
+/// 2. **分页处理**: 自动处理跨页面的缓冲区，将其分解为多个物理页面的切片
+/// 3. **安全输出**: 逐个处理每个物理页面的数据，确保内存访问安全
+///
+/// ## 内存管理
+///
+/// 使用新的地址空间管理机制：
+/// - 通过 `current_user_token()` 获取当前任务的页表
+/// - 使用 `translate_byte_buffer()` 进行安全的地址转换
+/// - 支持跨页面的缓冲区访问
+///
 /// ## Safety
 ///
-/// 该函数使用 `unsafe` 代码：
-/// - 从原始指针 `buf` 创建切片
-/// - 假设用户提供的指针和长度是有效的
+/// 相比之前的实现，现在通过页表转换提供了更好的安全性：
+/// - 自动验证用户提供的虚拟地址是否有效
+/// - 确保只访问用户任务有权限访问的内存
+/// - 防止访问内核内存或其他任务的内存
 ///
 /// ## Panics
 ///
 /// - 当 `fd` 不是支持的文件描述符时会 panic
 /// - 当缓冲区内容不是有效 UTF-8 字符串时会 panic
-///
-/// ## Security Note
-///
-/// 当前实现跳过了内存访问权限检查（注释掉的代码），
-/// 在生产环境中应该验证用户提供的指针是否在合法的内存范围内。
+/// - 当用户提供的虚拟地址无效时，`translate_byte_buffer` 可能会 panic
 ///
 /// ## Examples
 ///
@@ -74,10 +84,12 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
 
     match fd {
         FD_STDOUT => {
-            // 从用户空间读取数据并输出到控制台
-            let slice = unsafe { core::slice::from_raw_parts(buf, len) };
-            let str = core::str::from_utf8(slice).unwrap();
-            print!("{}", str);
+            // 通过页表转换获取用户缓冲区的物理地址
+            let buffers = translated_byte_buffer(current_user_token(), buf, len);
+            // 遍历所有物理页面，逐个输出数据到控制台
+            for buffer in buffers {
+                print!("{}", core::str::from_utf8(buffer).unwrap());
+            }
             len as isize
         }
         _ => {

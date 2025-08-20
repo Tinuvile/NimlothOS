@@ -31,24 +31,6 @@ pub const PAGE_SIZE: usize = 0x1000;
 /// 用于地址计算中的位移操作，4KB = 2^12 字节。
 pub const PAGE_SIZE_BITS: usize = 0xc;
 
-/// 最大应用程序数量
-///
-/// 系统支持的并发应用程序最大数量，当前设置为 4 个。
-/// TODO: 未来版本中将支持动态应用程序管理。
-pub const MAX_APP_NUM: usize = 4; // TODO: delete
-
-/// 应用程序加载基地址
-///
-/// 用户应用程序在物理内存中的起始加载地址。
-/// 每个应用程序按 [`APP_SIZE_LIMIT`] 间隔依次加载。
-pub const APP_BASE_ADDRESS: usize = 0x80400000; // TODO: delete
-
-/// 单个应用程序大小限制 (128KB)
-///
-/// 每个用户应用程序占用的最大内存空间，包括代码段、
-/// 数据段等所有内容。
-pub const APP_SIZE_LIMIT: usize = 0x20000; // TODO: delete
-
 /// 跳板页地址
 ///
 /// 位于虚拟地址空间的最高页面，用于在用户态和内核态之间
@@ -80,10 +62,10 @@ pub const TRAP_CONTEXT: usize = TRAMPOLINE - PAGE_SIZE;
 ///
 /// ```text
 /// 高地址 -> TRAMPOLINE (跳板页)
-///          |-- PAGE_SIZE (保护页) --|
-///          |-- KERNEL_STACK_SIZE --|  <- app 0 的内核栈
-///          |-- PAGE_SIZE (保护页) --|
-///          |-- KERNEL_STACK_SIZE --|  <- app 1 的内核栈
+///          |-- PAGE_SIZE (GUARD PAGE) --|
+///          |--   KERNEL_STACK_SIZE    --|  <- app 0 的内核栈
+///          |-- PAGE_SIZE (GUARD PAGE) --|
+///          |--   KERNEL_STACK_SIZE    --|  <- app 1 的内核栈
 ///          ...
 /// 低地址
 /// ```

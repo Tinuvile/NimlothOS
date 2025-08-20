@@ -26,16 +26,19 @@
 //! - `sstatus`: 状态寄存器，控制中断使能和特权级
 //! - `sepc`: 异常程序计数器，指向触发陷阱的指令地址
 
+use crate::config::{TRAMPOLINE, TRAP_CONTEXT};
 use crate::syscall::syscall;
-use crate::task::exit_current_and_run_next;
+use crate::task::{current_trap_cx, current_user_token, exit_current_and_run_next};
 use crate::timer::set_next_trigger;
 use crate::{println, task::suspend_current_and_run_next};
-use core::arch::global_asm;
+use core::arch::{asm, global_asm};
 use riscv::register::{
     mtvec::TrapMode,
     scause::{self, Exception, Interrupt, Trap},
     sie, stval, stvec,
 };
+
+pub use context::TrapContext;
 
 mod context;
 
@@ -44,24 +47,25 @@ global_asm!(include_str!("trap.S"));
 
 /// 初始化陷阱处理系统
 ///
-/// 设置陷阱向量寄存器 `stvec`，指向陷阱处理入口点 `__alltraps`。
-/// 必须在系统启动早期调用，在任何可能触发陷阱的操作之前。
+/// 设置内核态的陷阱处理入口点，配置陷阱向量寄存器 (`stvec`)
+/// 指向内核陷阱处理函数。这是陷阱处理系统的初始化函数。
 ///
-/// ## 配置内容
+/// ## 初始化内容
 ///
-/// - 将 `stvec` 设置为 `__alltraps` 函数地址
-/// - 使用直接模式 (`TrapMode::Direct`)，所有陷阱都跳转到同一个处理程序
+/// - 设置 `stvec` 寄存器指向 `trap_from_kernel`
+/// - 配置直接模式 (`TrapMode::Direct`)
+/// - 为内核态陷阱处理做准备
 ///
-/// ## Safety
+/// ## 调用时机
 ///
-/// 此函数是安全的，但内部使用 `unsafe` 访问 CSR 寄存器。
+/// 应在系统启动早期调用，在启用中断之前完成陷阱系统初始化。
+///
+/// ## Note
+///
+/// 此函数只设置内核态陷阱入口，用户态陷阱入口会在任务切换时
+/// 通过 `set_user_trap_entry()` 动态设置。
 pub fn init() {
-    unsafe extern "C" {
-        fn __alltraps();
-    }
-    unsafe {
-        stvec::write(__alltraps as usize, TrapMode::Direct);
-    }
+    set_kernel_trap_entry();
 }
 
 /// 启用时钟中断
@@ -84,73 +88,97 @@ pub fn enable_timer_interrupt() {
     }
 }
 
-/// 陷阱处理器主函数
+/// 设置内核态陷阱入口
 ///
-/// 这是所有陷阱的统一处理入口，由汇编代码 `__alltraps` 调用。
-/// 根据陷阱类型分发到不同的处理逻辑，处理完成后返回修改后的陷阱上下文。
+/// 配置 `stvec` 寄存器指向内核陷阱处理函数 `trap_from_kernel`。
+/// 当内核态发生陷阱时，硬件会跳转到此函数执行。
 ///
-/// ## Arguments
+/// ## 安全性
 ///
-/// * `cx` - 陷阱上下文的可变引用，包含触发陷阱时的 CPU 状态
+/// 使用 `unsafe` 直接操作 CSR 寄存器，这是特权操作。
+fn set_kernel_trap_entry() {
+    unsafe {
+        stvec::write(trap_from_kernel as usize, TrapMode::Direct);
+    }
+}
+
+/// 设置用户态陷阱入口
 ///
-/// ## Returns
+/// 配置 `stvec` 寄存器指向用户态陷阱处理入口 `TRAMPOLINE`。
+/// 当用户态发生陷阱时，硬件会跳转到 Trampoline 页面执行。
 ///
-/// 返回修改后的陷阱上下文，供 `__restore` 恢复到用户态
+/// ## Trampoline 机制
 ///
-/// ## 处理的陷阱类型
+/// Trampoline 页面包含 `__alltraps` 和 `__restore` 汇编代码，
+/// 负责保存和恢复完整的用户态上下文。
 ///
-/// ### 1. 系统调用 (`UserEnvCall`)
+/// ## 安全性
 ///
-/// - 将 `sepc` 加 4，跳过 `ecall` 指令
-/// - 从寄存器提取系统调用号和参数
-/// - 调用 [`syscall`] 执行具体的系统调用
-/// - 将返回值写入 `a0` 寄存器 (`cx.x[10]`)
+/// 使用 `unsafe` 直接操作 CSR 寄存器，这是特权操作。
+fn set_user_trap_entry() {
+    unsafe {
+        stvec::write(TRAMPOLINE as usize, TrapMode::Direct);
+    }
+}
+
+/// 内核态陷阱处理函数
 ///
-/// ### 2. 存储异常 (`StoreFault`, `StorePageFault`)
+/// 当内核态发生陷阱时的处理函数。在当前的简化实现中，
+/// 内核态不应该发生陷阱，因此直接触发 panic。
 ///
-/// - 记录故障地址 (`stval`) 和指令地址 (`sepc`)
-/// - 输出错误信息到内核日志
-/// - 终止当前任务并调度下一个任务
+/// ## 设计原理
 ///
-/// ### 3. 非法指令 (`IllegalInstruction`)
+/// - 内核代码应该是可信的，不应该产生异常
+/// - 如果内核态发生陷阱，说明存在严重的内核 bug
+/// - 立即停止系统运行，避免进一步的损坏
 ///
-/// - 记录异常指令地址 (`sepc`)
-/// - 输出错误信息到内核日志  
-/// - 终止当前任务并调度下一个任务
+/// ## 可能的陷阱原因
 ///
-/// ### 4. 监督者时钟中断 (`SupervisorTimer`)
+/// - 内核代码访问无效内存地址
+/// - 内核代码执行无效指令
+/// - 硬件故障或配置错误
 ///
-/// - 设置下一次时钟中断触发时间
-/// - 挂起当前任务并切换到下一个就绪任务
-/// - 实现抢占式多任务调度
+/// ## 属性说明
 ///
-/// ## 寄存器约定
-///
-/// 遵循 RISC-V ABI 约定：
-/// - `x10` (`a0`): 系统调用返回值 / 第一个参数
-/// - `x11` (`a1`): 系统调用第二个参数
-/// - `x12` (`a2`): 系统调用第三个参数  
-/// - `x17` (`a7`): 系统调用号
-///
-/// ## 执行流程
-///
-/// ```text
-/// 陷阱触发 -> __alltraps -> trap_handler -> __restore -> 用户态
-/// ```
-///
-/// ## Safety
-///
-/// - 使用 `#[unsafe(no_mangle)]` 确保函数名不被修改，供汇编代码调用
-/// - 函数本身是安全的，所有 unsafe 操作都在子函数中处理
-///
-/// ## Panics
-///
-/// 遇到不支持的陷阱类型时会触发 panic，这通常表示：
-/// - 硬件故障
-/// - 用户程序触发了预期外的异常
-/// - 内核配置错误
+/// - `#[unsafe(no_mangle)]`: 防止函数名被混淆，确保链接器能找到
+/// - `-> !`: 函数永不返回，因为会触发 panic
 #[unsafe(no_mangle)]
-pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
+pub fn trap_from_kernel() -> ! {
+    panic!("a trap from kernel!");
+}
+
+/// 陷阱处理主函数
+///
+/// 所有用户态陷阱的统一处理入口，根据陷阱原因分发到相应的处理逻辑。
+/// 这是陷阱处理系统的核心函数，处理系统调用、异常和中断。
+///
+/// ## 处理流程
+///
+/// 1. **设置内核陷阱入口**: 防止处理过程中的嵌套陷阱
+/// 2. **获取陷阱信息**: 读取 `scause` 和 `stval` 寄存器
+/// 3. **分发处理**: 根据陷阱类型调用相应的处理逻辑
+/// 4. **返回用户态**: 调用 `trap_return()` 恢复用户执行
+///
+/// ## 支持的陷阱类型
+///
+/// - **系统调用** (`UserEnvCall`): 处理用户程序的系统调用请求
+/// - **内存异常** (`StoreFault`, `StorePageFault`, `LoadFault`, `LoadPageFault`): 处理内存访问违规
+/// - **非法指令** (`IllegalInstruction`): 处理无效指令执行
+/// - **时钟中断** (`SupervisorTimer`): 处理抢占式调度
+///
+/// ## 错误处理
+///
+/// - 对于致命异常（内存违规、非法指令），终止当前任务
+/// - 对于未知陷阱类型，触发 panic
+///
+/// ## 属性说明
+///
+/// - `#[unsafe(no_mangle)]`: 防止函数名被混淆，汇编代码需要调用此函数
+/// - `-> !`: 函数永不返回，总是通过 `trap_return()` 返回用户态
+#[unsafe(no_mangle)]
+pub fn trap_handler() -> ! {
+    set_kernel_trap_entry();
+    let cx = current_trap_cx();
     let scause = scause::read();
     let stval = stval::read();
     match scause.cause() {
@@ -159,7 +187,10 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
             cx.sepc += 4; // 跳过 ecall 指令
             cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
         }
-        Trap::Exception(Exception::StoreFault) | Trap::Exception(Exception::StorePageFault) => {
+        Trap::Exception(Exception::StoreFault)
+        | Trap::Exception(Exception::StorePageFault)
+        | Trap::Exception(Exception::LoadFault)
+        | Trap::Exception(Exception::LoadPageFault) => {
             // 存储异常：非法内存访问
             println!(
                 "[kernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.",
@@ -189,7 +220,74 @@ pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
             );
         }
     }
-    cx
+    trap_return();
 }
 
-pub use context::TrapContext;
+/// 陷阱返回函数
+///
+/// 陷阱处理完成后返回用户态的函数，负责恢复用户态执行环境并
+/// 跳转回用户程序继续执行。这是陷阱处理的最后阶段。
+///
+/// ## 执行流程
+///
+/// 1. **设置用户陷阱入口**: 配置 `stvec` 指向 Trampoline
+/// 2. **准备返回参数**: 获取陷阱上下文地址和用户页表标识符
+/// 3. **跳转到 Trampoline**: 通过内联汇编跳转到 `__restore`
+/// 4. **恢复用户状态**: `__restore` 恢复所有寄存器并执行 `sret`
+///
+/// ## 地址空间切换
+///
+/// 函数执行过程中会发生地址空间切换：
+/// - 开始：内核地址空间
+/// - 跳转到 Trampoline：仍在内核地址空间（Trampoline 在两个地址空间都有映射）
+/// - `__restore` 执行 `sret`：切换到用户地址空间
+///
+/// ## Trampoline 机制
+///
+/// ```text
+/// 地址空间切换过程:
+/// ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+/// │  Kernel Space   │    │   Trampoline    │    │   User Space    │
+/// │                 │───>│    (Shared)     │───>│                 │
+/// │  trap_return()  │    │   __restore     │    │  User Program   │
+/// └─────────────────┘    └─────────────────┘    └─────────────────┘
+/// ```
+///
+/// ## 内联汇编
+///
+/// 使用内联汇编执行关键的跳转操作：
+/// - `fence.i`: 指令缓存同步
+/// - `jr {restore_va}`: 跳转到 `__restore` 函数
+/// - 传递参数：`a0` = 陷阱上下文地址，`a1` = 用户页表标识符
+///
+/// ## 安全性
+///
+/// - 使用 `unsafe` 执行特权操作和内联汇编
+/// - 地址计算确保跳转到正确的 Trampoline 位置
+/// - 参数传递确保 `__restore` 获得正确的上下文信息
+///
+/// ## 属性说明
+///
+/// - `#[unsafe(no_mangle)]`: 防止函数名被混淆，可能被其他代码调用
+/// - `-> !`: 函数永不返回，总是跳转到用户程序执行
+#[unsafe(no_mangle)]
+pub fn trap_return() -> ! {
+    set_user_trap_entry();
+    let trap_cx_ptr = TRAP_CONTEXT;
+    let user_satp = current_user_token();
+    unsafe extern "C" {
+        fn __alltraps();
+        fn __restore();
+    }
+    let restore_va = __restore as usize - __alltraps as usize + TRAMPOLINE;
+    unsafe {
+        asm!(
+            "fence.i",
+            "jr {restore_va}",
+            restore_va = in(reg) restore_va,
+            in("a0") trap_cx_ptr,
+            in("a1") user_satp,
+            options(noreturn),
+        );
+    }
+}

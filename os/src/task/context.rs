@@ -2,6 +2,7 @@
 //!
 //! 定义任务上下文结构，用于在任务切换时保存和恢复 CPU 寄存器状态。
 //! 任务上下文包含了任务切换时需要保存的所有寄存器信息。
+use crate::trap::trap_return;
 
 /// 任务上下文结构
 ///
@@ -69,39 +70,54 @@ impl TaskContext {
         }
     }
 
-    /// 创建指向陷阱恢复函数的任务上下文
+    /// 创建指向陷阱返回的任务上下文
     ///
-    /// 为新创建的任务创建上下文，设置返回地址为 `__restore` 函数，
-    /// 栈指针指向指定的内核栈位置。这样当任务被调度时，
-    /// 会从 `__restore` 开始执行，恢复用户态并跳转到应用程序入口。
+    /// 为新任务创建一个任务上下文，设置返回地址指向 `trap_return` 函数。
+    /// 这使得当任务首次被调度时，会跳转到 `trap_return` 执行，从而
+    /// 恢复陷阱上下文并进入用户态开始执行。
     ///
     /// ## Arguments
     ///
-    /// * `kstack_ptr` - 内核栈指针，指向为该任务分配的内核栈顶
+    /// * `kstack_ptr` - 内核栈指针，指向该任务的内核栈顶
     ///
     /// ## Returns
     ///
-    /// 返回配置好的 `TaskContext`，可用于任务调度
+    /// 配置好的任务上下文，可用于任务首次调度
     ///
     /// ## 执行流程
     ///
-    /// 当此上下文被恢复时：
-    /// 1. `sp` 被设置为 `kstack_ptr`（内核栈）
-    /// 2. 执行 `ret` 跳转到 `__restore` 函数
-    /// 3. `__restore` 从内核栈恢复陷阱上下文
-    /// 4. `sret` 返回用户态，开始执行应用程序
+    /// 当此上下文被 `__switch` 恢复时：
+    /// 1. 恢复栈指针到指定的内核栈
+    /// 2. 通过 `ret` 指令跳转到 `trap_return` 函数
+    /// 3. `trap_return` 恢复陷阱上下文并切换到用户态
+    /// 4. 用户程序开始执行
     ///
-    /// ## Safety
+    /// ## 与 `zero_init()` 的区别
     ///
-    /// 调用者必须确保：
-    /// - `kstack_ptr` 指向有效的内核栈地址
-    /// - 内核栈顶包含有效的陷阱上下文
-    pub fn goto_restore(kstack_ptr: usize) -> Self {
-        unsafe extern "C" {
-            fn __restore();
-        }
+    /// | 方法 | 返回地址 | 用途 |
+    /// |------|----------|------|
+    /// | `zero_init()` | 0 | 临时占位符 |
+    /// | `goto_trap_return()` | `trap_return` | 新任务初始化 |
+    ///
+    /// ## 设计原理
+    ///
+    /// 新创建的任务需要一个特殊的启动流程：
+    /// - 不能直接跳转到用户代码（缺少完整的用户态上下文）
+    /// - 必须通过 `trap_return` 建立完整的用户态环境
+    /// - 这种设计统一了任务切换和陷阱返回的机制
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// // 为新任务创建上下文
+    /// let task_cx = TaskContext::goto_trap_return(kernel_stack_top);
+    ///
+    /// // 任务首次调度时的执行路径：
+    /// // __switch -> trap_return -> __restore -> 用户程序
+    /// ```
+    pub fn goto_trap_return(kstack_ptr: usize) -> Self {
         Self {
-            ra: __restore as usize,
+            ra: trap_return as usize,
             sp: kstack_ptr,
             s: [0; 12],
         }
