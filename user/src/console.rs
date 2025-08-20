@@ -1,8 +1,9 @@
-use super::write;
+use super::{read, write};
 use core::fmt::{self, Write};
 
 struct Stdout;
 
+const STDIN: usize = 0;
 const STDOUT: usize = 1;
 
 impl Write for Stdout {
@@ -14,6 +15,12 @@ impl Write for Stdout {
 
 pub fn print(args: fmt::Arguments) {
     Stdout.write_fmt(args).unwrap();
+}
+
+pub fn getchar() -> u8 {
+    let mut c = [0u8; 1];
+    read(STDIN, &mut c);
+    c[0]
 }
 
 #[macro_export]
