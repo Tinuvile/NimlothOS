@@ -97,16 +97,16 @@ use lazy_static::lazy_static;
 use riscv::register::satp;
 
 unsafe extern "C" {
-    fn stext();
-    fn etext();
-    fn srodata();
-    fn erodata();
-    fn sdata();
-    fn edata();
-    fn sbss_with_stack();
-    fn ebss();
-    fn ekernel();
-    fn strampoline();
+    safe fn stext();
+    safe fn etext();
+    safe fn srodata();
+    safe fn erodata();
+    safe fn sdata();
+    safe fn edata();
+    safe fn sbss_with_stack();
+    safe fn ebss();
+    safe fn ekernel();
+    safe fn strampoline();
 }
 
 lazy_static! {
@@ -880,6 +880,18 @@ impl MemorySet {
             ),
             None,
         );
+        println!("mapping memory-mapped registers");
+        for pair in MMIO {
+            memory_set.push(
+                MapArea::new(
+                    (*pair).0.into(),
+                    ((*pair).0 + (*pair).1).into(),
+                    MapType::Identical,
+                    MapPermission::R | MapPermission::W,
+                ),
+                None,
+            );
+        }
         memory_set
     }
 
@@ -1000,6 +1012,7 @@ impl MemorySet {
         let max_end_va: VirtAddr = max_end_vpn.into();
         let mut user_stack_bottom: usize = max_end_va.into();
 
+        // Guard Page
         user_stack_bottom += PAGE_SIZE;
         let user_stack_top: usize = user_stack_bottom + USER_STACK_SIZE;
         memory_set.push(
@@ -1012,6 +1025,18 @@ impl MemorySet {
             None,
         );
 
+        // 堆空间的初始内存区域，sbrk
+        memory_set.push(
+            MapArea::new(
+                user_stack_top.into(),
+                user_stack_top.into(),
+                MapType::Framed,
+                MapPermission::R | MapPermission::W | MapPermission::U,
+            ),
+            None,
+        );
+
+        // TrapContext
         memory_set.push(
             MapArea::new(
                 TRAP_CONTEXT.into(),

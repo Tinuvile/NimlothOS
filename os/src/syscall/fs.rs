@@ -88,7 +88,11 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
             let buffers = translated_byte_buffer(current_user_token(), buf, len);
             // 遍历所有物理页面，逐个输出数据到控制台
             for buffer in buffers {
-                print!("{}", core::str::from_utf8(buffer).unwrap());
+                if let Ok(string) = core::str::from_utf8(buffer) {
+                    print!("{}", string);
+                } else {
+                    continue;
+                }
             }
             len as isize
         }

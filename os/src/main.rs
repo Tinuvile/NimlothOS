@@ -122,8 +122,8 @@ pub fn rust_main() -> ! {
 /// 这个函数必须在任何 Rust 代码使用全局变量之前调用。
 fn clear_bss() {
     unsafe extern "C" {
-        fn sbss();
-        fn ebss();
+        safe fn sbss();
+        safe fn ebss();
     }
     (sbss as usize..ebss as usize).for_each(|a| unsafe {
         (a as *mut u8).write_volatile(0);

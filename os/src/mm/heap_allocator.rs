@@ -42,10 +42,9 @@ static mut HEAP_SPACE: [u8; KERNEL_HEAP_SIZE] = [0; KERNEL_HEAP_SIZE];
 /// - 调用时没有其他代码正在访问 `HEAP_SPACE`
 pub fn init_heap() {
     unsafe {
-        HEAP_ALLOCATOR.lock().init(
-            addr_of_mut!(HEAP_SPACE) as *mut u8 as usize,
-            KERNEL_HEAP_SIZE,
-        );
+        HEAP_ALLOCATOR
+            .lock()
+            .init(addr_of_mut!(HEAP_SPACE) as usize, KERNEL_HEAP_SIZE);
     }
 }
 

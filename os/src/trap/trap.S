@@ -6,8 +6,8 @@
     ld x\n, \n*8(sp)
 .endm
     .section .text.trampoline
-    .global __alltraps
-    .global __restore
+    .globl __alltraps
+    .globl __restore
     .align 2
 
 __alltraps:
@@ -53,7 +53,6 @@ __restore:
     ld t1, 33*8(sp)
     csrw sstatus, t0
     csrw sepc, t1
-    csrw sscratch, t2
     ld x1, 1*8(sp)
     ld x3, 3*8(sp)
     .set n, 5

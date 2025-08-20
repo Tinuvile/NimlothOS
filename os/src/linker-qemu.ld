@@ -12,7 +12,7 @@ SECTIONS
         *(.text.entry)
         . = ALIGN(4K);
         strampoline = .;
-        *(.text.trampoline)
+        *(.text.trampoline);
         . = ALIGN(4K);
         *(.text .text.*)
     }
