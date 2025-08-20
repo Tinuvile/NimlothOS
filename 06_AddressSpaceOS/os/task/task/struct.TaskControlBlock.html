@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="任务控制块 (Task Control Block, TCB)"><title>TaskControlBlock in os::task::task - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Task<wbr>Control<wbr>Block</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#设计原则" title="设计原则">设计原则</a></li><li><a href="#扩展性" title="扩展性">扩展性</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.base_size" title="base_size">base_size</a></li><li><a href="#structfield.heap_bottom" title="heap_bottom">heap_bottom</a></li><li><a href="#structfield.memory_set" title="memory_set">memory_set</a></li><li><a href="#structfield.program_brk" title="program_brk">program_brk</a></li><li><a href="#structfield.task_cx" title="task_cx">task_cx</a></li><li><a href="#structfield.task_status" title="task_status">task_status</a></li><li><a href="#structfield.trap_cx_ppn" title="trap_cx_ppn">trap_cx_ppn</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.change_program_brk" title="change_program_brk">change_program_brk</a></li><li><a href="#method.get_trap_cx" title="get_trap_cx">get_trap_cx</a></li><li><a href="#method.get_user_token" title="get_user_token">get_user_token</a></li><li><a href="#method.new" title="new">new</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-TaskControlBlock" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-TaskControlBlock" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-TaskControlBlock" title="Send">Send</a></li><li><a href="#impl-Sync-for-TaskControlBlock" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-TaskControlBlock" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-TaskControlBlock" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>task::<wbr>task</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">task</a>::<wbr><a href="index.html">task</a></div><h1>Struct <span class="struct">TaskControlBlock</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/task/task.rs.html#30-73">Source</a> </span></div><pre class="rust item-decl"><code>pub struct TaskControlBlock {
+    pub task_status: <a class="enum" href="enum.TaskStatus.html" title="enum os::task::task::TaskStatus">TaskStatus</a>,
+    pub task_cx: <a class="struct" href="../context/struct.TaskContext.html" title="struct os::task::context::TaskContext">TaskContext</a>,
+    pub memory_set: <a class="struct" href="../../mm/memory_set/struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a>,
+    pub trap_cx_ppn: <a class="struct" href="../../mm/address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>,
+    pub base_size: usize,
+    pub heap_bottom: usize,
+    pub program_brk: usize,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>任务控制块 (Task Control Block, TCB)</p>
+<p>存储单个任务的所有必要信息，包括任务状态和执行上下文。
+每个应用程序对应一个任务控制块。</p>
+<h3 id="设计原则"><a class="doc-anchor" href="#设计原则">§</a>设计原则</h3>
+<ul>
+<li><strong>最小化设计</strong>: 只包含任务调度所需的核心信息</li>
+<li><strong>状态分离</strong>: 将任务状态与上下文分开存储，便于管理</li>
+<li><strong>复制语义</strong>: 实现 <code>Copy</code> trait，支持高效的值拷贝</li>
+</ul>
+<h3 id="扩展性"><a class="doc-anchor" href="#扩展性">§</a>扩展性</h3>
+<p>未来版本可能会添加更多字段：</p>
+<ul>
+<li>任务优先级</li>
+<li>执行时间统计</li>
+<li>内存使用信息</li>
+<li>进程 ID 和父子关系</li>
+</ul>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.task_status" class="structfield section-header"><a href="#structfield.task_status" class="anchor field">§</a><code>task_status: <a class="enum" href="enum.TaskStatus.html" title="enum os::task::task::TaskStatus">TaskStatus</a></code></span><div class="docblock"><p>任务当前状态</p>
+<p>标识任务在其生命周期中的当前阶段，用于调度决策。</p>
+</div><span id="structfield.task_cx" class="structfield section-header"><a href="#structfield.task_cx" class="anchor field">§</a><code>task_cx: <a class="struct" href="../context/struct.TaskContext.html" title="struct os::task::context::TaskContext">TaskContext</a></code></span><div class="docblock"><p>任务上下文</p>
+<p>保存任务的 CPU 寄存器状态，用于任务切换时的状态保存和恢复。</p>
+</div><span id="structfield.memory_set" class="structfield section-header"><a href="#structfield.memory_set" class="anchor field">§</a><code>memory_set: <a class="struct" href="../../mm/memory_set/struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></code></span><div class="docblock"><p>任务的内存地址空间</p>
+<p>包含该任务的完整虚拟地址空间，包括代码段、数据段、堆、栈等。
+每个任务都有独立的地址空间，实现进程间的内存隔离。</p>
+</div><span id="structfield.trap_cx_ppn" class="structfield section-header"><a href="#structfield.trap_cx_ppn" class="anchor field">§</a><code>trap_cx_ppn: <a class="struct" href="../../mm/address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a></code></span><div class="docblock"><p>陷阱上下文的物理页号</p>
+<p>指向存储该任务陷阱上下文的物理页面。陷阱上下文存储在用户地址空间
+的固定虚拟地址 <code>TRAP_CONTEXT</code>，此字段记录其对应的物理页号，
+便于内核直接访问和修改。</p>
+</div><span id="structfield.base_size" class="structfield section-header"><a href="#structfield.base_size" class="anchor field">§</a><code>base_size: usize</code></span><div class="docblock"><p>基础大小（用户栈顶地址）</p>
+<p>记录用户程序的初始栈顶地址，也作为堆空间的起始参考点。
+在任务创建时设置，通常不会改变。</p>
+</div><span id="structfield.heap_bottom" class="structfield section-header"><a href="#structfield.heap_bottom" class="anchor field">§</a><code>heap_bottom: usize</code></span><div class="docblock"><p>堆底部地址</p>
+<p>用户程序堆空间的起始地址，通常等于 <code>base_size</code>。
+堆从此地址开始向高地址方向增长，是 <code>sbrk</code> 系统调用的参考基准。</p>
+</div><span id="structfield.program_brk" class="structfield section-header"><a href="#structfield.program_brk" class="anchor field">§</a><code>program_brk: usize</code></span><div class="docblock"><p>程序断点（当前堆顶）</p>
+<p>当前用户程序堆空间的结束地址，即堆顶位置。
+通过 <code>sbrk</code> 系统调用可以调整此值来扩展或收缩堆空间。
+范围：<code>[heap_bottom, program_brk)</code> 为已分配的堆空间。</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-TaskControlBlock" class="impl"><a class="src rightside" href="../../../src/os/task/task.rs.html#130-404">Source</a><a href="#impl-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#191-223">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(elf_data: &amp;[u8], app_id: usize) -&gt; Self</h4></section></summary><div class="docblock"><p>创建新的任务控制块</p>
+<p>从 ELF 文件数据创建一个完整的任务控制块，包括解析 ELF 文件、
+构建用户地址空间、分配内核栈、初始化陷阱上下文等所有必要步骤。</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>elf_data</code> - 应用程序的 ELF 文件二进制数据</li>
+<li><code>app_id</code> - 应用程序标识符，用于分配独立的内核栈</li>
+</ul>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>完全初始化的任务控制块，可以被调度执行</p>
+<h6 id="初始化流程"><a class="doc-anchor" href="#初始化流程">§</a>初始化流程</h6>
+<ol>
+<li><strong>解析 ELF</strong>: 调用 <code>MemorySet::from_elf()</code> 构建用户地址空间</li>
+<li><strong>获取陷阱上下文</strong>: 通过虚拟地址转换获取陷阱上下文的物理页号</li>
+<li><strong>分配内核栈</strong>: 在内核地址空间中为该任务分配独立的内核栈</li>
+<li><strong>创建任务上下文</strong>: 设置任务上下文指向 <code>trap_return</code></li>
+<li><strong>初始化陷阱上下文</strong>: 设置用户程序入口、栈指针和内核环境</li>
+<li><strong>设置堆管理</strong>: 初始化堆底部和程序断点</li>
+</ol>
+<h6 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h6><div class="example-wrap"><pre class="language-text"><code>用户地址空间:
+┌─────────────────┐ ← TRAMPOLINE
+│   Trampoline    │
+├─────────────────┤ ← TRAP_CONTEXT  
+│  Trap Context   │ ← trap_cx_ppn 指向这里
+├─────────────────┤
+│   User Stack    │ ← user_sp
+├─────────────────┤
+│   ELF Sections  │ ← entry_point
+└─────────────────┘
+
+内核地址空间:
+┌─────────────────┐ ← kernel_stack_top
+│  Kernel Stack   │ ← 每个任务独立的内核栈
+└─────────────────┘ ← kernel_stack_bottom</code></pre></div><h6 id="字段初始化"><a class="doc-anchor" href="#字段初始化">§</a>字段初始化</h6>
+<ul>
+<li><code>task_status</code>: 设置为 <code>Ready</code> 状态</li>
+<li><code>task_cx</code>: 指向 <code>trap_return</code> 的任务上下文</li>
+<li><code>memory_set</code>: 从 ELF 构建的完整用户地址空间</li>
+<li><code>trap_cx_ppn</code>: 陷阱上下文的物理页号</li>
+<li><code>base_size</code>: 用户栈顶地址（堆的初始大小）</li>
+<li><code>heap_bottom</code>: 堆的起始地址</li>
+<li><code>program_brk</code>: 程序断点（当前堆顶）</li>
+</ul>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>app_data = get_app_data(<span class="number">0</span>);
+<span class="kw">let </span>task = TaskControlBlock::new(app_data, <span class="number">0</span>);
+<span class="comment">// 任务现在可以被调度执行</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_trap_cx" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#266-268">Source</a><h4 class="code-header">pub fn <a href="#method.get_trap_cx" class="fn">get_trap_cx</a>(&amp;self) -&gt; &amp;'static mut <a class="struct" href="../../trap/context/struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h4></section></summary><div class="docblock"><p>获取任务的陷阱上下文</p>
+<p>通过陷阱上下文的物理页号获取该任务陷阱上下文的可变引用。
+陷阱上下文存储在任务的用户地址空间中的固定虚拟地址。</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<p>指向任务陷阱上下文的可变引用，生命周期为 <code>'static</code></p>
+<h6 id="实现原理"><a class="doc-anchor" href="#实现原理">§</a>实现原理</h6>
+<ol>
+<li><strong>物理页号</strong>: <code>trap_cx_ppn</code> 存储陷阱上下文所在的物理页号</li>
+<li><strong>直接访问</strong>: 通过物理页号直接获取物理内存的可变引用</li>
+<li><strong>类型转换</strong>: 将物理页面解释为 <code>TrapContext</code> 结构体</li>
+</ol>
+<h6 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h6>
+<ul>
+<li><strong>系统调用处理</strong>: 读取和修改系统调用参数和返回值</li>
+<li><strong>异常处理</strong>: 访问触发异常时的寄存器状态</li>
+<li><strong>任务初始化</strong>: 设置新任务的初始陷阱上下文</li>
+<li><strong>调试和诊断</strong>: 检查任务的执行状态</li>
+</ul>
+<h6 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h6>
+<p>此函数返回 <code>'static</code> 生命周期的引用，调用者需要确保：</p>
+<ul>
+<li>不会在任务销毁后继续使用该引用</li>
+<li>同一时间只有一个任务在访问其陷阱上下文</li>
+</ul>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取当前任务的陷阱上下文
+</span><span class="kw">let </span>trap_cx = task.get_trap_cx();
+
+<span class="comment">// 读取系统调用参数
+</span><span class="kw">let </span>syscall_id = trap_cx.x[<span class="number">17</span>];
+<span class="kw">let </span>arg0 = trap_cx.x[<span class="number">10</span>];
+
+<span class="comment">// 设置系统调用返回值
+</span>trap_cx.x[<span class="number">10</span>] = result <span class="kw">as </span>usize;</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_user_token" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#309-311">Source</a><h4 class="code-header">pub fn <a href="#method.get_user_token" class="fn">get_user_token</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取用户地址空间的页表标识符</p>
+<p>返回该任务用户地址空间的页表标识符（<code>satp</code> 寄存器值），
+用于地址空间切换和陷阱处理。</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<p>用户地址空间的页表标识符，包含页表模式、ASID 和根页表物理页号</p>
+<h6 id="使用场景-1"><a class="doc-anchor" href="#使用场景-1">§</a>使用场景</h6>
+<ul>
+<li><strong>陷阱返回</strong>: 在 <code>trap_return</code> 中切换回用户地址空间</li>
+<li><strong>任务切换</strong>: 保存和恢复任务的地址空间标识符</li>
+<li><strong>调试工具</strong>: 获取任务的地址空间信息</li>
+<li><strong>内存管理</strong>: 识别不同任务的地址空间</li>
+</ul>
+<h6 id="实现细节"><a class="doc-anchor" href="#实现细节">§</a>实现细节</h6>
+<p>此函数是 <code>self.memory_set.token()</code> 的便捷包装，
+提供了任务级别的接口来访问底层的内存管理功能。</p>
+<h6 id="与内核地址空间的区别"><a class="doc-anchor" href="#与内核地址空间的区别">§</a>与内核地址空间的区别</h6>
+<ul>
+<li><strong>用户 token</strong>: 每个任务都有独立的用户地址空间标识符</li>
+<li><strong>内核 token</strong>: 所有任务共享同一个内核地址空间标识符</li>
+<li><strong>切换时机</strong>: 在陷阱处理和任务切换时需要在两者间切换</li>
+</ul>
+<h6 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取用户地址空间标识符
+</span><span class="kw">let </span>user_token = task.get_user_token();
+
+<span class="comment">// 在陷阱返回时使用
+</span><span class="kw">unsafe </span>{
+    satp::write(user_token);
+    <span class="macro">asm!</span>(<span class="string">"sfence.vma"</span>);
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.change_program_brk" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#384-403">Source</a><h4 class="code-header">pub fn <a href="#method.change_program_brk" class="fn">change_program_brk</a>(&amp;mut self, size: i32) -&gt; Option&lt;usize&gt;</h4></section></summary><div class="docblock"><p>修改程序断点（堆大小调整）</p>
+<p>实现 <code>sbrk</code> 系统调用的核心功能，通过调整程序断点来动态改变
+用户程序的堆大小。支持堆的扩展和收缩操作。</p>
+<h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
+<ul>
+<li><code>size</code> - 堆大小的变化量（字节）
+<ul>
+<li>正数：扩展堆空间</li>
+<li>负数：收缩堆空间</li>
+<li>零：查询当前断点位置</li>
+</ul>
+</li>
+</ul>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Some(old_brk)</code> - 成功时返回调整前的程序断点地址</li>
+<li><code>None</code> - 失败时返回 None（通常是内存不足或参数无效）</li>
+</ul>
+<h6 id="堆管理机制"><a class="doc-anchor" href="#堆管理机制">§</a>堆管理机制</h6><div class="example-wrap"><pre class="language-text"><code>堆内存布局:
+┌─────────────────┐ ← heap_bottom (固定)
+│                 │
+│   已分配堆空间   │
+│                 │
+├─────────────────┤ ← program_brk (可变)
+│                 │
+│   未分配空间     │
+│                 │
+└─────────────────┘</code></pre></div><h6 id="操作流程"><a class="doc-anchor" href="#操作流程">§</a>操作流程</h6>
+<ol>
+<li><strong>计算新断点</strong>: <code>new_brk = current_brk + size</code></li>
+<li><strong>边界检查</strong>: 确保新断点不低于 <code>heap_bottom</code></li>
+<li><strong>内存操作</strong>:
+<ul>
+<li>扩展：调用 <code>memory_set.append_to()</code> 分配新页面</li>
+<li>收缩：调用 <code>memory_set.shrink_to()</code> 释放页面</li>
+</ul>
+</li>
+<li><strong>更新断点</strong>: 成功后更新 <code>program_brk</code> 字段</li>
+</ol>
+<h6 id="错误情况"><a class="doc-anchor" href="#错误情况">§</a>错误情况</h6>
+<ul>
+<li><strong>堆收缩过度</strong>: 新断点低于 <code>heap_bottom</code></li>
+<li><strong>内存不足</strong>: 无法分配足够的物理页面</li>
+<li><strong>地址空间冲突</strong>: 与其他内存区域重叠</li>
+</ul>
+<h6 id="并发安全"><a class="doc-anchor" href="#并发安全">§</a>并发安全</h6>
+<p>此函数需要 <code>&amp;mut self</code>，确保同一时间只有一个线程能修改
+任务的堆状态，避免竞争条件。</p>
+<h6 id="examples-3"><a class="doc-anchor" href="#examples-3">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 扩展堆空间 4KB
+</span><span class="kw">if let </span><span class="prelude-val">Some</span>(old_brk) = task.change_program_brk(<span class="number">4096</span>) {
+    <span class="macro">println!</span>(<span class="string">"Heap extended from {:#x}"</span>, old_brk);
+}
+
+<span class="comment">// 收缩堆空间 2KB  
+</span><span class="kw">if let </span><span class="prelude-val">Some</span>(old_brk) = task.change_program_brk(-<span class="number">2048</span>) {
+    <span class="macro">println!</span>(<span class="string">"Heap shrunk from {:#x}"</span>, old_brk);
+}
+
+<span class="comment">// 查询当前断点
+</span><span class="kw">if let </span><span class="prelude-val">Some</span>(current_brk) = task.change_program_brk(<span class="number">0</span>) {
+    <span class="macro">println!</span>(<span class="string">"Current program break: {:#x}"</span>, current_brk);
+}</code></pre></div>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-TaskControlBlock" class="impl"><a href="#impl-Freeze-for-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section><section id="impl-RefUnwindSafe-for-TaskControlBlock" class="impl"><a href="#impl-RefUnwindSafe-for-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section><section id="impl-Send-for-TaskControlBlock" class="impl"><a href="#impl-Send-for-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section><section id="impl-Sync-for-TaskControlBlock" class="impl"><a href="#impl-Sync-for-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section><section id="impl-Unpin-for-TaskControlBlock" class="impl"><a href="#impl-Unpin-for-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section><section id="impl-UnwindSafe-for-TaskControlBlock" class="impl"><a href="#impl-UnwindSafe-for-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

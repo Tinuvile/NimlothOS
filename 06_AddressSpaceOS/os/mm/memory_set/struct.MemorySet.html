@@ -1,0 +1,413 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="内存集合（地址空间）"><title>MemorySet in os::mm::memory_set - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Memory<wbr>Set</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#组成部分" title="组成部分">组成部分</a></li><li><a href="#生命周期管理" title="生命周期管理">生命周期管理</a></li><li><a href="#并发安全" title="并发安全">并发安全</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.areas" title="areas">areas</a></li><li><a href="#structfield.page_table" title="page_table">page_table</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.activate" title="activate">activate</a></li><li><a href="#method.append_to" title="append_to">append_to</a></li><li><a href="#method.from_elf" title="from_elf">from_elf</a></li><li><a href="#method.insert_framed_area" title="insert_framed_area">insert_framed_area</a></li><li><a href="#method.map_trampoline" title="map_trampoline">map_trampoline</a></li><li><a href="#method.new_bare" title="new_bare">new_bare</a></li><li><a href="#method.new_kernel" title="new_kernel">new_kernel</a></li><li><a href="#method.push" title="push">push</a></li><li><a href="#method.shrink_to" title="shrink_to">shrink_to</a></li><li><a href="#method.token" title="token">token</a></li><li><a href="#method.translate" title="translate">translate</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-MemorySet" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-MemorySet" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-MemorySet" title="Send">Send</a></li><li><a href="#impl-Sync-for-MemorySet" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-MemorySet" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-MemorySet" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>mm::<wbr>memory_<wbr>set</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">mm</a>::<wbr><a href="index.html">memory_set</a></div><h1>Struct <span class="struct">MemorySet</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/mm/memory_set.rs.html#176-179">Source</a> </span></div><pre class="rust item-decl"><code>pub struct MemorySet {
+    page_table: <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>,
+    areas: Vec&lt;<a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a>&gt;,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>内存集合（地址空间）</p>
+<p>表示一个完整的虚拟地址空间，包含页表和多个内存映射区域。
+每个进程都有独立的 <code>MemorySet</code>，实现地址空间隔离。</p>
+<h3 id="组成部分"><a class="doc-anchor" href="#组成部分">§</a>组成部分</h3>
+<ul>
+<li><code>page_table</code>: 多级页表，负责虚拟地址到物理地址的转换</li>
+<li><code>areas</code>: 内存映射区域列表，每个区域有独立的映射类型和权限</li>
+</ul>
+<h3 id="生命周期管理"><a class="doc-anchor" href="#生命周期管理">§</a>生命周期管理</h3>
+<p><code>MemorySet</code> 拥有其包含的所有页表和物理页帧，当对象被销毁时，
+会自动释放相关的物理内存资源，确保内存安全。</p>
+<h3 id="并发安全"><a class="doc-anchor" href="#并发安全">§</a>并发安全</h3>
+<p>内核地址空间通过 <code>KERNEL_SPACE</code> 全局变量管理，使用 <code>UPSafeCell</code>
+提供单处理器环境下的安全可变访问。</p>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.page_table" class="structfield section-header"><a href="#structfield.page_table" class="anchor field">§</a><code>page_table: <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a></code></span><span id="structfield.areas" class="structfield section-header"><a href="#structfield.areas" class="anchor field">§</a><code>areas: Vec&lt;<a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a>&gt;</code></span><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-MemorySet" class="impl"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#627-1326">Source</a><a href="#impl-MemorySet" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new_bare" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#659-664">Source</a><h4 class="code-header">pub fn <a href="#method.new_bare" class="fn">new_bare</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建空的地址空间</p>
+<p>创建一个仅包含空页表和空区域列表的地址空间。这是构建
+复杂地址空间的基础，需要后续添加具体的内存区域。</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>新创建的空地址空间，不包含任何内存映射</p>
+<h6 id="初始状态"><a class="doc-anchor" href="#初始状态">§</a>初始状态</h6>
+<ul>
+<li><code>page_table</code>: 新的空页表，仅包含根页表</li>
+<li><code>areas</code>: 空的区域列表</li>
+</ul>
+<h6 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h6>
+<ul>
+<li>构建用户程序地址空间</li>
+<li>构建内核地址空间的基础</li>
+<li>清理和重建地址空间</li>
+</ul>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>memory_set = MemorySet::new_bare();
+<span class="comment">// 添加具体的内存区域...
+</span>memory_set.insert_framed_area(
+    VirtAddr::from(<span class="number">0x10000000</span>),
+    VirtAddr::from(<span class="number">0x10001000</span>),
+    MapPermission::R | MapPermission::W | MapPermission::U
+);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.push" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#692-698">Source</a><h4 class="code-header">fn <a href="#method.push" class="fn">push</a>(&amp;mut self, map_area: <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a>, data: Option&lt;&amp;[u8]&gt;)</h4></section></summary><div class="docblock"><p>将内存区域添加到地址空间</p>
+<p>将一个内存映射区域添加到当前地址空间中，并可选地将数据复制到该区域。
+这是地址空间构建的核心操作。</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>map_area</code> - 要添加的内存映射区域</li>
+<li><code>data</code> - 可选的初始化数据（如 ELF 段数据）</li>
+</ul>
+<h6 id="操作流程"><a class="doc-anchor" href="#操作流程">§</a>操作流程</h6>
+<ol>
+<li><strong>建立映射</strong>: 调用 <code>map_area.map()</code> 在页表中建立所有页面映射</li>
+<li><strong>复制数据</strong>: 如果提供了数据，将其复制到映射的内存区域</li>
+<li><strong>记录区域</strong>: 将区域添加到 <code>areas</code> 列表中以便管理</li>
+</ol>
+<h6 id="内存安全"><a class="doc-anchor" href="#内存安全">§</a>内存安全</h6>
+<ul>
+<li>区域被添加到 <code>areas</code> 列表后，其生命周期由 <code>MemorySet</code> 管理</li>
+<li>当 <code>MemorySet</code> 被销毁时，所有区域的映射和页帧会自动清理</li>
+</ul>
+<h6 id="使用场景-1"><a class="doc-anchor" href="#使用场景-1">§</a>使用场景</h6>
+<ul>
+<li>添加 ELF 文件的代码段和数据段</li>
+<li>添加用户栈区域</li>
+<li>添加内核的各个逻辑段</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.insert_framed_area" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#742-749">Source</a><h4 class="code-header">pub fn <a href="#method.insert_framed_area" class="fn">insert_framed_area</a>(
+    &amp;mut self,
+    start_va: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>,
+    end_va: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>,
+    perm: <a class="struct" href="struct.MapPermission.html" title="struct os::mm::memory_set::MapPermission">MapPermission</a>,
+)</h4></section></summary><div class="docblock"><p>插入帧映射内存区域</p>
+<p>在地址空间中添加一个使用 Framed 映射类型的内存区域。
+该区域的每个页面都会分配独立的物理页帧。</p>
+<h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
+<ul>
+<li><code>start_va</code> - 区域起始虚拟地址</li>
+<li><code>end_va</code> - 区域结束虚拟地址（不包含）</li>
+<li><code>perm</code> - 内存访问权限</li>
+</ul>
+<h6 id="特点"><a class="doc-anchor" href="#特点">§</a>特点</h6>
+<ul>
+<li><strong>独立分配</strong>: 每个虚拟页面对应一个新分配的物理页帧</li>
+<li><strong>地址隔离</strong>: 虚拟地址和物理地址没有固定关系</li>
+<li><strong>内存保护</strong>: 支持完整的内存访问权限控制</li>
+<li><strong>自动清理</strong>: 区域销毁时自动释放所有物理页帧</li>
+</ul>
+<h6 id="使用场景-2"><a class="doc-anchor" href="#使用场景-2">§</a>使用场景</h6>
+<ul>
+<li>用户程序的堆区域</li>
+<li>用户程序的栈区域</li>
+<li>内核的动态内存区域</li>
+<li>需要地址隔离的任何区域</li>
+</ul>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 添加用户态可读写区域
+</span>memory_set.insert_framed_area(
+    VirtAddr::from(<span class="number">0x10000000</span>),
+    VirtAddr::from(<span class="number">0x10001000</span>),
+    MapPermission::R | MapPermission::W | MapPermission::U
+);
+
+<span class="comment">// 添加用户栈区域
+</span>memory_set.insert_framed_area(
+    VirtAddr::from(USER_STACK_BASE),
+    VirtAddr::from(USER_STACK_BASE + USER_STACK_SIZE),
+    MapPermission::R | MapPermission::W | MapPermission::U
+);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.map_trampoline" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#772-778">Source</a><h4 class="code-header">fn <a href="#method.map_trampoline" class="fn">map_trampoline</a>(&amp;mut self)</h4></section></summary><div class="docblock"><p>映射 Trampoline 页面</p>
+<p>在地址空间的高地址区域映射 Trampoline 页面，用于内核态和用户态之间的
+上下文切换。Trampoline 是一个特殊的汇编代码段，在所有地址空间中都映射到
+同一个物理地址。</p>
+<h6 id="映射特点"><a class="doc-anchor" href="#映射特点">§</a>映射特点</h6>
+<ul>
+<li><strong>虚拟地址</strong>: <code>TRAMPOLINE</code> 常量定义的高地址</li>
+<li><strong>物理地址</strong>: <code>strampoline</code> 符号指向的物理地址</li>
+<li><strong>权限</strong>: 可读 + 可执行（<code>R | X</code>）</li>
+<li><strong>共享</strong>: 所有地址空间都映射到同一物理页面</li>
+</ul>
+<h6 id="作用"><a class="doc-anchor" href="#作用">§</a>作用</h6>
+<p>Trampoline 允许在地址空间切换过程中继续执行代码，解决了
+在切换 <code>satp</code> 寄存器后指令取指地址变化的问题。</p>
+<h6 id="安全性"><a class="doc-anchor" href="#安全性">§</a>安全性</h6>
+<p>Trampoline 代码经过精心设计，不会泄露内核信息给用户程序。</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.new_kernel" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#823-896">Source</a><h4 class="code-header">pub fn <a href="#method.new_kernel" class="fn">new_kernel</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建内核地址空间</p>
+<p>构建完整的内核地址空间，包括内核的各个逻辑段（.text、.rodata、.data、.bss）
+以及物理内存映射区域和 Trampoline。所有内核段都使用恒等映射，确保虚拟地址
+等于物理地址，便于内核直接访问物理内存。</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<p>完整配置的内核地址空间，包含所有必要的内存映射</p>
+<h6 id="内核段映射"><a class="doc-anchor" href="#内核段映射">§</a>内核段映射</h6><div><table><thead><tr><th>段名称</th><th>权限</th><th>映射类型</th><th>用途</th></tr></thead><tbody>
+<tr><td>.text</td><td>R+X</td><td>Identical</td><td>内核代码段</td></tr>
+<tr><td>.rodata</td><td>R</td><td>Identical</td><td>只读数据段</td></tr>
+<tr><td>.data</td><td>R+W</td><td>Identical</td><td>已初始化数据段</td></tr>
+<tr><td>.bss</td><td>R+W</td><td>Identical</td><td>未初始化数据段</td></tr>
+<tr><td>Physical Memory</td><td>R+W</td><td>Identical</td><td>物理内存直接映射</td></tr>
+<tr><td>Trampoline</td><td>R+X</td><td>Identical</td><td>上下文切换代码</td></tr>
+</tbody></table>
+</div><h6 id="地址范围"><a class="doc-anchor" href="#地址范围">§</a>地址范围</h6>
+<ul>
+<li><strong>内核段</strong>: 由链接器脚本 <code>linker-qemu.ld</code> 定义的符号确定边界</li>
+<li><strong>物理内存</strong>: 从 <code>ekernel</code> 到 <code>MEMORY_END</code> 的整个可用物理内存</li>
+<li><strong>Trampoline</strong>: 固定映射到 <code>TRAMPOLINE</code> 虚拟地址</li>
+</ul>
+<h6 id="调试输出"><a class="doc-anchor" href="#调试输出">§</a>调试输出</h6>
+<p>函数会打印各个段的地址范围，便于调试和验证内存布局。</p>
+<h6 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 创建内核地址空间（通常在系统初始化时调用）
+</span><span class="kw">let </span>kernel_space = MemorySet::new_kernel();
+
+<span class="comment">// 输出示例：
+// .text [0x80200000, 0x80210000)
+// .rodata [0x80210000, 0x80220000)
+// .data [0x80220000, 0x80230000)
+// .bss [0x80230000, 0x80240000)</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.from_elf" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#975-1054">Source</a><h4 class="code-header">pub fn <a href="#method.from_elf" class="fn">from_elf</a>(elf_data: &amp;[u8]) -&gt; (Self, usize, usize)</h4></section></summary><div class="docblock"><p>从 ELF 文件创建用户地址空间</p>
+<p>解析 ELF 文件并构建相应的用户程序地址空间，包括程序的各个段、用户栈、
+Trap Context 和 Trampoline。所有用户段都使用 Framed 映射，实现地址空间隔离。</p>
+<h6 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h6>
+<ul>
+<li><code>elf_data</code> - ELF 文件的二进制数据</li>
+</ul>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<p>返回一个三元组：</p>
+<ul>
+<li><code>MemorySet</code>: 构建好的用户地址空间</li>
+<li><code>usize</code>: 用户栈顶地址</li>
+<li><code>usize</code>: 程序入口点地址</li>
+</ul>
+<h6 id="地址空间布局"><a class="doc-anchor" href="#地址空间布局">§</a>地址空间布局</h6><div class="example-wrap"><pre class="language-text"><code>高地址 (TRAMPOLINE)
+┌──────────────────────────────────────────────────────┐
+│                   Trampoline                         │
+│                    (R+X)                             │
+├──────────────────────────────────────────────────────┤
+│                 Trap Context                         │
+│                    (R+W)                             │
+├──────────────────────────────────────────────────────┤
+│                  User Stack                          │
+│                   (R+W+U)                            │
+├──────────────────────────────────────────────────────┤
+│                  Guard Page                          │
+├──────────────────────────────────────────────────────┤
+│               ELF Program Sections                   │
+│            (.text/.data/.bss etc)                    │
+│              (Based on ELF flags)                    │
+└──────────────────────────────────────────────────────┘
+低地址 (0x10000)</code></pre></div><h6 id="elf-解析过程"><a class="doc-anchor" href="#elf-解析过程">§</a>ELF 解析过程</h6>
+<ol>
+<li><strong>验证 ELF 魔数</strong>: 确保文件格式正确</li>
+<li><strong>解析程序头</strong>: 遍历所有 <code>LOAD</code> 类型的程序段</li>
+<li><strong>权限转换</strong>: 将 ELF 段标志转换为 <code>MapPermission</code></li>
+<li><strong>段映射</strong>: 为每个段创建 Framed 映射并复制数据</li>
+<li><strong>用户栈</strong>: 在程序段之上分配用户栈空间</li>
+<li><strong>系统区域</strong>: 映射 Trap Context 和 Trampoline</li>
+</ol>
+<h6 id="权限映射"><a class="doc-anchor" href="#权限映射">§</a>权限映射</h6>
+<p>ELF 段标志到内存权限的转换：</p>
+<ul>
+<li><code>PF_R</code> → <code>MapPermission::R</code></li>
+<li><code>PF_W</code> → <code>MapPermission::W</code></li>
+<li><code>PF_X</code> → <code>MapPermission::X</code></li>
+<li>所有用户段都包含 <code>MapPermission::U</code></li>
+</ul>
+<h6 id="内存安全-1"><a class="doc-anchor" href="#内存安全-1">§</a>内存安全</h6>
+<ul>
+<li>所有用户段使用 Framed 映射，与内核地址空间完全隔离</li>
+<li>用户栈与程序段之间有保护页面防止栈溢出</li>
+<li>Trap Context 仅内核可写，用户只读</li>
+</ul>
+<h6 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h6>
+<ul>
+<li>ELF 魔数验证失败</li>
+<li>ELF 文件格式错误</li>
+<li>物理页帧分配失败</li>
+</ul>
+<h6 id="examples-3"><a class="doc-anchor" href="#examples-3">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>app_data = get_app_data(<span class="number">0</span>); <span class="comment">// 获取应用程序 ELF 数据
+</span><span class="kw">let </span>(memory_set, user_stack_top, entry_point) = MemorySet::from_elf(app_data);
+
+<span class="macro">println!</span>(<span class="string">"Entry point: {:#x}"</span>, entry_point);
+<span class="macro">println!</span>(<span class="string">"User stack top: {:#x}"</span>, user_stack_top);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.activate" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1100-1106">Source</a><h4 class="code-header">pub fn <a href="#method.activate" class="fn">activate</a>(&amp;self)</h4></section></summary><div class="docblock"><p>激活地址空间</p>
+<p>将当前地址空间设置为活跃的地址空间，启用该地址空间的页表进行
+地址转换。这是地址空间切换的核心操作。</p>
+<h6 id="操作流程-1"><a class="doc-anchor" href="#操作流程-1">§</a>操作流程</h6>
+<ol>
+<li><strong>获取页表标识</strong>: 调用 <code>page_table.token()</code> 获取 <code>satp</code> 寄存器值</li>
+<li><strong>设置 satp</strong>: 将页表标识写入 <code>satp</code> 寄存器</li>
+<li><strong>刷新 TLB</strong>: 执行 <code>sfence.vma</code> 指令清空 TLB 缓存</li>
+</ol>
+<h6 id="satp-寄存器格式"><a class="doc-anchor" href="#satp-寄存器格式">§</a>satp 寄存器格式</h6><div class="example-wrap"><pre class="language-text"><code>┌─────────────┬─────────────────┬─────────────────────────────────────────────┐
+│    MODE     │      ASID       │                    PPN                      │
+│   (4bit)    │     (16bit)     │                  (44bit)                    │
+└─────────────┴─────────────────┴─────────────────────────────────────────────┘</code></pre></div><h6 id="安全性-1"><a class="doc-anchor" href="#安全性-1">§</a>安全性</h6>
+<p>此操作使用 <code>unsafe</code> 代码，因为：</p>
+<ul>
+<li>直接操作系统寄存器</li>
+<li>执行特权指令</li>
+<li>可能影响所有后续的内存访问</li>
+</ul>
+<h6 id="使用场景-3"><a class="doc-anchor" href="#使用场景-3">§</a>使用场景</h6>
+<ul>
+<li>系统初始化时激活内核地址空间</li>
+<li>进程切换时激活用户地址空间</li>
+<li>从用户态返回内核态时恢复内核地址空间</li>
+</ul>
+<h6 id="examples-4"><a class="doc-anchor" href="#examples-4">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 激活内核地址空间
+</span><span class="kw">let </span>kernel_space = KERNEL_SPACE.exclusive_access();
+kernel_space.activate();
+
+<span class="comment">// 激活用户地址空间
+</span><span class="kw">let </span>user_space = task.get_user_space();
+user_space.activate();</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.translate" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1148-1150">Source</a><h4 class="code-header">pub fn <a href="#method.translate" class="fn">translate</a>(&amp;self, vpn: <a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>) -&gt; Option&lt;<a class="struct" href="../page_table/struct.PageTableEntry.html" title="struct os::mm::page_table::PageTableEntry">PageTableEntry</a>&gt;</h4></section></summary><div class="docblock"><p>转换虚拟页号到页表项</p>
+<p>通过地址空间的页表将虚拟页号转换为对应的页表项。
+返回的页表项包含物理页号和权限信息。</p>
+<h6 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h6>
+<ul>
+<li><code>vpn</code> - 要转换的虚拟页号</li>
+</ul>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>Some(PageTableEntry)</code> - 找到对应的页表项</li>
+<li><code>None</code> - 虚拟页号未被映射</li>
+</ul>
+<h6 id="转换过程"><a class="doc-anchor" href="#转换过程">§</a>转换过程</h6>
+<ol>
+<li>从虚拟页号提取三级页表索引</li>
+<li>从根页表开始逐级遍历</li>
+<li>检查每级页表项的有效性</li>
+<li>返回最终的叶子页表项</li>
+</ol>
+<h6 id="使用场景-4"><a class="doc-anchor" href="#使用场景-4">§</a>使用场景</h6>
+<ul>
+<li>手动地址转换和验证</li>
+<li>内存访问权限检查</li>
+<li>调试和诊断工具</li>
+<li>页面故障处理</li>
+</ul>
+<h6 id="examples-5"><a class="doc-anchor" href="#examples-5">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>vpn = VirtPageNum(<span class="number">0x10000</span>);
+<span class="kw">if let </span><span class="prelude-val">Some</span>(pte) = memory_set.translate(vpn) {
+    <span class="kw">let </span>ppn = pte.ppn();
+    <span class="kw">let </span>readable = pte.readable();
+    <span class="macro">println!</span>(<span class="string">"VPN {:#x} -&gt; PPN {:#x}, readable: {}"</span>, vpn.<span class="number">0</span>, ppn.<span class="number">0</span>, readable);
+} <span class="kw">else </span>{
+    <span class="macro">println!</span>(<span class="string">"VPN {:#x} not mapped"</span>, vpn.<span class="number">0</span>);
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.shrink_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1198-1209">Source</a><h4 class="code-header">pub fn <a href="#method.shrink_to" class="fn">shrink_to</a>(&amp;mut self, start: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>, new_end: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>) -&gt; bool</h4></section></summary><div class="docblock"><p>缩小地址空间中的内存区域</p>
+<p>查找以指定地址开始的内存区域，并将其缩小到新的结束地址。
+主要用于动态内存管理和堆空间回收。</p>
+<h6 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h6>
+<ul>
+<li><code>start</code> - 目标区域的起始虚拟地址</li>
+<li><code>new_end</code> - 新的结束虚拟地址（不包含）</li>
+</ul>
+<h6 id="returns-4"><a class="doc-anchor" href="#returns-4">§</a>Returns</h6>
+<ul>
+<li><code>true</code> - 成功找到并缩小了目标区域</li>
+<li><code>false</code> - 未找到以指定地址开始的区域</li>
+</ul>
+<h6 id="操作过程"><a class="doc-anchor" href="#操作过程">§</a>操作过程</h6>
+<ol>
+<li><strong>查找区域</strong>: 遍历 <code>areas</code> 列表找到起始地址匹配的区域</li>
+<li><strong>缩小区域</strong>: 调用区域的 <code>shrink_to()</code> 方法</li>
+<li><strong>清理资源</strong>: 被移除的页面自动释放对应的物理页帧</li>
+</ol>
+<h6 id="地址对齐"><a class="doc-anchor" href="#地址对齐">§</a>地址对齐</h6>
+<ul>
+<li><code>start</code> 会向下对齐到页边界进行区域匹配</li>
+<li><code>new_end</code> 会向上对齐到页边界确定新边界</li>
+</ul>
+<h6 id="使用场景-5"><a class="doc-anchor" href="#使用场景-5">§</a>使用场景</h6>
+<ul>
+<li>堆空间收缩（<code>sbrk</code> 系统调用）</li>
+<li>内存回收和优化</li>
+<li>动态库卸载</li>
+</ul>
+<h6 id="examples-6"><a class="doc-anchor" href="#examples-6">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 缩小堆空间
+</span><span class="kw">let </span>heap_start = VirtAddr::from(<span class="number">0x10000000</span>);
+<span class="kw">let </span>new_heap_end = VirtAddr::from(<span class="number">0x10008000</span>); <span class="comment">// 从 64KB 缩小到 32KB
+
+</span><span class="kw">if </span>memory_set.shrink_to(heap_start, new_heap_end) {
+    <span class="macro">println!</span>(<span class="string">"Heap shrunk successfully"</span>);
+} <span class="kw">else </span>{
+    <span class="macro">println!</span>(<span class="string">"Heap region not found"</span>);
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.append_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1267-1278">Source</a><h4 class="code-header">pub fn <a href="#method.append_to" class="fn">append_to</a>(&amp;mut self, start: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>, new_end: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>) -&gt; bool</h4></section></summary><div class="docblock"><p>扩展地址空间中的内存区域</p>
+<p>查找以指定地址开始的内存区域，并将其扩展到新的结束地址。
+主要用于动态内存分配和堆空间扩展。</p>
+<h6 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h6>
+<ul>
+<li><code>start</code> - 目标区域的起始虚拟地址</li>
+<li><code>new_end</code> - 新的结束虚拟地址（不包含）</li>
+</ul>
+<h6 id="returns-5"><a class="doc-anchor" href="#returns-5">§</a>Returns</h6>
+<ul>
+<li><code>true</code> - 成功找到并扩展了目标区域</li>
+<li><code>false</code> - 未找到以指定地址开始的区域</li>
+</ul>
+<h6 id="操作过程-1"><a class="doc-anchor" href="#操作过程-1">§</a>操作过程</h6>
+<ol>
+<li><strong>查找区域</strong>: 遍历 <code>areas</code> 列表找到起始地址匹配的区域</li>
+<li><strong>扩展区域</strong>: 调用区域的 <code>append_to()</code> 方法</li>
+<li><strong>分配资源</strong>: 为新增的页面分配物理页帧</li>
+</ol>
+<h6 id="地址对齐-1"><a class="doc-anchor" href="#地址对齐-1">§</a>地址对齐</h6>
+<ul>
+<li><code>start</code> 会向下对齐到页边界进行区域匹配</li>
+<li><code>new_end</code> 会向上对齐到页边界确定新边界</li>
+</ul>
+<h6 id="内存分配"><a class="doc-anchor" href="#内存分配">§</a>内存分配</h6>
+<p>对于 Framed 映射的区域，每个新增的页面都会分配一个独立的
+物理页帧，实现完整的地址空间隔离。</p>
+<h6 id="使用场景-6"><a class="doc-anchor" href="#使用场景-6">§</a>使用场景</h6>
+<ul>
+<li>堆空间扩展（<code>sbrk</code> 系统调用）</li>
+<li>动态库加载</li>
+<li>用户栈扩展</li>
+<li>内存映射文件扩展</li>
+</ul>
+<h6 id="panics-1"><a class="doc-anchor" href="#panics-1">§</a>Panics</h6>
+<p>如果物理页帧分配失败（内存不足）</p>
+<h6 id="examples-7"><a class="doc-anchor" href="#examples-7">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 扩展堆空间
+</span><span class="kw">let </span>heap_start = VirtAddr::from(<span class="number">0x10000000</span>);
+<span class="kw">let </span>new_heap_end = VirtAddr::from(<span class="number">0x10010000</span>); <span class="comment">// 从 32KB 扩展到 64KB
+
+</span><span class="kw">if </span>memory_set.append_to(heap_start, new_heap_end) {
+    <span class="macro">println!</span>(<span class="string">"Heap expanded successfully"</span>);
+} <span class="kw">else </span>{
+    <span class="macro">println!</span>(<span class="string">"Heap region not found"</span>);
+}</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.token" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1323-1325">Source</a><h4 class="code-header">pub fn <a href="#method.token" class="fn">token</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取地址空间的页表标识符</p>
+<p>返回当前地址空间的页表标识符（<code>satp</code> 寄存器值），用于地址空间切换
+和页表管理。该标识符包含页表模式、ASID 和根页表物理页号信息。</p>
+<h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>
+<p><code>usize</code> - 页表标识符，可直接写入 <code>satp</code> 寄存器</p>
+<h6 id="satp-寄存器格式-1"><a class="doc-anchor" href="#satp-寄存器格式-1">§</a>satp 寄存器格式</h6><div class="example-wrap"><pre class="language-text"><code>┌─────────────┬─────────────────┬─────────────────────────────────────────────┐
+│    MODE     │      ASID       │                    PPN                      │
+│   (4bit)    │     (16bit)     │                  (44bit)                    │
+└─────────────┴─────────────────┴─────────────────────────────────────────────┘</code></pre></div><h6 id="使用场景-7"><a class="doc-anchor" href="#使用场景-7">§</a>使用场景</h6>
+<ul>
+<li><strong>地址空间切换</strong>: 进程切换时设置新的页表</li>
+<li><strong>陷阱上下文</strong>: 保存当前地址空间标识符</li>
+<li><strong>调试和监控</strong>: 获取当前活跃的页表信息</li>
+</ul>
+<h6 id="与-activate-的关系"><a class="doc-anchor" href="#与-activate-的关系">§</a>与 <code>activate()</code> 的关系</h6>
+<p><code>token()</code> 获取标识符，<code>activate()</code> 使用标识符：</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>token = memory_set.token();  <span class="comment">// 获取标识符
+// ... 可以保存 token 供后续使用
+</span>memory_set.activate();           <span class="comment">// 激活地址空间（内部调用 token()）</span></code></pre></div>
+<h6 id="examples-8"><a class="doc-anchor" href="#examples-8">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取内核地址空间标识符
+</span><span class="kw">let </span>kernel_token = KERNEL_SPACE.exclusive_access().token();
+
+<span class="comment">// 在任务切换中使用
+</span><span class="kw">let </span>user_token = task.memory_set.token();
+<span class="comment">// 保存到陷阱上下文中...</span></code></pre></div>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-MemorySet" class="impl"><a href="#impl-Freeze-for-MemorySet" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section><section id="impl-RefUnwindSafe-for-MemorySet" class="impl"><a href="#impl-RefUnwindSafe-for-MemorySet" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section><section id="impl-Send-for-MemorySet" class="impl"><a href="#impl-Send-for-MemorySet" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section><section id="impl-Sync-for-MemorySet" class="impl"><a href="#impl-Sync-for-MemorySet" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section><section id="impl-Unpin-for-MemorySet" class="impl"><a href="#impl-Unpin-for-MemorySet" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section><section id="impl-UnwindSafe-for-MemorySet" class="impl"><a href="#impl-UnwindSafe-for-MemorySet" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>
