@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="系统调用：调整程序断点（堆管理）"><title>sys_sbrk in os::syscall::process - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">sys_<wbr>sbrk</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#堆管理机制" title="堆管理机制">堆管理机制</a></li><li><a href="#实现细节" title="实现细节">实现细节</a></li><li><a href="#错误处理" title="错误处理">错误处理</a></li><li><a href="#使用场景" title="使用场景">使用场景</a></li><li><a href="#examples" title="Examples">Examples</a></li><li><a href="#security-notes" title="Security Notes">Security Notes</a></li><li><a href="#performance-considerations" title="Performance Considerations">Performance Considerations</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>syscall::<wbr>process</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">syscall</a>::<wbr><a href="index.html">process</a></div><h1>Function <span class="fn">sys_sbrk</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/syscall/process.rs.html#209-215">Source</a> </span></div><pre class="rust item-decl"><code>pub fn sys_sbrk(size: i32) -&gt; isize</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>系统调用：调整程序断点（堆管理）</p>
+<p>实现 <code>sbrk(2)</code> 系统调用，用于动态调整当前进程的堆大小。
+这是实现 <code>malloc</code>、<code>free</code> 等动态内存分配函数的基础系统调用。</p>
+<h3 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h3>
+<ul>
+<li><code>size</code> - 堆大小的变化量（字节）
+<ul>
+<li><strong>正数</strong>: 扩展堆空间，增加可用内存</li>
+<li><strong>负数</strong>: 收缩堆空间，释放内存</li>
+<li><strong>零</strong>: 查询当前程序断点位置，不改变堆大小</li>
+</ul>
+</li>
+</ul>
+<h3 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h3>
+<ul>
+<li><strong>成功</strong>: 返回调整前的程序断点地址（旧的堆顶地址）</li>
+<li><strong>失败</strong>: 返回 -1，可能的失败原因：
+<ul>
+<li>内存不足，无法分配新的物理页面</li>
+<li>试图收缩到堆底部以下</li>
+<li>地址空间操作失败</li>
+</ul>
+</li>
+</ul>
+<h3 id="堆管理机制"><a class="doc-anchor" href="#堆管理机制">§</a>堆管理机制</h3><div class="example-wrap"><pre class="language-text"><code>进程地址空间中的堆布局：
+┌─────────────────┐ ← heap_bottom (fixed)
+│                 │
+│  Allocated Heap │   ← Memory usable by user
+│     Space       │
+├─────────────────┤ ← program_brk (variable, old value)
+│                 │
+│   New Space     │   ← New space when size &gt; 0
+│                 │
+├─────────────────┤ ← program_brk (variable, new value)
+│   Unallocated   │
+│      Space      │
+└─────────────────┘</code></pre></div><h3 id="实现细节"><a class="doc-anchor" href="#实现细节">§</a>实现细节</h3>
+<ol>
+<li><strong>委托处理</strong>: 调用 <code>change_program_brk()</code> 执行实际的堆调整</li>
+<li><strong>页面对齐</strong>: 底层自动处理页面边界对齐</li>
+<li><strong>物理内存</strong>: 自动分配/释放物理页帧</li>
+<li><strong>地址空间</strong>: 更新进程的虚拟地址空间映射</li>
+</ol>
+<h3 id="错误处理"><a class="doc-anchor" href="#错误处理">§</a>错误处理</h3>
+<ul>
+<li>返回 -1 表示操作失败</li>
+<li>用户程序应该检查返回值并适当处理错误</li>
+<li>失败后堆状态保持不变</li>
+</ul>
+<h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3>
+<ul>
+<li><strong>动态内存分配</strong>: <code>malloc()</code> 的底层实现</li>
+<li><strong>内存池管理</strong>: 自定义内存分配器</li>
+<li><strong>垃圾收集</strong>: 动态调整堆大小</li>
+<li><strong>性能优化</strong>: 预分配大块内存减少系统调用次数</li>
+</ul>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
+<p>从用户态调用：</p>
+<div class="example-wrap"><pre class="language-c"><code>// 扩展堆空间 1KB
+void *old_brk = sbrk(1024);
+if (old_brk == (void*)-1) {
+    // 分配失败，处理错误
+    return -1;
+}
+
+// 查询当前堆顶
+void *current_brk = sbrk(0);
+
+// 收缩堆空间 512 字节
+void *prev_brk = sbrk(-512);</code></pre></div><h3 id="security-notes"><a class="doc-anchor" href="#security-notes">§</a>Security Notes</h3>
+<ul>
+<li>系统会自动验证内存访问权限</li>
+<li>防止堆与栈重叠</li>
+<li>确保不会访问其他进程的内存</li>
+</ul>
+<h3 id="performance-considerations"><a class="doc-anchor" href="#performance-considerations">§</a>Performance Considerations</h3>
+<ul>
+<li>频繁的小幅调整可能导致性能问题</li>
+<li>建议批量分配以减少系统调用开销</li>
+<li>页面分配/释放涉及内核态切换，有一定开销</li>
+</ul>
+</div></details></section></div></main></body></html>

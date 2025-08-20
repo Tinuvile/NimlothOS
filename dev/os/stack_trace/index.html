@@ -3,7 +3,7 @@
 通过解析栈帧链表来重构函数调用链，帮助定位问题代码。</p>
 <h3 id="实现原理"><a class="doc-anchor" href="#实现原理">§</a>实现原理</h3><h4 id="risc-v-栈帧结构"><a class="doc-anchor" href="#risc-v-栈帧结构">§</a>RISC-V 栈帧结构</h4><div class="example-wrap"><pre class="language-text"><code>高地址 (栈顶)
 ┌─────────────────┐
-│   局部变量       │
+│ Local Variables │
 ├─────────────────┤
 │   saved s0      │ &lt;- fp - 16 (前一个栈帧的 fp)
 ├─────────────────┤

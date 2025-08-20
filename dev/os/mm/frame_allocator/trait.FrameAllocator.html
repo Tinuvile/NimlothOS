@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="页帧分配器 trait"><title>FrameAllocator in os::mm::frame_allocator - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc trait"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Frame<wbr>Allocator</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#设计原则" title="设计原则">设计原则</a></li><li><a href="#实现要求" title="实现要求">实现要求</a></li></ul><h3><a href="#required-methods">Required Methods</a></h3><ul class="block"><li><a href="#tymethod.alloc" title="alloc">alloc</a></li><li><a href="#tymethod.dealloc" title="dealloc">dealloc</a></li><li><a href="#tymethod.new" title="new">new</a></li></ul><h3><a href="#dyn-compatibility">Dyn Compatibility</a></h3><h3><a href="#implementors">Implementors</a></h3></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>mm::<wbr>frame_<wbr>allocator</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">mm</a>::<wbr><a href="index.html">frame_allocator</a></div><h1>Trait <span class="trait">FrameAllocator</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/mm/frame_allocator.rs.html#84-128">Source</a> </span></div><pre class="rust item-decl"><code>trait FrameAllocator {
+    // Required methods
+    fn <a href="#tymethod.new" class="fn">new</a>() -&gt; Self;
+<span class="item-spacer"></span>    fn <a href="#tymethod.alloc" class="fn">alloc</a>(&amp;mut self) -&gt; Option&lt;<a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>&gt;;
+<span class="item-spacer"></span>    fn <a href="#tymethod.dealloc" class="fn">dealloc</a>(&amp;mut self, ppn: <a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>);
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>页帧分配器 trait</p>
+<p>定义物理页帧分配器的标准接口，支持页帧分配、释放和初始化操作。
+所有页帧分配器实现都应该遵循此接口约定。</p>
+<h3 id="设计原则"><a class="doc-anchor" href="#设计原则">§</a>设计原则</h3>
+<ul>
+<li><strong>内存安全</strong>：防止重复释放和使用已释放的页帧</li>
+<li><strong>错误处理</strong>：分配失败时返回 <code>None</code>，不触发 panic</li>
+<li><strong>状态管理</strong>：维护分配器内部状态的一致性</li>
+</ul>
+<h3 id="实现要求"><a class="doc-anchor" href="#实现要求">§</a>实现要求</h3>
+<p>实现者需要保证：</p>
+<ul>
+<li><code>alloc()</code> 返回的页号在有效范围内</li>
+<li><code>dealloc()</code> 只接受之前分配的页号</li>
+<li>不会分配同一页帧给多个调用者</li>
+</ul>
+</div></details><h2 id="required-methods" class="section-header">Required Methods<a href="#required-methods" class="anchor">§</a></h2><div class="methods"><details class="toggle method-toggle" open><summary><section id="tymethod.new" class="method"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#93">Source</a><h4 class="code-header">fn <a href="#tymethod.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建新的分配器实例</p>
+<p>创建一个未初始化的分配器，需要调用 <code>init()</code> 方法
+设置可分配的页帧范围。</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>返回新创建的分配器实例</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.alloc" class="method"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#110">Source</a><h4 class="code-header">fn <a href="#tymethod.alloc" class="fn">alloc</a>(&amp;mut self) -&gt; Option&lt;<a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>&gt;</h4></section></summary><div class="docblock"><p>分配一个物理页帧</p>
+<p>从可用页帧池中分配一个 4KB 物理页帧。优先使用
+回收列表中的页帧，其次按顺序分配新页帧。</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Some(ppn)</code> - 成功分配的物理页号</li>
+<li><code>None</code> - 内存不足，分配失败</li>
+</ul>
+<h6 id="分配策略"><a class="doc-anchor" href="#分配策略">§</a>分配策略</h6>
+<ol>
+<li>检查回收列表，优先复用已释放的页帧</li>
+<li>如果回收列表为空，从连续区间分配新页帧</li>
+<li>如果所有页帧都已分配，返回 <code>None</code></li>
+</ol>
+</div></details><details class="toggle method-toggle" open><summary><section id="tymethod.dealloc" class="method"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#127">Source</a><h4 class="code-header">fn <a href="#tymethod.dealloc" class="fn">dealloc</a>(&amp;mut self, ppn: <a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>)</h4></section></summary><div class="docblock"><p>释放一个物理页帧</p>
+<p>将之前分配的页帧回收到分配器，使其可以被再次分配。
+释放的页帧会被添加到回收列表中。</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>ppn</code> - 要释放的物理页号，必须是之前通过 <code>alloc()</code> 获得的</li>
+</ul>
+<h6 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h6>
+<p>以下情况会触发 panic：</p>
+<ul>
+<li>释放未分配的页帧</li>
+<li>重复释放同一页帧</li>
+<li>释放无效的页号（超出分配器管理范围）</li>
+</ul>
+</div></details></div><h2 id="dyn-compatibility" class="section-header">Dyn Compatibility<a href="#dyn-compatibility" class="anchor">§</a></h2><div class="dyn-compatibility-info"><p>This trait is <b>not</b> <a href="https://doc.rust-lang.org/nightly/reference/items/traits.html#dyn-compatibility">dyn compatible</a>.</p><p><i>In older versions of Rust, dyn compatibility was called "object safety", so this trait is not object safe.</i></p></div><h2 id="implementors" class="section-header">Implementors<a href="#implementors" class="anchor">§</a></h2><div id="implementors-list"><section id="impl-FrameAllocator-for-StackFrameAllocator" class="impl"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#215-294">Source</a><a href="#impl-FrameAllocator-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="trait.FrameAllocator.html" title="trait os::mm::frame_allocator::FrameAllocator">FrameAllocator</a> for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section></div><script src="../../../trait.impl/os/mm/frame_allocator/trait.FrameAllocator.js" async></script></section></div></main></body></html>
