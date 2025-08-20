@@ -75,10 +75,10 @@ const VPN_WIDTH_SV39: usize = VA_WIDTH_SV39 - PAGE_SIZE_BITS;
 ///
 /// ## 主要方法
 ///
-/// - [`floor()`] - 向下对齐到页边界
-/// - [`ceil()`] - 向上对齐到页边界  
-/// - [`page_offset()`] - 获取页内偏移
-/// - [`aligned()`] - 检查是否页对齐
+/// - [`floor`] - 向下对齐到页边界
+/// - [`ceil`] - 向上对齐到页边界  
+/// - [`page_offset`] - 获取页内偏移
+/// - [`aligned`] - 检查是否页对齐
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysAddr(pub usize);
 
@@ -108,9 +108,9 @@ pub struct VirtAddr(pub usize);
 ///
 /// ## 主要功能
 ///
-/// - 页面数据访问：[`get_bytes_array()`]
-/// - 页表项访问：[`get_pte_array()`]
-/// - 任意类型访问：[`get_mut<T>()`]
+/// - 页面数据访问：[`get_bytes_array`]
+/// - 页表项访问：[`get_pte_array`]
+/// - 任意类型访问：[`get_mut<T>`]
 ///
 /// ## 使用场景
 ///
@@ -134,8 +134,8 @@ pub struct PhysPageNum(pub usize);
 ///
 /// ## 主要方法
 ///
-/// - [`indexes()`] - 获取三级页表索引数组
-/// - [`step()`] - 递增页号 (支持范围迭代)
+/// - [`indexes`] - 获取三级页表索引数组
+/// - [`step`] - 递增页号 (支持范围迭代)
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtPageNum(pub usize);
 
