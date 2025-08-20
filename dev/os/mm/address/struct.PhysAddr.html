@@ -10,10 +10,10 @@
 </ul>
 <h3 id="主要方法"><a class="doc-anchor" href="#主要方法">§</a>主要方法</h3>
 <ul>
-<li>[<code>floor()</code>] - 向下对齐到页边界</li>
-<li>[<code>ceil()</code>] - 向上对齐到页边界</li>
-<li>[<code>page_offset()</code>] - 获取页内偏移</li>
-<li>[<code>aligned()</code>] - 检查是否页对齐</li>
+<li>[<code>floor</code>] - 向下对齐到页边界</li>
+<li>[<code>ceil</code>] - 向上对齐到页边界</li>
+<li>[<code>page_offset</code>] - 获取页内偏移</li>
+<li>[<code>aligned</code>] - 检查是否页对齐</li>
 </ul>
 </div></details><h2 id="fields" class="fields section-header">Tuple Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.0" class="structfield section-header"><a href="#structfield.0" class="anchor field">§</a><code>0: usize</code></span><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-PhysAddr" class="impl"><a class="src rightside" href="../../../src/os/mm/address.rs.html#142-226">Source</a><a href="#impl-PhysAddr" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.PhysAddr.html" title="struct os::mm::address::PhysAddr">PhysAddr</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.floor" class="method"><a class="src rightside" href="../../../src/os/mm/address.rs.html#158-160">Source</a><h4 class="code-header">pub fn <a href="#method.floor" class="fn">floor</a>(&amp;self) -&gt; <a class="struct" href="struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a></h4></section></summary><div class="docblock"><p>向下对齐到页边界</p>
 <p>将物理地址向下舍入到最接近的页面边界，返回对应的物理页号。

@@ -10,8 +10,8 @@
 </ul>
 <h3 id="主要方法"><a class="doc-anchor" href="#主要方法">§</a>主要方法</h3>
 <ul>
-<li>[<code>indexes()</code>] - 获取三级页表索引数组</li>
-<li>[<code>step()</code>] - 递增页号 (支持范围迭代)</li>
+<li>[<code>indexes</code>] - 获取三级页表索引数组</li>
+<li>[<code>step</code>] - 递增页号 (支持范围迭代)</li>
 </ul>
 </div></details><h2 id="fields" class="fields section-header">Tuple Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.0" class="structfield section-header"><a href="#structfield.0" class="anchor field">§</a><code>0: usize</code></span><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-VirtPageNum" class="impl"><a class="src rightside" href="../../../src/os/mm/address.rs.html#373-416">Source</a><a href="#impl-VirtPageNum" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.indexes" class="method"><a class="src rightside" href="../../../src/os/mm/address.rs.html#407-415">Source</a><h4 class="code-header">pub fn <a href="#method.indexes" class="fn">indexes</a>(&amp;self) -&gt; [usize; 3]</h4></section></summary><div class="docblock"><p>获取三级页表索引</p>
 <p>将 27 位虚拟页号分解为三个 9 位的页表索引，用于 SV39 分页机制
