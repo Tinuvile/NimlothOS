@@ -15,7 +15,7 @@
 <h3 id="并发安全"><a class="doc-anchor" href="#并发安全">§</a>并发安全</h3>
 <p>内核地址空间通过 <code>KERNEL_SPACE</code> 全局变量管理，使用 <code>UPSafeCell</code>
 提供单处理器环境下的安全可变访问。</p>
-</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.page_table" class="structfield section-header"><a href="#structfield.page_table" class="anchor field">§</a><code>page_table: <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a></code></span><span id="structfield.areas" class="structfield section-header"><a href="#structfield.areas" class="anchor field">§</a><code>areas: Vec&lt;<a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a>&gt;</code></span><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-MemorySet" class="impl"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#627-1301">Source</a><a href="#impl-MemorySet" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new_bare" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#659-664">Source</a><h4 class="code-header">pub fn <a href="#method.new_bare" class="fn">new_bare</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建空的地址空间</p>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.page_table" class="structfield section-header"><a href="#structfield.page_table" class="anchor field">§</a><code>page_table: <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a></code></span><span id="structfield.areas" class="structfield section-header"><a href="#structfield.areas" class="anchor field">§</a><code>areas: Vec&lt;<a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a>&gt;</code></span><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-MemorySet" class="impl"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#627-1326">Source</a><a href="#impl-MemorySet" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new_bare" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#659-664">Source</a><h4 class="code-header">pub fn <a href="#method.new_bare" class="fn">new_bare</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建空的地址空间</p>
 <p>创建一个仅包含空页表和空区域列表的地址空间。这是构建
 复杂地址空间的基础，需要后续添加具体的内存区域。</p>
 <h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
@@ -122,7 +122,7 @@
 在切换 <code>satp</code> 寄存器后指令取指地址变化的问题。</p>
 <h6 id="安全性"><a class="doc-anchor" href="#安全性">§</a>安全性</h6>
 <p>Trampoline 代码经过精心设计，不会泄露内核信息给用户程序。</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.new_kernel" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#823-884">Source</a><h4 class="code-header">pub fn <a href="#method.new_kernel" class="fn">new_kernel</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建内核地址空间</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.new_kernel" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#823-896">Source</a><h4 class="code-header">pub fn <a href="#method.new_kernel" class="fn">new_kernel</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建内核地址空间</p>
 <p>构建完整的内核地址空间，包括内核的各个逻辑段（.text、.rodata、.data、.bss）
 以及物理内存映射区域和 Trampoline。所有内核段都使用恒等映射，确保虚拟地址
 等于物理地址，便于内核直接访问物理内存。</p>
@@ -153,7 +153,7 @@
 // .rodata [0x80210000, 0x80220000)
 // .data [0x80220000, 0x80230000)
 // .bss [0x80230000, 0x80240000)</span></code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.from_elf" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#963-1029">Source</a><h4 class="code-header">pub fn <a href="#method.from_elf" class="fn">from_elf</a>(elf_data: &amp;[u8]) -&gt; (Self, usize, usize)</h4></section></summary><div class="docblock"><p>从 ELF 文件创建用户地址空间</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.from_elf" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#975-1054">Source</a><h4 class="code-header">pub fn <a href="#method.from_elf" class="fn">from_elf</a>(elf_data: &amp;[u8]) -&gt; (Self, usize, usize)</h4></section></summary><div class="docblock"><p>从 ELF 文件创建用户地址空间</p>
 <p>解析 ELF 文件并构建相应的用户程序地址空间，包括程序的各个段、用户栈、
 Trap Context 和 Trampoline。所有用户段都使用 Framed 映射，实现地址空间隔离。</p>
 <h6 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h6>
@@ -219,7 +219,7 @@ Trap Context 和 Trampoline。所有用户段都使用 Framed 映射，实现地
 
 <span class="macro">println!</span>(<span class="string">"Entry point: {:#x}"</span>, entry_point);
 <span class="macro">println!</span>(<span class="string">"User stack top: {:#x}"</span>, user_stack_top);</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.activate" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1075-1081">Source</a><h4 class="code-header">pub fn <a href="#method.activate" class="fn">activate</a>(&amp;self)</h4></section></summary><div class="docblock"><p>激活地址空间</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.activate" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1100-1106">Source</a><h4 class="code-header">pub fn <a href="#method.activate" class="fn">activate</a>(&amp;self)</h4></section></summary><div class="docblock"><p>激活地址空间</p>
 <p>将当前地址空间设置为活跃的地址空间，启用该地址空间的页表进行
 地址转换。这是地址空间切换的核心操作。</p>
 <h6 id="操作流程-1"><a class="doc-anchor" href="#操作流程-1">§</a>操作流程</h6>
@@ -252,7 +252,7 @@ kernel_space.activate();
 <span class="comment">// 激活用户地址空间
 </span><span class="kw">let </span>user_space = task.get_user_space();
 user_space.activate();</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.translate" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1123-1125">Source</a><h4 class="code-header">pub fn <a href="#method.translate" class="fn">translate</a>(&amp;self, vpn: <a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>) -&gt; Option&lt;<a class="struct" href="../page_table/struct.PageTableEntry.html" title="struct os::mm::page_table::PageTableEntry">PageTableEntry</a>&gt;</h4></section></summary><div class="docblock"><p>转换虚拟页号到页表项</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.translate" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1148-1150">Source</a><h4 class="code-header">pub fn <a href="#method.translate" class="fn">translate</a>(&amp;self, vpn: <a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>) -&gt; Option&lt;<a class="struct" href="../page_table/struct.PageTableEntry.html" title="struct os::mm::page_table::PageTableEntry">PageTableEntry</a>&gt;</h4></section></summary><div class="docblock"><p>转换虚拟页号到页表项</p>
 <p>通过地址空间的页表将虚拟页号转换为对应的页表项。
 返回的页表项包含物理页号和权限信息。</p>
 <h6 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h6>
@@ -287,7 +287,7 @@ user_space.activate();</code></pre></div>
 } <span class="kw">else </span>{
     <span class="macro">println!</span>(<span class="string">"VPN {:#x} not mapped"</span>, vpn.<span class="number">0</span>);
 }</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.shrink_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1173-1184">Source</a><h4 class="code-header">pub fn <a href="#method.shrink_to" class="fn">shrink_to</a>(&amp;mut self, start: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>, new_end: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>) -&gt; bool</h4></section></summary><div class="docblock"><p>缩小地址空间中的内存区域</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.shrink_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1198-1209">Source</a><h4 class="code-header">pub fn <a href="#method.shrink_to" class="fn">shrink_to</a>(&amp;mut self, start: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>, new_end: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>) -&gt; bool</h4></section></summary><div class="docblock"><p>缩小地址空间中的内存区域</p>
 <p>查找以指定地址开始的内存区域，并将其缩小到新的结束地址。
 主要用于动态内存管理和堆空间回收。</p>
 <h6 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h6>
@@ -327,7 +327,7 @@ user_space.activate();</code></pre></div>
 } <span class="kw">else </span>{
     <span class="macro">println!</span>(<span class="string">"Heap region not found"</span>);
 }</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.append_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1242-1253">Source</a><h4 class="code-header">pub fn <a href="#method.append_to" class="fn">append_to</a>(&amp;mut self, start: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>, new_end: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>) -&gt; bool</h4></section></summary><div class="docblock"><p>扩展地址空间中的内存区域</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.append_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1267-1278">Source</a><h4 class="code-header">pub fn <a href="#method.append_to" class="fn">append_to</a>(&amp;mut self, start: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>, new_end: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>) -&gt; bool</h4></section></summary><div class="docblock"><p>扩展地址空间中的内存区域</p>
 <p>查找以指定地址开始的内存区域，并将其扩展到新的结束地址。
 主要用于动态内存分配和堆空间扩展。</p>
 <h6 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h6>
@@ -373,7 +373,7 @@ user_space.activate();</code></pre></div>
 } <span class="kw">else </span>{
     <span class="macro">println!</span>(<span class="string">"Heap region not found"</span>);
 }</code></pre></div>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.token" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1298-1300">Source</a><h4 class="code-header">pub fn <a href="#method.token" class="fn">token</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取地址空间的页表标识符</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.token" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#1323-1325">Source</a><h4 class="code-header">pub fn <a href="#method.token" class="fn">token</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取地址空间的页表标识符</p>
 <p>返回当前地址空间的页表标识符（<code>satp</code> 寄存器值），用于地址空间切换
 和页表管理。该标识符包含页表模式、ASID 和根页表物理页号信息。</p>
 <h6 id="returns-6"><a class="doc-anchor" href="#returns-6">§</a>Returns</h6>

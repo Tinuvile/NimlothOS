@@ -122,8 +122,8 @@
 <a href=#122 id=122 data-nosnippet>122</a>/// 这个函数必须在任何 Rust 代码使用全局变量之前调用。
 <a href=#123 id=123 data-nosnippet>123</a></span><span class="kw">fn </span>clear_bss() {
 <a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">unsafe extern </span><span class="string">"C" </span>{
-<a href=#125 id=125 data-nosnippet>125</a>        <span class="kw">fn </span>sbss();
-<a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">fn </span>ebss();
+<a href=#125 id=125 data-nosnippet>125</a>        safe <span class="kw">fn </span>sbss();
+<a href=#126 id=126 data-nosnippet>126</a>        safe <span class="kw">fn </span>ebss();
 <a href=#127 id=127 data-nosnippet>127</a>    }
 <a href=#128 id=128 data-nosnippet>128</a>    (sbss <span class="kw">as </span>usize..ebss <span class="kw">as </span>usize).for_each(|a| <span class="kw">unsafe </span>{
 <a href=#129 id=129 data-nosnippet>129</a>        (a <span class="kw">as </span><span class="kw-2">*mut </span>u8).write_volatile(<span class="number">0</span>);
