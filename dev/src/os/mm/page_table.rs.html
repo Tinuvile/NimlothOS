@@ -880,7 +880,7 @@
 <a href=#880 id=880 data-nosnippet>880</a>        vpn.step();
 <a href=#881 id=881 data-nosnippet>881</a>        <span class="kw">let </span><span class="kw-2">mut </span>end_va: VirtAddr = vpn.into();
 <a href=#882 id=882 data-nosnippet>882</a>        end_va = end_va.min(VirtAddr::from(end));
-<a href=#883 id=883 data-nosnippet>883</a>        <span class="kw">if </span>start_va.page_offset() == <span class="number">0 </span>{
+<a href=#883 id=883 data-nosnippet>883</a>        <span class="kw">if </span>end_va.page_offset() == <span class="number">0 </span>{
 <a href=#884 id=884 data-nosnippet>884</a>            v.push(<span class="kw-2">&amp;mut </span>ppn.get_bytes_array()[start_va.page_offset()..]);
 <a href=#885 id=885 data-nosnippet>885</a>        } <span class="kw">else </span>{
 <a href=#886 id=886 data-nosnippet>886</a>            v.push(<span class="kw-2">&amp;mut </span>ppn.get_bytes_array()[start_va.page_offset()..end_va.page_offset()]);
