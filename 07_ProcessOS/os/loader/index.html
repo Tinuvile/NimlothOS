@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="应用程序加载器模块"><title>os::loader - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module loader</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#应用程序加载器模块" title="应用程序加载器模块">应用程序加载器模块</a><ul><li><a href="#设计原理" title="设计原理">设计原理</a></li><li><a href="#安全注意事项" title="安全注意事项">安全注意事项</a></li><li><a href="#使用示例" title="使用示例">使用示例</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate os</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">os</a></div><h1>Module <span>loader</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/os/loader.rs.html#1-356">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="应用程序加载器模块"><a class="doc-anchor" href="#应用程序加载器模块">§</a>应用程序加载器模块</h2>
+<p>提供从内核镜像中加载用户应用程序的功能。用户应用程序在构建时被链接到
+内核镜像中，运行时通过此模块提供的接口进行访问和加载。</p>
+<h3 id="设计原理"><a class="doc-anchor" href="#设计原理">§</a>设计原理</h3><h4 id="应用程序嵌入"><a class="doc-anchor" href="#应用程序嵌入">§</a>应用程序嵌入</h4>
+<p>用户应用程序通过构建脚本 (<code>build.rs</code>) 和汇编文件 (<code>link_app.S</code>) 被嵌入到
+内核镜像中。构建过程会：</p>
+<ol>
+<li>编译所有用户应用程序为独立的二进制文件</li>
+<li>生成包含应用程序数据的汇编代码</li>
+<li>将汇编代码链接到内核镜像中</li>
+</ol>
+<h4 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h4>
+<p>嵌入的应用程序数据在内核镜像中的布局：</p>
+<div class="example-wrap"><pre class="language-text"><code>_num_app symbol location:
+┌─────────────────────────────────────────────────────────────┐
+│                     Number of Apps                          │
+│                       (8 bytes)                             │
+├─────────────────────────────────────────────────────────────┤
+│                   App 0 Start Address                       │
+│                       (8 bytes)                             │
+├─────────────────────────────────────────────────────────────┤
+│                   App 1 Start Address                       │
+│                       (8 bytes)                             │
+├─────────────────────────────────────────────────────────────┤
+│                          ...                                │
+├─────────────────────────────────────────────────────────────┤
+│                   App N End Address                         │
+│                       (8 bytes)                             │
+├─────────────────────────────────────────────────────────────┤
+│                       App 0 Data                            │
+│                       (Variable)                            │
+├─────────────────────────────────────────────────────────────┤
+│                       App 1 Data                            │
+│                       (Variable)                            │
+├─────────────────────────────────────────────────────────────┤
+│                          ...                                │
+└─────────────────────────────────────────────────────────────┘</code></pre></div><h3 id="安全注意事项"><a class="doc-anchor" href="#安全注意事项">§</a>安全注意事项</h3>
+<ul>
+<li>所有内存访问都使用 <code>read_volatile()</code> 避免编译器优化</li>
+<li>应用程序 ID 边界检查防止越界访问</li>
+<li>使用 <code>unsafe</code> 代码块明确标识不安全操作</li>
+</ul>
+<h3 id="使用示例"><a class="doc-anchor" href="#使用示例">§</a>使用示例</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取应用程序数量
+</span><span class="kw">let </span>app_count = get_num_app();
+<span class="macro">println!</span>(<span class="string">"Found {} applications"</span>, app_count);
+
+<span class="comment">// 加载特定应用程序
+</span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..app_count {
+    <span class="kw">let </span>app_data = get_app_data(i);
+    <span class="macro">println!</span>(<span class="string">"App {}: {} bytes"</span>, i, app_data.len());
+    <span class="comment">// 将应用程序数据加载到内存中...
+</span>}</code></pre></div>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.APP_NAMES.html" title="struct os::loader::APP_NAMES">APP_<wbr>NAMES</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dd>应用程序名称缓存</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.get_app_data.html" title="fn os::loader::get_app_data">get_<wbr>app_<wbr>data</a></dt><dd>获取指定应用程序的二进制数据</dd><dt><a class="fn" href="fn.get_app_data_by_name.html" title="fn os::loader::get_app_data_by_name">get_<wbr>app_<wbr>data_<wbr>by_<wbr>name</a></dt><dd>根据应用程序名称获取二进制数据</dd><dt><a class="fn" href="fn.get_num_app.html" title="fn os::loader::get_num_app">get_<wbr>num_<wbr>app</a></dt><dd>获取嵌入的应用程序数量</dd><dt><a class="fn" href="fn.list_apps.html" title="fn os::loader::list_apps">list_<wbr>apps</a></dt><dd>列出所有可用的应用程序名称</dd></dl></section></div></main></body></html>

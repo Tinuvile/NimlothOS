@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="内存集合管理模块"><title>os::mm::memory_set - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module memory_<wbr>set</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#内存集合管理模块" title="内存集合管理模块">内存集合管理模块</a><ul><li><a href="#核心概念" title="核心概念">核心概念</a></li><li><a href="#地址空间布局" title="地址空间布局">地址空间布局</a></li><li><a href="#映射类型" title="映射类型">映射类型</a></li><li><a href="#使用示例" title="使用示例">使用示例</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In os::mm</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">mm</a></div><h1>Module <span>memory_set</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/mm/memory_set.rs.html#1-1623">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="内存集合管理模块"><a class="doc-anchor" href="#内存集合管理模块">§</a>内存集合管理模块</h2>
+<p>提供完整的地址空间管理功能，包括内存映射区域的创建、管理和地址空间切换。
+支持 RISC-V SV39 分页机制，实现内核和用户程序的地址空间隔离。</p>
+<h3 id="核心概念"><a class="doc-anchor" href="#核心概念">§</a>核心概念</h3>
+<ul>
+<li><a href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet"><code>MemorySet</code></a> - 完整的地址空间，包含页表和多个内存映射区域</li>
+<li><a href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea"><code>MapArea</code></a> - 单个连续的内存映射区域，具有统一的映射类型和权限</li>
+<li><a href="enum.MapType.html" title="enum os::mm::memory_set::MapType"><code>MapType</code></a> - 映射类型：恒等映射或帧映射</li>
+<li><a href="struct.MapPermission.html" title="struct os::mm::memory_set::MapPermission"><code>MapPermission</code></a> - 内存访问权限：读、写、执行、用户态访问</li>
+</ul>
+<h3 id="地址空间布局"><a class="doc-anchor" href="#地址空间布局">§</a>地址空间布局</h3><h4 id="内核地址空间-低256g"><a class="doc-anchor" href="#内核地址空间-低256g">§</a>内核地址空间 (低256G)</h4><div class="example-wrap"><pre class="language-text"><code>┌──────────────────────────────────--───────────────────────────┐
+│                   Kernel Address Space                        │
+├─────────────────┬──────────────-─┬──────────-───┬─────────────┤
+│  .text Section  │ .rodata Section│ .data Section│ .bss Section│
+│     (R+X)       │      (R)       │    (R+W)     │    (R+W)    │
+├─────────────────┴───────────────-┴───────────-──┴─────────────┤
+│                  Physical Memory Mapping                      │
+│                        (R+W)                                  │
+└─────────────────────────────────────────────────--────────────┘</code></pre></div><h4 id="用户地址空间"><a class="doc-anchor" href="#用户地址空间">§</a>用户地址空间</h4><div class="example-wrap"><pre class="language-text"><code>高地址 (TRAMPOLINE)
+┌──────────────────────────────────────────────────┐
+│                   Trampoline                     │
+│                    (R+X)                         │
+├──────────────────────────────────────────────────┤
+│                 Trap Context                     │
+│                    (R+W)                         │
+├──────────────────────────────────────────────────┤
+│                  User Stack                      │
+│                   (R+W+U)                        │
+├────────────────────────-─────────────────────────┤
+│                     ...                          │
+├──────────────────────────────────────────────────┤
+│               Program Sections                   │
+│            (.text/.data/.bss etc)                │
+│              (Based on ELF flags)                │
+└──────────────────────────────────────────────────┘
+低地址 (0x10000)</code></pre></div><h3 id="映射类型"><a class="doc-anchor" href="#映射类型">§</a>映射类型</h3><h4 id="identical-映射-恒等映射"><a class="doc-anchor" href="#identical-映射-恒等映射">§</a>Identical 映射 (恒等映射)</h4>
+<ul>
+<li><strong>特点</strong>: 虚拟地址 = 物理地址</li>
+<li><strong>用途</strong>: 内核直接访问物理内存和设备</li>
+<li><strong>优势</strong>: 简单、高效、地址可预测</li>
+<li><strong>限制</strong>: 无法提供地址空间隔离</li>
+</ul>
+<h4 id="framed-映射-帧映射"><a class="doc-anchor" href="#framed-映射-帧映射">§</a>Framed 映射 (帧映射)</h4>
+<ul>
+<li><strong>特点</strong>: 每个虚拟页映射到独立分配的物理页帧</li>
+<li><strong>用途</strong>: 用户程序地址空间、内核堆</li>
+<li><strong>优势</strong>: 灵活、安全、支持地址空间隔离</li>
+<li><strong>成本</strong>: 需要额外的页表和页帧管理</li>
+</ul>
+<h3 id="使用示例"><a class="doc-anchor" href="#使用示例">§</a>使用示例</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::mm::{MemorySet, MapArea, MapType, MapPermission};
+
+<span class="comment">// 创建新的地址空间
+</span><span class="kw">let </span><span class="kw-2">mut </span>memory_set = MemorySet::new_bare();
+
+<span class="comment">// 添加内存映射区域
+</span>memory_set.insert_framed_area(
+    VirtAddr::from(<span class="number">0x10000000</span>),
+    VirtAddr::from(<span class="number">0x10001000</span>),
+    MapPermission::R | MapPermission::W | MapPermission::U
+);
+
+<span class="comment">// 激活地址空间
+</span>memory_set.activate();</code></pre></div>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.KERNEL_SPACE.html" title="struct os::mm::memory_set::KERNEL_SPACE">KERNEL_<wbr>SPACE</a></dt><dd>全局内核地址空间</dd><dt><a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></dt><dd>内存映射区域</dd><dt><a class="struct" href="struct.MapPermission.html" title="struct os::mm::memory_set::MapPermission">MapPermission</a></dt><dd>内存映射权限</dd><dt><a class="struct" href="struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">Memory<wbr>Set</a></dt><dd>内存集合（地址空间）</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.MapType.html" title="enum os::mm::memory_set::MapType">MapType</a></dt><dd>内存映射类型</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.ebss.html" title="fn os::mm::memory_set::ebss">ebss</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.edata.html" title="fn os::mm::memory_set::edata">edata</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.ekernel.html" title="fn os::mm::memory_set::ekernel">ekernel</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.erodata.html" title="fn os::mm::memory_set::erodata">erodata</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.etext.html" title="fn os::mm::memory_set::etext">etext</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.remap_test.html" title="fn os::mm::memory_set::remap_test">remap_<wbr>test</a></dt><dd>重映射测试函数</dd><dt><a class="fn" href="fn.sbss_with_stack.html" title="fn os::mm::memory_set::sbss_with_stack">sbss_<wbr>with_<wbr>stack</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.sdata.html" title="fn os::mm::memory_set::sdata">sdata</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.srodata.html" title="fn os::mm::memory_set::srodata">srodata</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.stext.html" title="fn os::mm::memory_set::stext">stext</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt><dt><a class="fn" href="fn.strampoline.html" title="fn os::mm::memory_set::strampoline">strampoline</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt></dl></section></div></main></body></html>
