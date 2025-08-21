@@ -4,7 +4,7 @@
 //! CPU 时间片让出和系统时间获取等功能。
 
 use crate::println;
-use crate::task::{change_program_brk, exit_current_and_run_next, suspend_current_and_run_next};
+use crate::task::{exit_current_and_run_next, suspend_current_and_run_next};
 use crate::timer::get_time_ms;
 
 /// 系统调用：进程退出
@@ -117,99 +117,4 @@ pub fn sys_yield() -> isize {
 /// 返回的时间值可能会在长时间运行后溢出，调用者应该考虑处理这种情况。
 pub fn sys_get_time() -> isize {
     get_time_ms() as isize
-}
-
-/// 系统调用：调整程序断点（堆管理）
-///
-/// 实现 `sbrk(2)` 系统调用，用于动态调整当前进程的堆大小。
-/// 这是实现 `malloc`、`free` 等动态内存分配函数的基础系统调用。
-///
-/// ## Arguments
-///
-/// * `size` - 堆大小的变化量（字节）
-///   - **正数**: 扩展堆空间，增加可用内存
-///   - **负数**: 收缩堆空间，释放内存
-///   - **零**: 查询当前程序断点位置，不改变堆大小
-///
-/// ## Returns
-///
-/// - **成功**: 返回调整前的程序断点地址（旧的堆顶地址）
-/// - **失败**: 返回 -1，可能的失败原因：
-///   - 内存不足，无法分配新的物理页面
-///   - 试图收缩到堆底部以下
-///   - 地址空间操作失败
-///
-/// ## 堆管理机制
-///
-/// ```text
-/// 进程地址空间中的堆布局：
-/// ┌─────────────────┐ ← heap_bottom (fixed)
-/// │                 │
-/// │  Allocated Heap │   ← Memory usable by user
-/// │     Space       │
-/// ├─────────────────┤ ← program_brk (variable, old value)
-/// │                 │
-/// │   New Space     │   ← New space when size > 0
-/// │                 │
-/// ├─────────────────┤ ← program_brk (variable, new value)
-/// │   Unallocated   │
-/// │      Space      │
-/// └─────────────────┘
-/// ```
-///
-/// ## 实现细节
-///
-/// 1. **委托处理**: 调用 `change_program_brk()` 执行实际的堆调整
-/// 2. **页面对齐**: 底层自动处理页面边界对齐
-/// 3. **物理内存**: 自动分配/释放物理页帧
-/// 4. **地址空间**: 更新进程的虚拟地址空间映射
-///
-/// ## 错误处理
-///
-/// - 返回 -1 表示操作失败
-/// - 用户程序应该检查返回值并适当处理错误
-/// - 失败后堆状态保持不变
-///
-/// ## 使用场景
-///
-/// - **动态内存分配**: `malloc()` 的底层实现
-/// - **内存池管理**: 自定义内存分配器
-/// - **垃圾收集**: 动态调整堆大小
-/// - **性能优化**: 预分配大块内存减少系统调用次数
-///
-/// ## Examples
-///
-/// 从用户态调用：
-/// ```c
-/// // 扩展堆空间 1KB
-/// void *old_brk = sbrk(1024);
-/// if (old_brk == (void*)-1) {
-///     // 分配失败，处理错误
-///     return -1;
-/// }
-///
-/// // 查询当前堆顶
-/// void *current_brk = sbrk(0);
-///
-/// // 收缩堆空间 512 字节
-/// void *prev_brk = sbrk(-512);
-/// ```
-///
-/// ## Security Notes
-///
-/// - 系统会自动验证内存访问权限
-/// - 防止堆与栈重叠
-/// - 确保不会访问其他进程的内存
-///
-/// ## Performance Considerations
-///
-/// - 频繁的小幅调整可能导致性能问题
-/// - 建议批量分配以减少系统调用开销
-/// - 页面分配/释放涉及内核态切换，有一定开销
-pub fn sys_sbrk(size: i32) -> isize {
-    if let Some(old_brk) = change_program_brk(size) {
-        old_brk as isize
-    } else {
-        -1
-    }
 }

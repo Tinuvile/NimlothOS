@@ -7,7 +7,6 @@
 //!
 //! - **文件系统**: [`sys_write`] - 向文件描述符写入数据
 //! - **进程管理**: [`sys_exit`], [`sys_yield`], [`sys_get_time`]
-//! - **内存管理**: [`sys_sbrk`] - 调整程序断点
 //!
 //! ## 系统调用编号
 //!
@@ -16,7 +15,6 @@
 //! - `SYSCALL_EXIT` (93) - 进程退出
 //! - `SYSCALL_YIELD` (124) - 让出 CPU
 //! - `SYSCALL_GET_TIME` (169) - 获取系统时间
-//! - `SYSCALL_SBRK` (214) - 调整程序断点
 
 use fs::*;
 use process::*;
@@ -43,11 +41,6 @@ const SYSCALL_YIELD: usize = 124;
 ///
 /// 对应 Linux 系统调用 `gettimeofday(2)` 的简化版本，获取系统时间戳。
 const SYSCALL_GET_TIME: usize = 169;
-
-/// 系统调用号：调整程序断点
-///
-/// 对应 Linux 系统调用 `sbrk(2)`，用于动态调整进程的堆大小。
-const SYSCALL_SBRK: usize = 214;
 
 /// 系统调用分发器
 ///
@@ -81,7 +74,6 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
         SYSCALL_EXIT => sys_exit(args[0] as i32),
         SYSCALL_YIELD => sys_yield(),
         SYSCALL_GET_TIME => sys_get_time(),
-        SYSCALL_SBRK => sys_sbrk(args[0] as i32),
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
     }
 }

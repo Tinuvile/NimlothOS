@@ -82,7 +82,6 @@
 
 use super::{
     FrameTracker, PhysAddr, PhysPageNum, StepByOne, VPNRange, VirtAddr, VirtPageNum, frame_alloc,
-    frame_dealloc,
     page_table::{PTEFlags, PageTable, PageTableEntry},
 };
 use crate::config::{MEMORY_END, MMIO, PAGE_SIZE, TRAMPOLINE, TRAP_CONTEXT, USER_STACK_SIZE};
@@ -243,6 +242,7 @@ bitflags! {
     /// - 不能单独设置 `W` 权限（RISC-V 规范要求）
     /// - `U` 权限允许用户态访问，否则仅内核态可访问
     /// - 权限检查在每次内存访问时由硬件执行
+    #[derive(Clone, Copy)]
     pub struct MapPermission: u8 {
         /// 可读权限 (Read)
         ///
@@ -621,6 +621,73 @@ impl MapArea {
             self.map_one(page_table, vpn)
         }
         self.vpn_range = VPNRange::new(self.vpn_range.get_start(), new_end);
+    }
+
+    /// 从另一个内存区域创建新的映射区域
+    ///
+    /// 复制另一个内存映射区域的配置（地址范围、映射类型、访问权限），
+    /// 但不复制实际的物理页帧映射。新创建的区域需要重新进行页面映射。
+    ///
+    /// ## Arguments
+    ///
+    /// * `another` - 源内存映射区域的引用
+    ///
+    /// ## Returns
+    ///
+    /// 新创建的内存映射区域，具有相同的配置但空的页帧映射表
+    ///
+    /// ## 复制内容
+    ///
+    /// - **虚拟页号范围**: 完全复制源区域的地址范围
+    /// - **映射类型**: 复制映射类型（Identical 或 Framed）
+    /// - **访问权限**: 复制所有权限标志位
+    /// - **页帧映射**: 创建空的映射表，需要后续填充
+    ///
+    /// ## 设计目的
+    ///
+    /// 此函数主要用于进程 fork 操作中创建子进程的地址空间结构。
+    /// 它保持了地址空间布局的一致性，但允许独立的物理页面分配。
+    ///
+    /// ## 使用场景
+    ///
+    /// - **进程 fork**: 创建子进程地址空间的框架
+    /// - **地址空间复制**: 保持布局一致的空间复制
+    /// - **模板创建**: 基于现有配置创建新的区域模板
+    ///
+    /// ## 后续操作
+    ///
+    /// 创建后通常需要：
+    /// 1. 调用 `map()` 建立页表映射
+    /// 2. 复制源区域的数据到新的物理页面
+    /// 3. 将新区域添加到目标地址空间
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// // 复制现有区域的配置
+    /// let template_area = MapArea::new(
+    ///     VirtAddr::from(0x10000000),
+    ///     VirtAddr::from(0x10001000),
+    ///     MapType::Framed,
+    ///     MapPermission::R | MapPermission::W | MapPermission::U
+    /// );
+    ///
+    /// // 基于模板创建新区域
+    /// let new_area = MapArea::from_another(&template_area);
+    /// // new_area 具有相同的地址范围和权限，但需要重新映射
+    /// ```
+    ///
+    /// ## 内存安全
+    ///
+    /// 新创建的区域与源区域完全独立，不会共享任何物理页帧，
+    /// 确保地址空间隔离和内存安全。
+    pub fn from_another(another: &Self) -> Self {
+        Self {
+            vpn_range: VPNRange::new(another.vpn_range.get_start(), another.vpn_range.get_end()),
+            data_frames: BTreeMap::new(),
+            map_type: another.map_type,
+            map_perm: another.map_perm,
+        }
     }
 }
 
@@ -1323,6 +1390,257 @@ impl MemorySet {
     pub fn token(&self) -> usize {
         self.page_table.token()
     }
+
+    /// 移除指定起始虚拟页号的内存区域
+    ///
+    /// 查找并移除地址空间中以指定虚拟页号开始的内存映射区域。
+    /// 这是一个精确匹配操作，只有起始页号完全一致的区域才会被移除。
+    ///
+    /// ## Arguments
+    ///
+    /// * `start_vpn` - 要移除区域的起始虚拟页号
+    ///
+    /// ## 操作流程
+    ///
+    /// 1. **查找区域**: 在 `areas` 列表中查找起始页号匹配的区域
+    /// 2. **取消映射**: 调用区域的 `unmap()` 方法清理所有页表映射
+    /// 3. **移除区域**: 从 `areas` 列表中删除该区域
+    /// 4. **资源清理**: 通过 RAII 机制自动释放相关的物理页帧
+    ///
+    /// ## 资源管理
+    ///
+    /// ### 页表清理
+    /// - 移除区域内所有虚拟页面的页表项
+    /// - 确保后续访问这些地址会触发页面异常
+    ///
+    /// ### 物理内存释放
+    /// - Framed 映射：自动释放所有分配的物理页帧
+    /// - Identical 映射：仅清理页表项，不释放物理页面
+    ///
+    /// ## 使用场景
+    ///
+    /// - **内存映射文件卸载**: 取消文件映射区域
+    /// - **动态库卸载**: 移除动态加载的代码段和数据段
+    /// - **堆空间管理**: 移除不再使用的堆区域
+    /// - **进程清理**: 进程退出时清理特定内存区域
+    ///
+    /// ## 安全性
+    ///
+    /// 函数会安全处理以下情况：
+    /// - 如果未找到匹配的区域，函数静默返回，不会产生错误
+    /// - 所有相关的物理页帧会通过 `FrameTracker` 的析构函数自动释放
+    /// - 页表项的清理确保了后续访问的安全性
+    ///
+    /// ## 内存布局影响
+    ///
+    /// ```text
+    /// 移除前的地址空间:
+    /// ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+    /// │ Area A   │ │ Area B   │ │ Area C   │ │ Area D   │
+    /// │ VPN:100  │ │ VPN:200  │ │ VPN:300  │ │ VPN:400  │
+    /// └──────────┘ └──────────┘ └──────────┘ └──────────┘
+    ///
+    /// remove_area_with_start_vpn(VirtPageNum(200)) 后:
+    /// ┌──────────┐              ┌──────────┐ ┌──────────┐
+    /// │ Area A   │     Empty    │ Area C   │ │ Area D   │
+    /// │ VPN:100  │              │ VPN:300  │ │ VPN:400  │
+    /// └──────────┘              └──────────┘ └──────────┘
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// // 移除特定的内存映射区域
+    /// let heap_start = VirtPageNum(0x10000); // 堆区域起始页号
+    /// memory_set.remove_area_with_start_vpn(heap_start);
+    /// // 堆区域被移除，相关物理页帧被释放
+    ///
+    /// // 移除动态加载的库
+    /// let lib_start = VirtPageNum(0x40000000 >> 12); // 库加载地址
+    /// memory_set.remove_area_with_start_vpn(lib_start);
+    /// // 库的代码段和数据段被完全卸载
+    /// ```
+    ///
+    /// ## 注意事项
+    ///
+    /// - 函数使用精确匹配，只有起始页号完全相同的区域才会被移除
+    /// - 移除后该区域的所有虚拟地址将变为无效
+    /// - 如果有代码仍在访问被移除区域，会触发页面异常
+    /// - 建议在移除前确保没有其他代码依赖该区域
+    pub fn remove_area_with_start_vpn(&mut self, start_vpn: VirtPageNum) {
+        if let Some((idx, area)) = self
+            .areas
+            .iter_mut()
+            .enumerate()
+            .find(|(_, area)| area.vpn_range.get_start() == start_vpn)
+        {
+            area.unmap(&mut self.page_table);
+            self.areas.remove(idx);
+        }
+    }
+
+    /// 从现有用户地址空间创建完全独立的副本
+    ///
+    /// 深度复制一个已存在的用户地址空间，创建具有相同内存布局和数据内容
+    /// 的全新地址空间。这是 fork 系统调用的核心实现，确保父子进程拥有
+    /// 独立但内容相同的地址空间。
+    ///
+    /// ## Arguments
+    ///
+    /// * `user_space` - 源用户地址空间的引用
+    ///
+    /// ## Returns
+    ///
+    /// 新创建的地址空间，包含与源空间相同的内存布局和数据
+    ///
+    /// ## 复制过程
+    ///
+    /// ### 1. 基础结构复制
+    /// ```text
+    /// 源地址空间                    目标地址空间
+    /// ┌──────────┐                ┌──────────┐
+    /// │PageTable │ ──────────────►│New Table │
+    /// ├──────────┤                ├──────────┤
+    /// │ Area A   │ ──────────────►│ Area A'  │
+    /// ├──────────┤                ├──────────┤
+    /// │ Area B   │ ──────────────►│ Area B'  │
+    /// ├──────────┤                ├──────────┤
+    /// │   ...    │ ──────────────►│   ...    │
+    /// └──────────┘                └──────────┘
+    /// ```
+    ///
+    /// ### 2. 数据复制流程
+    /// 1. **创建空地址空间**: 初始化新的页表和区域列表
+    /// 2. **映射 Trampoline**: 共享系统调用跳板页面
+    /// 3. **复制区域结构**: 为每个源区域创建对应的新区域
+    /// 4. **建立页面映射**: 为新区域分配独立的物理页帧
+    /// 5. **逐页复制数据**: 将源物理页面的内容复制到新页面
+    ///
+    /// ## 内存隔离保证
+    ///
+    /// ### 物理页面独立性
+    /// - **独立分配**: 每个页面都分配新的物理页帧
+    /// - **数据复制**: 逐字节复制源页面内容到新页面
+    /// - **完全隔离**: 修改新地址空间不会影响源地址空间
+    ///
+    /// ### 虚拟地址一致性
+    /// - **布局保持**: 虚拟地址布局与源空间完全一致
+    /// - **权限复制**: 保持每个区域的原始访问权限
+    /// - **映射类型**: 保持原始的映射类型（通常为 Framed）
+    ///
+    /// ## 共享资源
+    ///
+    /// 只有 **Trampoline** 页面在父子进程间共享：
+    /// - 系统调用跳板代码（只读+可执行）
+    /// - 不包含进程私有数据
+    /// - 安全的共享资源
+    ///
+    /// ## 性能特征
+    ///
+    /// - **时间复杂度**: O(n × p)，其中 n 是区域数量，p 是总页面数
+    /// - **空间复杂度**: O(p)，需要分配与源空间相同数量的物理页面
+    /// - **内存开销**: 完整复制所有用户数据，内存使用翻倍
+    ///
+    /// ## 使用场景
+    ///
+    /// ### 主要用途
+    /// - **进程 Fork**: 创建子进程的独立地址空间
+    /// - **检查点恢复**: 保存进程状态快照
+    /// - **调试和分析**: 创建进程副本用于分析
+    ///
+    /// ### 典型调用序列
+    /// ```rust
+    /// // 在 fork 系统调用中
+    /// let parent_space = current_task.memory_set;
+    /// let child_space = MemorySet::from_existed_user(&parent_space);
+    ///
+    /// // 创建子进程任务控制块
+    /// let child_task = TaskControlBlock::new_with_space(child_space);
+    /// ```
+    ///
+    /// ## 安全性考虑
+    ///
+    /// ### 内存安全
+    /// - **独立生命周期**: 子地址空间的销毁不影响父进程
+    /// - **访问隔离**: 父子进程无法直接访问对方的物理页面
+    /// - **权限继承**: 子进程继承父进程的内存访问权限
+    ///
+    /// ### 数据一致性
+    /// - **原子复制**: 复制过程中源数据保持不变
+    /// - **完整复制**: 所有用户空间数据都被精确复制
+    /// - **状态一致**: 复制时刻的内存状态被完整保留
+    ///
+    /// ## 错误处理
+    ///
+    /// 函数可能在以下情况下 panic：
+    /// - 物理页帧分配失败（内存不足）
+    /// - 页表映射操作失败
+    /// - 源地址空间结构损坏
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// // fork 系统调用的核心实现
+    /// fn sys_fork() -> isize {
+    ///     let current_task = current_task().unwrap();
+    ///     
+    ///     // 复制父进程的地址空间
+    ///     let parent_space = &current_task.inner_exclusive_access().memory_set;
+    ///     let child_space = MemorySet::from_existed_user(parent_space);
+    ///     
+    ///     // 创建子进程...
+    ///     let child_task = TaskControlBlock::new_with_space(child_space);
+    ///     
+    ///     child_task.getpid() as isize
+    /// }
+    /// ```
+    ///
+    /// ## 内存布局示例
+    ///
+    /// ```text
+    /// Fork 前 - 父进程:
+    /// ┌──────────────────────────────────────────────────────────┐
+    /// │                    Parent Process                        │
+    /// │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────────────┐  │
+    /// │  │.text   │  │.data   │  │ Stack  │  │      Heap      │  │
+    /// │  │ PPN:A  │  │ PPN:B  │  │ PPN:C  │  │ PPN:D,E,F,...  │  │
+    /// │  └────────┘  └────────┘  └────────┘  └────────────────┘  │
+    /// └──────────────────────────────────────────────────────────┘
+    ///
+    /// Fork 后 - 父进程和子进程:
+    /// ┌──────────────────────────────────────────────────────────┐
+    /// │                    Parent Process                        │
+    /// │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────────────┐  │
+    /// │  │.text   │  │.data   │  │ Stack  │  │      Heap      │  │
+    /// │  │ PPN:A  │  │ PPN:B  │  │ PPN:C  │  │ PPN:D,E,F,...  │  │
+    /// │  └────────┘  └────────┘  └────────┘  └────────────────┘  │
+    /// └──────────────────────────────────────────────────────────┘
+    ///
+    /// ┌──────────────────────────────────────────────────────────┐
+    /// │                    Child Process                         │
+    /// │  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────────────┐  │
+    /// │  │.text   │  │.data   │  │ Stack  │  │      Heap      │  │
+    /// │  │ PPN:A' │  │ PPN:B' │  │ PPN:C' │  │ PPN:D',E',F'.. │  │
+    /// │  └────────┘  └────────┘  └────────┘  └────────────────┘  │
+    /// └──────────────────────────────────────────────────────────┘
+    /// (相同的虚拟地址，不同的物理页面，相同的数据内容)
+    /// ```
+    pub fn from_existed_user(user_space: &Self) -> Self {
+        let mut memory_set = Self::new_bare();
+        memory_set.map_trampoline();
+        for area in user_space.areas.iter() {
+            let new_area = MapArea::from_another(area);
+            memory_set.push(new_area, None);
+            for vpn in area.vpn_range {
+                let src_ppn = user_space.translate(vpn).unwrap().ppn();
+                let dst_ppn = memory_set.translate(vpn).unwrap().ppn();
+                dst_ppn
+                    .get_bytes_array()
+                    .copy_from_slice(src_ppn.get_bytes_array());
+            }
+        }
+        memory_set
+    }
 }
 
 /// 重映射测试函数
@@ -1374,7 +1692,7 @@ impl MemorySet {
 /// remap_test(); // 如果通过，打印 "remap_test passed!"
 /// ```
 pub fn remap_test() {
-    let mut kernel_space = KERNEL_SPACE.exclusive_access();
+    let kernel_space = KERNEL_SPACE.exclusive_access();
     let mid_text: VirtAddr = ((stext as usize + etext as usize) / 2).into();
     let mid_rodata: VirtAddr = ((srodata as usize + erodata as usize) / 2).into();
     let mid_data: VirtAddr = ((sdata as usize + edata as usize) / 2).into();

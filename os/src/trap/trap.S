@@ -6,8 +6,8 @@
     ld x\n, \n*8(sp)
 .endm
     .section .text.trampoline
-    .globl __alltraps
-    .globl __restore
+    .global __alltraps
+    .global __restore
     .align 2
 
 __alltraps:
