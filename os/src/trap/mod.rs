@@ -7,7 +7,8 @@
 //!
 //! - **系统调用** (`UserEnvCall`): 用户程序请求内核服务
 //! - **时钟中断** (`SupervisorTimer`): 实现抢占式多任务调度
-//! - **页面异常** (`StoreFault`, `StorePageFault`): 内存访问违规
+//! - **数据访问异常** (`StoreFault`, `StorePageFault`, `LoadFault`, `LoadPageFault`): 数据内存访问违规
+//! - **指令访问异常** (`InstructionFault`, `InstructionPageFault`): 指令内存访问违规
 //! - **非法指令** (`IllegalInstruction`): 执行无效指令
 //!
 //! ## 执行流程
@@ -144,7 +145,7 @@ fn set_user_trap_entry() {
 /// - `-> !`: 函数永不返回，因为会触发 panic
 #[unsafe(no_mangle)]
 pub fn trap_from_kernel() -> ! {
-    panic!("a trap from kernel!");
+    panic!("a trap {:?} from kernel!", scause::read().cause());
 }
 
 /// 陷阱处理主函数
@@ -159,10 +160,19 @@ pub fn trap_from_kernel() -> ! {
 /// 3. **分发处理**: 根据陷阱类型调用相应的处理逻辑
 /// 4. **返回用户态**: 调用 `trap_return()` 恢复用户执行
 ///
+/// ## 系统调用处理细节
+///
+/// 系统调用处理中有特殊的上下文管理：
+/// - 首次获取陷阱上下文以读取系统调用参数
+/// - 更新 `sepc` 寄存器指向下一条指令 (`pc += 4`)
+/// - 调用系统调用处理函数，此时可能发生任务切换
+/// - 再次获取陷阱上下文以写入返回值（因为任务切换后上下文可能变化）
+///
 /// ## 支持的陷阱类型
 ///
 /// - **系统调用** (`UserEnvCall`): 处理用户程序的系统调用请求
-/// - **内存异常** (`StoreFault`, `StorePageFault`, `LoadFault`, `LoadPageFault`): 处理内存访问违规
+/// - **数据访问异常** (`StoreFault`, `StorePageFault`, `LoadFault`, `LoadPageFault`): 处理数据内存访问违规
+/// - **指令访问异常** (`InstructionFault`, `InstructionPageFault`): 处理指令内存访问违规
 /// - **非法指令** (`IllegalInstruction`): 处理无效指令执行
 /// - **时钟中断** (`SupervisorTimer`): 处理抢占式调度
 ///
@@ -178,41 +188,42 @@ pub fn trap_from_kernel() -> ! {
 #[unsafe(no_mangle)]
 pub fn trap_handler() -> ! {
     set_kernel_trap_entry();
-    let cx = current_trap_cx();
     let scause = scause::read();
     let stval = stval::read();
     match scause.cause() {
         Trap::Exception(Exception::UserEnvCall) => {
-            // 系统调用处理
-            cx.sepc += 4; // 跳过 ecall 指令
-            cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
+            let mut cx = current_trap_cx();
+            cx.sepc += 4;
+            let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]);
+            cx = current_trap_cx();
+            cx.x[10] = result as usize;
         }
         Trap::Exception(Exception::StoreFault)
         | Trap::Exception(Exception::StorePageFault)
         | Trap::Exception(Exception::LoadFault)
-        | Trap::Exception(Exception::LoadPageFault) => {
-            // 存储异常：非法内存访问
+        | Trap::Exception(Exception::LoadPageFault)
+        | Trap::Exception(Exception::InstructionFault)
+        | Trap::Exception(Exception::InstructionPageFault) => {
             println!(
-                "[kernel] PageFault in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.",
-                stval, cx.sepc
+                "[kernel] {:?} in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.",
+                scause.cause(),
+                stval,
+                current_trap_cx().sepc
             );
-            exit_current_and_run_next();
+            exit_current_and_run_next(-2);
         }
         Trap::Exception(Exception::IllegalInstruction) => {
-            // 非法指令异常：执行了无效的指令
             println!(
                 "[kernel] IllegalInstruction in application, bad instruction = {:#x}, kernel killed it.",
-                cx.sepc
+                current_trap_cx().sepc
             );
-            exit_current_and_run_next();
+            exit_current_and_run_next(-3);
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
-            // 时钟中断：实现抢占式调度
             set_next_trigger();
             suspend_current_and_run_next();
         }
         _ => {
-            // 未处理的陷阱类型
             panic!(
                 "Unsupported trap {:?}, stval = {:#x}!",
                 scause.cause(),

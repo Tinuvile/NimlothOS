@@ -5,22 +5,38 @@
 //!
 //! ## 支持的系统调用
 //!
-//! - **文件系统**: [`sys_write`] - 向文件描述符写入数据
-//! - **进程管理**: [`sys_exit`], [`sys_yield`], [`sys_get_time`]
+//! - **文件系统**:
+//!   - [`sys_read`]  - 从文件描述符读取数据
+//!   - [`sys_write`] - 向文件描述符写入数据
+//! - **进程管理**:
+//!   - [`sys_exit`]     - 进程退出
+//!   - [`sys_yield`]    - 让出 CPU
+//!   - [`sys_get_time`] - 获取系统时间
+//!   - [`sys_getpid`]   - 获取当前进程 PID
+//!   - [`sys_fork`]     - 创建子进程（复制地址空间）
+//!   - [`sys_exec`]     - 替换为新程序镜像
+//!   - [`sys_waitpid`]  - 等待子进程结束并获取退出码
 //!
 //! ## 系统调用编号
 //!
 //! 遵循 Linux 系统调用编号约定：
-//! - `SYSCALL_WRITE` (64) - 写操作
-//! - `SYSCALL_EXIT` (93) - 进程退出
-//! - `SYSCALL_YIELD` (124) - 让出 CPU
-//! - `SYSCALL_GET_TIME` (169) - 获取系统时间
+//! - `SYSCALL_READ` (63)       - 读操作
+//! - `SYSCALL_WRITE` (64)      - 写操作
+//! - `SYSCALL_EXIT` (93)       - 进程退出
+//! - `SYSCALL_YIELD` (124)     - 让出 CPU
+//! - `SYSCALL_GET_TIME` (169)  - 获取系统时间
+//! - `SYSCALL_GETPID` (172)    - 获取进程 PID
+//! - `SYSCALL_FORK` (220)      - 创建子进程
+//! - `SYSCALL_EXEC` (221)      - 执行新程序
+//! - `SYSCALL_WAITPID` (260)   - 等待子进程
 
 use fs::*;
 use process::*;
 
 mod fs;
 mod process;
+
+const SYSCALL_READ: usize = 63;
 
 /// 系统调用号：写操作
 ///
@@ -41,6 +57,14 @@ const SYSCALL_YIELD: usize = 124;
 ///
 /// 对应 Linux 系统调用 `gettimeofday(2)` 的简化版本，获取系统时间戳。
 const SYSCALL_GET_TIME: usize = 169;
+
+const SYSCALL_GETPID: usize = 172;
+
+const SYSCALL_FORK: usize = 220;
+
+const SYSCALL_EXEC: usize = 221;
+
+const SYSCALL_WAITPID: usize = 260;
 
 /// 系统调用分发器
 ///
@@ -70,10 +94,15 @@ const SYSCALL_GET_TIME: usize = 169;
 /// - `a0` 寄存器存放返回值
 pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
     match syscall_id {
+        SYSCALL_READ => sys_read(args[0], args[1] as *const u8, args[2]),
         SYSCALL_WRITE => sys_write(args[0], args[1] as *const u8, args[2]),
         SYSCALL_EXIT => sys_exit(args[0] as i32),
         SYSCALL_YIELD => sys_yield(),
         SYSCALL_GET_TIME => sys_get_time(),
+        SYSCALL_GETPID => sys_getpid(),
+        SYSCALL_FORK => sys_fork(),
+        SYSCALL_EXEC => sys_exec(args[0] as *const u8),
+        SYSCALL_WAITPID => sys_waitpid(args[0] as isize, args[1] as *mut i32),
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
     }
 }

@@ -223,6 +223,41 @@ impl PhysAddr {
     pub fn aligned(&self) -> bool {
         self.page_offset() == 0
     }
+
+    /// 获取指定类型的可变引用
+    ///
+    /// 将物理地址直接转换为类型 `T` 的可变引用，用于访问该地址处
+    /// 存放的内存对象。该方法属于低级原语，绕过了借用检查并依赖
+    /// 调用者保证内存安全。
+    ///
+    /// ## Type Parameters
+    ///
+    /// * `T` - 目标数据类型，必须与地址处的数据布局兼容
+    ///
+    /// ## Returns
+    ///
+    /// 指向类型 `T` 的可变引用，生命周期为 `'static`，表示该引用
+    /// 在类型系统看来可长期存在（实际由调用者保证其有效期）。
+    ///
+    /// ## Safety
+    ///
+    /// 此方法内部使用 `unsafe` 执行裸指针到引用的转换，调用者必须确保：
+    /// - 该物理地址可被安全地当作 `*mut T` 访问
+    /// - 目标内存已经按 `T` 的布局正确初始化
+    /// - 满足 `T` 的对齐要求，否则行为未定义
+    /// - 在引用存活期间无数据竞争（不存在其他可变或不可变别名）
+    /// - 地址指向的内存在引用存活期间保持有效
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// let pa = PhysAddr(0x8020_1000);
+    /// let value: &mut u64 = pa.get_mut::<u64>();
+    /// *value = 0xdead_beef_dead_beefu64;
+    /// ```
+    pub fn get_mut<T>(&self) -> &'static mut T {
+        unsafe { (self.0 as *mut T).as_mut().unwrap() }
+    }
 }
 
 impl VirtAddr {

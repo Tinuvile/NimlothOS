@@ -6,7 +6,7 @@
 //!
 //! - **多任务支持**: 基于时间片轮转的抢占式多任务调度
 //! - **内存管理**: SV39 三级页表，支持虚拟内存和地址空间隔离
-//! - **系统调用**: 支持 write、exit、yield、get_time、sbrk 等系统调用
+//! - **系统调用**: 支持 read、write、exit、yield、get_time、getpid、fork、exec、waitpid 等系统调用
 //! - **陷阱处理**: 完整的异常、中断和系统调用处理机制
 //! - **应用加载**: 支持从内核镜像中加载多个用户应用程序
 //!
@@ -42,6 +42,7 @@
 #![no_std]
 #![no_main]
 #![feature(alloc_error_handler)]
+#![doc(test(no_crate_inject))]
 
 #[macro_use]
 mod config;
@@ -72,7 +73,7 @@ global_asm!(include_str!("link_app.S"));
 /// 内核主入口函数
 ///
 /// 这是 Rust 代码的主要入口点，负责初始化整个操作系统内核。
-/// 该函数永不返回，最终会转移控制权给第一个用户任务。
+/// 该函数永不返回，最终进入调度循环持续运行用户任务。
 ///
 /// ## 初始化流程
 ///
@@ -80,10 +81,12 @@ global_asm!(include_str!("link_app.S"));
 /// 2. [`log::init`] - 初始化日志系统
 /// 3. [`mm::init`] - 初始化内存管理系统
 /// 4. [`mm::remap_test`] - 测试内存重映射功能
-/// 5. [`trap::init`] - 初始化陷阱处理系统
-/// 6. [`trap::enable_timer_interrupt`] - 启用时钟中断
-/// 7. [`timer::set_next_trigger`] - 设置第一次时钟中断
-/// 8. [`task::run_first_task`] - 开始执行第一个任务
+/// 5. [`task::add_initproc`] - 注册初始用户进程
+/// 6. [`trap::init`] - 初始化陷阱处理系统
+/// 7. [`trap::enable_timer_interrupt`] - 启用时钟中断
+/// 8. [`timer::set_next_trigger`] - 设置第一次时钟中断
+/// 9. [`loader::list_apps`] - 列出可用的用户应用
+/// 10. [`task::run_tasks`] - 进入主调度循环
 ///
 /// ## Panics
 ///
@@ -94,12 +97,13 @@ pub fn rust_main() -> ! {
     log::init();
     info!("[kernel] Hello, world!");
     mm::init();
-    info!("[kernel] back to world!");
     mm::remap_test();
+    task::add_initproc();
     trap::init();
     trap::enable_timer_interrupt();
     timer::set_next_trigger();
-    task::run_first_task();
+    loader::list_apps();
+    task::run_tasks();
 
     panic!("Unreachable in rust_main!");
 }

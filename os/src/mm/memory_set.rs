@@ -1216,134 +1216,6 @@ impl MemorySet {
         self.page_table.translate(vpn)
     }
 
-    /// 缩小地址空间中的内存区域
-    ///
-    /// 查找以指定地址开始的内存区域，并将其缩小到新的结束地址。
-    /// 主要用于动态内存管理和堆空间回收。
-    ///
-    /// ## Arguments
-    ///
-    /// * `start` - 目标区域的起始虚拟地址
-    /// * `new_end` - 新的结束虚拟地址（不包含）
-    ///
-    /// ## Returns
-    ///
-    /// - `true` - 成功找到并缩小了目标区域
-    /// - `false` - 未找到以指定地址开始的区域
-    ///
-    /// ## 操作过程
-    ///
-    /// 1. **查找区域**: 遍历 `areas` 列表找到起始地址匹配的区域
-    /// 2. **缩小区域**: 调用区域的 `shrink_to()` 方法
-    /// 3. **清理资源**: 被移除的页面自动释放对应的物理页帧
-    ///
-    /// ## 地址对齐
-    ///
-    /// - `start` 会向下对齐到页边界进行区域匹配
-    /// - `new_end` 会向上对齐到页边界确定新边界
-    ///
-    /// ## 使用场景
-    ///
-    /// - 堆空间收缩（`sbrk` 系统调用）
-    /// - 内存回收和优化
-    /// - 动态库卸载
-    ///
-    /// ## Examples
-    ///
-    /// ```rust
-    /// // 缩小堆空间
-    /// let heap_start = VirtAddr::from(0x10000000);
-    /// let new_heap_end = VirtAddr::from(0x10008000); // 从 64KB 缩小到 32KB
-    ///
-    /// if memory_set.shrink_to(heap_start, new_heap_end) {
-    ///     println!("Heap shrunk successfully");
-    /// } else {
-    ///     println!("Heap region not found");
-    /// }
-    /// ```
-    #[allow(unused)]
-    pub fn shrink_to(&mut self, start: VirtAddr, new_end: VirtAddr) -> bool {
-        if let Some(area) = self
-            .areas
-            .iter_mut()
-            .find(|area| area.vpn_range.get_start() == start.floor())
-        {
-            area.shrink_to(&mut self.page_table, new_end.ceil());
-            true
-        } else {
-            false
-        }
-    }
-
-    /// 扩展地址空间中的内存区域
-    ///
-    /// 查找以指定地址开始的内存区域，并将其扩展到新的结束地址。
-    /// 主要用于动态内存分配和堆空间扩展。
-    ///
-    /// ## Arguments
-    ///
-    /// * `start` - 目标区域的起始虚拟地址
-    /// * `new_end` - 新的结束虚拟地址（不包含）
-    ///
-    /// ## Returns
-    ///
-    /// - `true` - 成功找到并扩展了目标区域
-    /// - `false` - 未找到以指定地址开始的区域
-    ///
-    /// ## 操作过程
-    ///
-    /// 1. **查找区域**: 遍历 `areas` 列表找到起始地址匹配的区域
-    /// 2. **扩展区域**: 调用区域的 `append_to()` 方法
-    /// 3. **分配资源**: 为新增的页面分配物理页帧
-    ///
-    /// ## 地址对齐
-    ///
-    /// - `start` 会向下对齐到页边界进行区域匹配
-    /// - `new_end` 会向上对齐到页边界确定新边界
-    ///
-    /// ## 内存分配
-    ///
-    /// 对于 Framed 映射的区域，每个新增的页面都会分配一个独立的
-    /// 物理页帧，实现完整的地址空间隔离。
-    ///
-    /// ## 使用场景
-    ///
-    /// - 堆空间扩展（`sbrk` 系统调用）
-    /// - 动态库加载
-    /// - 用户栈扩展
-    /// - 内存映射文件扩展
-    ///
-    /// ## Panics
-    ///
-    /// 如果物理页帧分配失败（内存不足）
-    ///
-    /// ## Examples
-    ///
-    /// ```rust
-    /// // 扩展堆空间
-    /// let heap_start = VirtAddr::from(0x10000000);
-    /// let new_heap_end = VirtAddr::from(0x10010000); // 从 32KB 扩展到 64KB
-    ///
-    /// if memory_set.append_to(heap_start, new_heap_end) {
-    ///     println!("Heap expanded successfully");
-    /// } else {
-    ///     println!("Heap region not found");
-    /// }
-    /// ```
-    #[allow(unused)]
-    pub fn append_to(&mut self, start: VirtAddr, new_end: VirtAddr) -> bool {
-        if let Some(area) = self
-            .areas
-            .iter_mut()
-            .find(|area| area.vpn_range.get_start() == start.floor())
-        {
-            area.append_to(&mut self.page_table, new_end.ceil());
-            true
-        } else {
-            false
-        }
-    }
-
     /// 获取地址空间的页表标识符
     ///
     /// 返回当前地址空间的页表标识符（`satp` 寄存器值），用于地址空间切换
@@ -1640,6 +1512,33 @@ impl MemorySet {
             }
         }
         memory_set
+    }
+
+    /// 回收数据页（仅清空区域元数据）
+    ///
+    /// 清空 `areas` 列表中记录的内存映射区域元数据。该操作不会修改页表、不会取消映射、
+    /// 也不会主动释放任何物理页帧，仅用于丢弃地址空间的"区域描述信息"。
+    ///
+    /// ## 适用场景
+    ///
+    /// - 进程退出路径：`MemorySet` 即将被销毁，相关页帧由 RAII 自动释放
+    /// - 需要快速丢弃区域管理信息，防止后续逻辑再遍历/操作这些区域
+    ///
+    /// ## 注意事项
+    ///
+    /// - 不会调用 `unmap()`：页表映射仍然存在
+    /// - 不会释放物理页帧：仅清空区域列表
+    /// - 仅在后续不再使用该地址空间或即将销毁时调用
+    /// - 若仍需继续使用地址空间，请改用 `remove_area_with_start_vpn()`/`unmap()` 等精确接口
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// // 在进程回收路径中：丢弃区域元数据
+    /// memory_set.recycle_data_pages();
+    /// ```
+    pub fn recycle_data_pages(&mut self) {
+        self.areas.clear();
     }
 }
 

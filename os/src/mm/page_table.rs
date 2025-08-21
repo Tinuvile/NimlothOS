@@ -77,10 +77,11 @@
 //! - 提供高效的地址转换功能
 
 use crate::mm::{
-    PhysPageNum, VirtAddr, VirtPageNum,
+    PhysAddr, PhysPageNum, VirtAddr, VirtPageNum,
     address::StepByOne,
     frame_allocator::{FrameTracker, frame_alloc},
 };
+use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
@@ -764,6 +765,44 @@ impl PageTable {
     pub fn token(&self) -> usize {
         8usize << 60 | self.root_ppn.0 // TODO：ASID暂时没有加，进程的时候再加
     }
+
+    /// 执行虚拟地址到物理地址的转换（带页内偏移）
+    ///
+    /// 在当前页表下，将给定的虚拟地址转换为对应的物理地址。
+    /// 与 [`translate`] 返回页表项不同，本函数会将页内偏移合并到
+    /// 最终的物理地址中，返回可直接用于内存访问的物理地址。
+    ///
+    /// ## Arguments
+    ///
+    /// * `va` - 需要转换的虚拟地址（包含页内偏移）
+    ///
+    /// ## Returns
+    ///
+    /// - `Some(PhysAddr)` - 转换成功，返回完整物理地址
+    /// - `None` - 虚拟地址未映射或中间页表无效
+    ///
+    /// ## 转换过程
+    ///
+    /// 1. 取出虚拟地址的页内偏移 `offset`
+    /// 2. 通过 `translate()` 查找页表项获取对齐的物理页起始地址
+    /// 3. 将页内偏移加到对齐地址上形成最终物理地址
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// let va = VirtAddr::from(0x1000_0123);
+    /// if let Some(pa) = page_table.translate_va(va) {
+    ///     // pa = 对齐物理页起始地址 + 0x123
+    /// }
+    /// ```
+    pub fn translate_va(&self, va: VirtAddr) -> Option<PhysAddr> {
+        self.find_pte(va.clone().floor()).map(|pte| {
+            let aligned_pa: PhysAddr = pte.ppn().into();
+            let offset = va.page_offset();
+            let aligned_pa_usize: usize = aligned_pa.into();
+            (aligned_pa_usize + offset).into()
+        })
+    }
 }
 
 /// 转换跨页面字节缓冲区
@@ -849,4 +888,96 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
         start = end_va.into();
     }
     v
+}
+
+/// 转换以 0 结尾的用户字符串为内核字符串
+///
+/// 在给定页表令牌（satp 值）下，从用户虚拟地址空间读取
+/// 以 `\0` 结尾的字节序列，并构造一个内核态的 [`String`] 返回。
+/// 该函数会按字节跨页面地读取，直到遇到终止符 `\0` 为止。
+///
+/// ## Arguments
+///
+/// * `token` - 页表令牌（satp 寄存器值），指定用户地址空间
+/// * `ptr` - 用户空间的 C 风格字符串起始指针
+///
+/// ## Returns
+///
+/// - 返回对应内容的内核态 [`String`]
+///
+/// ## 行为特征
+///
+/// - 支持跨页面读取
+/// - 逐字节读取直到遇到 `\0`
+/// - 如果中途地址未映射将触发 `unwrap()` panic（未来可改为错误返回）
+///
+/// ## Safety
+///
+/// - 假设 `ptr` 指向的是有效的、可读的用户地址
+/// - 调用者需确保字符串以 `\0` 终止，否则会一直向后读取直到出错
+///
+/// ## Examples
+///
+/// ```rust
+/// // 在系统调用中，将用户提供的路径参数转换为内核字符串
+/// let path = translated_str(current_user_token(), user_ptr);
+/// println!("open path: {}", path);
+/// ```
+pub fn translated_str(token: usize, ptr: *const u8) -> String {
+    let page_table = PageTable::from_token(token);
+    let mut string = String::new();
+    let mut va = ptr as usize;
+    loop {
+        let ch: u8 = *(page_table
+            .translate_va(VirtAddr::from(va))
+            .unwrap()
+            .get_mut());
+        if ch == 0 {
+            break;
+        } else {
+            string.push(ch as char);
+            va += 1;
+        }
+    }
+    string
+}
+
+/// 将用户虚拟地址转换为内核可写引用
+///
+/// 在给定的页表令牌（satp 值）下，将用户空间的指针转换为
+/// 内核态可写引用，便于在系统调用中直接修改用户缓冲区数据。
+///
+/// ## Type Parameters
+///
+/// * `T` - 目标引用的数据类型
+///
+/// ## Arguments
+///
+/// * `token` - 页表令牌（satp 寄存器值）
+/// * `ptr` - 用户空间指针
+///
+/// ## Returns
+///
+/// - `'static mut T` - 指向用户内存的可写引用（生命周期由调用者语义保证）
+///
+/// ## Safety
+///
+/// - 假设 `ptr` 指向有效且可写的用户内存
+/// - 调用者需确保不存在别名冲突与数据竞争
+/// - 如果地址未映射将触发 `unwrap()` panic（未来可改为错误返回）
+///
+/// ## Examples
+///
+/// ```rust
+/// // 将系统调用的返回值写回到用户缓冲区
+/// let buf: &mut u8 = translated_refmut(user_token, user_ptr);
+/// *buf = value as u8;
+/// ```
+pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
+    let page_table = PageTable::from_token(token);
+    let va = ptr as usize;
+    page_table
+        .translate_va(VirtAddr::from(va))
+        .unwrap()
+        .get_mut()
 }
