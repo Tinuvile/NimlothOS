@@ -880,7 +880,7 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
         vpn.step();
         let mut end_va: VirtAddr = vpn.into();
         end_va = end_va.min(VirtAddr::from(end));
-        if start_va.page_offset() == 0 {
+        if end_va.page_offset() == 0 {
             v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..]);
         } else {
             v.push(&mut ppn.get_bytes_array()[start_va.page_offset()..end_va.page_offset()]);
