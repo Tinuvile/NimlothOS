@@ -1,0 +1,49 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="根据应用程序名称获取二进制数据"><title>get_app_data_by_name in os::loader - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">get_<wbr>app_<wbr>data_<wbr>by_<wbr>name</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#实现细节" title="实现细节">实现细节</a></li><li><a href="#性能考虑" title="性能考虑">性能考虑</a></li><li><a href="#examples" title="Examples">Examples</a></li><li><a href="#使用场景" title="使用场景">使用场景</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>loader</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">os</a>::<wbr><a href="index.html">loader</a></div><h1>Function <span class="fn">get_app_data_by_name</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/os/loader.rs.html#288-293">Source</a> </span></div><pre class="rust item-decl"><code>pub fn get_app_data_by_name(name: &amp;str) -&gt; Option&lt;&amp;'static [u8]&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>根据应用程序名称获取二进制数据</p>
+<p>通过应用程序名称查找并返回对应的二进制数据。此函数提供了比基于 ID 的
+<code>get_app_data()</code> 更友好的访问方式，支持通过字符串名称直接定位应用程序。</p>
+<h3 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h3>
+<ul>
+<li><code>name</code> - 要查找的应用程序名称，必须与构建时嵌入的名称完全匹配（区分大小写）</li>
+</ul>
+<h3 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h3>
+<ul>
+<li><code>Some(&amp;'static [u8])</code> - 如果找到匹配的应用程序，返回指向其二进制数据的切片</li>
+<li><code>None</code> - 如果没有找到匹配名称的应用程序</li>
+</ul>
+<h3 id="实现细节"><a class="doc-anchor" href="#实现细节">§</a>实现细节</h3>
+<ol>
+<li><strong>名称查找</strong>: 在 <code>APP_NAMES</code> 向量中线性搜索匹配的名称</li>
+<li><strong>ID 映射</strong>: 将找到的名称索引作为应用程序 ID</li>
+<li><strong>数据获取</strong>: 调用 <code>get_app_data()</code> 获取对应的二进制数据</li>
+</ol>
+<h3 id="性能考虑"><a class="doc-anchor" href="#性能考虑">§</a>性能考虑</h3>
+<ul>
+<li><strong>时间复杂度</strong>: O(n)，其中 n 是应用程序数量</li>
+<li><strong>空间复杂度</strong>: O(1)，不额外分配内存</li>
+<li><strong>首次访问</strong>: 触发 <code>APP_NAMES</code> 的延迟初始化</li>
+</ul>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 查找特定应用程序
+</span><span class="kw">if let </span><span class="prelude-val">Some</span>(app_data) = get_app_data_by_name(<span class="string">"hello_world"</span>) {
+    <span class="macro">println!</span>(<span class="string">"Found hello_world: {} bytes"</span>, app_data.len());
+    <span class="comment">// 加载并执行应用程序...
+</span>} <span class="kw">else </span>{
+    <span class="macro">println!</span>(<span class="string">"Application 'hello_world' not found"</span>);
+}
+
+<span class="comment">// 批量查找多个应用程序
+</span><span class="kw">let </span>apps_to_load = [<span class="string">"init"</span>, <span class="string">"shell"</span>, <span class="string">"user_program"</span>];
+<span class="kw">for </span>app_name <span class="kw">in </span>apps_to_load.iter() {
+    <span class="kw">match </span>get_app_data_by_name(app_name) {
+        <span class="prelude-val">Some</span>(data) =&gt; <span class="macro">println!</span>(<span class="string">"Loaded {}: {} bytes"</span>, app_name, data.len()),
+        <span class="prelude-val">None </span>=&gt; <span class="macro">println!</span>(<span class="string">"Warning: {} not found"</span>, app_name),
+    }
+}</code></pre></div>
+<h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3>
+<ul>
+<li><strong>配置驱动加载</strong>: 基于配置文件中的应用程序名称进行加载</li>
+<li><strong>交互式选择</strong>: 用户通过名称选择要运行的应用程序</li>
+<li><strong>依赖解析</strong>: 根据应用程序声明的依赖名称加载相关程序</li>
+<li><strong>调试辅助</strong>: 开发时通过可读名称快速定位特定应用程序</li>
+</ul>
+</div></details></section></div></main></body></html>

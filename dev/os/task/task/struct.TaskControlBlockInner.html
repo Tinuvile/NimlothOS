@@ -1,0 +1,195 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="任务控制块内部可变状态"><title>TaskControlBlockInner in os::task::task - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Task<wbr>Control<wbr>Block<wbr>Inner</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#字段说明" title="字段说明">字段说明</a><ul><li><a href="#运行时状态" title="运行时状态">运行时状态</a></li><li><a href="#内存管理" title="内存管理">内存管理</a></li><li><a href="#进程关系" title="进程关系">进程关系</a></li></ul></li><li><a href="#设计考虑" title="设计考虑">设计考虑</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.base_size" title="base_size">base_size</a></li><li><a href="#structfield.children" title="children">children</a></li><li><a href="#structfield.exit_code" title="exit_code">exit_code</a></li><li><a href="#structfield.memory_set" title="memory_set">memory_set</a></li><li><a href="#structfield.parent" title="parent">parent</a></li><li><a href="#structfield.task_cx" title="task_cx">task_cx</a></li><li><a href="#structfield.task_status" title="task_status">task_status</a></li><li><a href="#structfield.trap_cx_ppn" title="trap_cx_ppn">trap_cx_ppn</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.get_status" title="get_status">get_status</a></li><li><a href="#method.get_trap_cx" title="get_trap_cx">get_trap_cx</a></li><li><a href="#method.get_user_token" title="get_user_token">get_user_token</a></li><li><a href="#method.is_zombie" title="is_zombie">is_zombie</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-RefUnwindSafe-for-TaskControlBlockInner" title="!RefUnwindSafe">!RefUnwindSafe</a></li><li><a href="#impl-UnwindSafe-for-TaskControlBlockInner" title="!UnwindSafe">!UnwindSafe</a></li><li><a href="#impl-Freeze-for-TaskControlBlockInner" title="Freeze">Freeze</a></li><li><a href="#impl-Send-for-TaskControlBlockInner" title="Send">Send</a></li><li><a href="#impl-Sync-for-TaskControlBlockInner" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-TaskControlBlockInner" title="Unpin">Unpin</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>task::<wbr>task</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">task</a>::<wbr><a href="index.html">task</a></div><h1>Struct <span class="struct">TaskControlBlockInner</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/task/task.rs.html#263-322">Source</a> </span></div><pre class="rust item-decl"><code>pub struct TaskControlBlockInner {
+    pub task_status: <a class="enum" href="enum.TaskStatus.html" title="enum os::task::task::TaskStatus">TaskStatus</a>,
+    pub task_cx: <a class="struct" href="../context/struct.TaskContext.html" title="struct os::task::context::TaskContext">TaskContext</a>,
+    pub memory_set: <a class="struct" href="../../mm/memory_set/struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a>,
+    pub trap_cx_ppn: <a class="struct" href="../../mm/address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>,
+    pub base_size: usize,
+    pub parent: Option&lt;Weak&lt;<a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a>&gt;&gt;,
+    pub children: Vec&lt;Arc&lt;<a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a>&gt;&gt;,
+    pub exit_code: i32,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>任务控制块内部可变状态</p>
+<p>包含进程的所有可变状态信息，需要在运行时进行修改的字段都集中在此结构中。
+通过 <a href="../../sync/up/struct.UPSafeCell.html" title="struct os::sync::up::UPSafeCell"><code>UPSafeCell</code></a> 进行互斥保护，确保并发访问的安全性。</p>
+<h3 id="字段说明"><a class="doc-anchor" href="#字段说明">§</a>字段说明</h3><h4 id="运行时状态"><a class="doc-anchor" href="#运行时状态">§</a>运行时状态</h4>
+<ul>
+<li><code>task_status</code>: 进程当前状态（Ready/Running/Zombie）</li>
+<li><code>task_cx</code>: 任务上下文，保存寄存器状态用于任务切换</li>
+<li><code>exit_code</code>: 进程退出码，用于父进程获取子进程执行结果</li>
+</ul>
+<h4 id="内存管理"><a class="doc-anchor" href="#内存管理">§</a>内存管理</h4>
+<ul>
+<li><code>memory_set</code>: 进程的完整地址空间，包含所有内存映射区域</li>
+<li><code>trap_cx_ppn</code>: 陷阱上下文的物理页号，用于用户态/内核态切换</li>
+<li><code>base_size</code>: 进程初始堆栈大小，用于内存分配决策</li>
+</ul>
+<h4 id="进程关系"><a class="doc-anchor" href="#进程关系">§</a>进程关系</h4>
+<ul>
+<li><code>parent</code>: 父进程的弱引用，避免循环引用导致内存泄漏</li>
+<li><code>children</code>: 子进程列表，维护进程树结构</li>
+</ul>
+<h3 id="设计考虑"><a class="doc-anchor" href="#设计考虑">§</a>设计考虑</h3>
+<p><strong>并发安全</strong>：</p>
+<ul>
+<li>所有字段都受到外层 <a href="../../sync/up/struct.UPSafeCell.html" title="struct os::sync::up::UPSafeCell"><code>UPSafeCell</code></a> 的保护</li>
+<li>访问时需要获取独占锁，避免数据竞争</li>
+<li>锁的持有时间应当尽可能短，避免性能影响</li>
+</ul>
+<p><strong>内存管理</strong>：</p>
+<ul>
+<li><a href="../../mm/memory_set/struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet"><code>MemorySet</code></a> 自动管理进程地址空间的生命周期</li>
+<li>使用 [<code>Arc</code>] 和 [<code>Weak</code>] 管理进程间的引用关系</li>
+<li>进程退出时自动清理相关资源</li>
+</ul>
+<p><strong>状态一致性</strong>：</p>
+<ul>
+<li>任务状态与上下文信息保持同步</li>
+<li>父子关系的双向引用保持一致</li>
+<li>内存映射与陷阱上下文匹配</li>
+</ul>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.task_status" class="structfield section-header"><a href="#structfield.task_status" class="anchor field">§</a><code>task_status: <a class="enum" href="enum.TaskStatus.html" title="enum os::task::task::TaskStatus">TaskStatus</a></code></span><div class="docblock"><p>任务当前状态</p>
+<p>表示进程在操作系统中的当前状态，影响调度器的调度决策。
+状态转换遵循严格的状态机规则。</p>
+</div><span id="structfield.task_cx" class="structfield section-header"><a href="#structfield.task_cx" class="anchor field">§</a><code>task_cx: <a class="struct" href="../context/struct.TaskContext.html" title="struct os::task::context::TaskContext">TaskContext</a></code></span><div class="docblock"><p>任务上下文</p>
+<p>保存进程在任务切换时需要恢复的寄存器状态，包括：</p>
+<ul>
+<li>返回地址 (ra): 任务恢复时的执行地址</li>
+<li>栈指针 (sp): 内核栈的栈顶地址</li>
+<li>被调用者保存寄存器 (s0-s11): 函数调用约定要求保存的寄存器</li>
+</ul>
+</div><span id="structfield.memory_set" class="structfield section-header"><a href="#structfield.memory_set" class="anchor field">§</a><code>memory_set: <a class="struct" href="../../mm/memory_set/struct.MemorySet.html" title="struct os::mm::memory_set::MemorySet">MemorySet</a></code></span><div class="docblock"><p>进程地址空间</p>
+<p>管理进程的完整虚拟地址空间，包括：</p>
+<ul>
+<li>代码段、数据段、堆段、栈段的映射</li>
+<li>页表管理和地址转换</li>
+<li>内存权限控制和保护</li>
+</ul>
+</div><span id="structfield.trap_cx_ppn" class="structfield section-header"><a href="#structfield.trap_cx_ppn" class="anchor field">§</a><code>trap_cx_ppn: <a class="struct" href="../../mm/address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a></code></span><div class="docblock"><p>陷阱上下文物理页号</p>
+<p>指向保存陷阱上下文的物理页面，陷阱上下文包含：</p>
+<ul>
+<li>用户态所有寄存器的值</li>
+<li>系统调用参数和返回值</li>
+<li>异常处理相关信息</li>
+</ul>
+</div><span id="structfield.base_size" class="structfield section-header"><a href="#structfield.base_size" class="anchor field">§</a><code>base_size: usize</code></span><div class="docblock"><p>进程基础内存大小</p>
+<p>记录进程初始化时的内存使用情况，用于：</p>
+<ul>
+<li>内存分配和回收的决策参考</li>
+<li>进程资源使用统计</li>
+<li>堆空间管理的基准值</li>
+</ul>
+</div><span id="structfield.parent" class="structfield section-header"><a href="#structfield.parent" class="anchor field">§</a><code>parent: Option&lt;Weak&lt;<a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a>&gt;&gt;</code></span><div class="docblock"><p>父进程引用</p>
+<p>指向父进程的弱引用，用于维护进程树结构。使用 [<code>Weak</code>] 避免
+父子进程间的循环引用，防止内存泄漏。当父进程退出时，
+子进程会被重新指向 init 进程。</p>
+</div><span id="structfield.children" class="structfield section-header"><a href="#structfield.children" class="anchor field">§</a><code>children: Vec&lt;Arc&lt;<a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a>&gt;&gt;</code></span><div class="docblock"><p>子进程列表</p>
+<p>维护当前进程的所有子进程，用于：</p>
+<ul>
+<li>实现 wait 系统调用，等待子进程退出</li>
+<li>进程退出时处理孤儿进程，重新指向 init 进程</li>
+<li>信号传递和进程组管理</li>
+</ul>
+</div><span id="structfield.exit_code" class="structfield section-header"><a href="#structfield.exit_code" class="anchor field">§</a><code>exit_code: i32</code></span><div class="docblock"><p>进程退出码</p>
+<p>记录进程的退出状态，供父进程通过 wait 系统调用获取。
+标准约定：0 表示正常退出，非零表示异常退出。</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-TaskControlBlockInner" class="impl"><a class="src rightside" href="../../../src/os/task/task.rs.html#442-577">Source</a><a href="#impl-TaskControlBlockInner" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.get_trap_cx" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#479-481">Source</a><h4 class="code-header">pub fn <a href="#method.get_trap_cx" class="fn">get_trap_cx</a>(&amp;self) -&gt; &amp;'static mut <a class="struct" href="../../trap/context/struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h4></section></summary><div class="docblock"><p>获取陷阱上下文的可变引用</p>
+<p>通过陷阱上下文物理页号获取指向 <a href="../../trap/context/struct.TrapContext.html" title="struct os::trap::context::TrapContext"><code>TrapContext</code></a> 的可变引用。
+陷阱上下文用于在用户态和内核态之间切换时保存和恢复寄存器状态。</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>返回陷阱上下文的可变引用，具有 <code>'static</code> 生命周期</p>
+<h6 id="安全性"><a class="doc-anchor" href="#安全性">§</a>安全性</h6>
+<p>返回的可变引用安全性基于以下保证：</p>
+<ul>
+<li>陷阱上下文所在的物理页面在进程生命周期内有效</li>
+<li>物理页号由内存集合管理，保证映射关系的正确性</li>
+<li>同一时刻只有一个可变引用存在，避免别名引用</li>
+</ul>
+<h6 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h6>
+<ul>
+<li><strong>系统调用处理</strong>: 读取和修改系统调用参数</li>
+<li><strong>异常处理</strong>: 获取异常发生时的寄存器状态</li>
+<li><strong>进程初始化</strong>: 设置新进程的初始寄存器状态</li>
+<li><strong>信号处理</strong>: 修改进程的执行上下文</li>
+</ul>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<span class="kw">let </span>trap_cx = inner.get_trap_cx();
+
+<span class="comment">// 读取系统调用参数
+</span><span class="kw">let </span>syscall_id = trap_cx.x[<span class="number">17</span>];
+<span class="kw">let </span>arg0 = trap_cx.x[<span class="number">10</span>];
+
+<span class="comment">// 设置系统调用返回值
+</span>trap_cx.x[<span class="number">10</span>] = result;</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_user_token" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#523-525">Source</a><h4 class="code-header">pub fn <a href="#method.get_user_token" class="fn">get_user_token</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取用户地址空间令牌</p>
+<p>返回当前进程地址空间的页表令牌，用于地址空间切换和地址转换。
+令牌包含页表模式、ASID 和根页表物理页号信息。</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<p>返回可直接写入 <code>satp</code> 寄存器的令牌值</p>
+<h6 id="satp-寄存器格式"><a class="doc-anchor" href="#satp-寄存器格式">§</a>satp 寄存器格式</h6><div class="example-wrap"><pre class="language-text"><code>63      60 59           44 43                     0
+┌─────────┐┌────────────────┐┌────────────────────────────────────────────┐
+│  MODE   ││      ASID      ││                   PPN                      │
+│ (4bit)  ││    (16bit)     ││                 (44bit)                    │
+└─────────┘└────────────────┘└────────────────────────────────────────────┘</code></pre></div><h6 id="使用场景-1"><a class="doc-anchor" href="#使用场景-1">§</a>使用场景</h6>
+<ul>
+<li><strong>任务切换</strong>: 在任务切换时保存当前地址空间信息</li>
+<li><strong>系统调用</strong>: 为地址转换提供用户态页表信息</li>
+<li><strong>内存管理</strong>: 访问用户态内存时指定地址空间</li>
+<li><strong>调试工具</strong>: 显示进程地址空间信息</li>
+</ul>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取当前任务的地址空间令牌
+</span><span class="kw">let </span>inner = task.inner_exclusive_access();
+<span class="kw">let </span>user_token = inner.get_user_token();
+
+<span class="comment">// 使用令牌进行地址转换
+</span><span class="kw">let </span>translated_buffer = translated_byte_buffer(
+    user_token,
+    user_buffer_ptr,
+    buffer_len
+);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.get_status" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#535-537">Source</a><h4 class="code-header">fn <a href="#method.get_status" class="fn">get_status</a>(&amp;self) -&gt; <a class="enum" href="enum.TaskStatus.html" title="enum os::task::task::TaskStatus">TaskStatus</a></h4></section></summary><div class="docblock"><p>获取任务状态</p>
+<p>返回当前任务的状态，为内部使用的辅助方法。
+外部代码应该直接访问 <code>task_status</code> 字段。</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<p>返回当前的 <a href="enum.TaskStatus.html" title="enum os::task::task::TaskStatus"><code>TaskStatus</code></a></p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.is_zombie" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#574-576">Source</a><h4 class="code-header">pub fn <a href="#method.is_zombie" class="fn">is_zombie</a>(&amp;self) -&gt; bool</h4></section></summary><div class="docblock"><p>检查任务是否为僵尸状态</p>
+<p>判断当前任务是否已经退出但尚未被父进程回收。
+僵尸进程不会被调度执行，但保留 TCB 以供父进程获取退出信息。</p>
+<h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
+<ul>
+<li><code>true</code> - 任务为僵尸状态，等待父进程回收</li>
+<li><code>false</code> - 任务不是僵尸状态，可能正在运行或就绪</li>
+</ul>
+<h6 id="使用场景-2"><a class="doc-anchor" href="#使用场景-2">§</a>使用场景</h6>
+<ul>
+<li><strong>父进程管理</strong>: 父进程检查子进程是否退出</li>
+<li><strong>进程清理</strong>: 系统定期清理僵尸进程</li>
+<li><strong>wait 系统调用</strong>: 等待子进程退出的实现</li>
+<li><strong>调度器</strong>: 过滤不可调度的进程</li>
+</ul>
+<h6 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 检查子进程状态
+</span><span class="kw">let </span>parent_inner = parent_task.inner_exclusive_access();
+<span class="kw">for </span>child_task <span class="kw">in </span><span class="kw-2">&amp;</span>parent_inner.children {
+    <span class="kw">let </span>child_inner = child_task.inner_exclusive_access();
+    <span class="kw">if </span>child_inner.is_zombie() {
+        <span class="macro">println!</span>(<span class="string">"Child process {} exited with code {}"</span>,
+                 child_task.getpid(), child_inner.exit_code);
+    }
+}
+
+<span class="comment">// 调度器过滤
+</span><span class="kw">if </span>!task_inner.is_zombie() {
+    ready_queue.push(task);
+}</code></pre></div>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-TaskControlBlockInner" class="impl"><a href="#impl-Freeze-for-TaskControlBlockInner" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a></h3></section><section id="impl-RefUnwindSafe-for-TaskControlBlockInner" class="impl"><a href="#impl-RefUnwindSafe-for-TaskControlBlockInner" class="anchor">§</a><h3 class="code-header">impl !RefUnwindSafe for <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a></h3></section><section id="impl-Send-for-TaskControlBlockInner" class="impl"><a href="#impl-Send-for-TaskControlBlockInner" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a></h3></section><section id="impl-Sync-for-TaskControlBlockInner" class="impl"><a href="#impl-Sync-for-TaskControlBlockInner" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a></h3></section><section id="impl-Unpin-for-TaskControlBlockInner" class="impl"><a href="#impl-Unpin-for-TaskControlBlockInner" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a></h3></section><section id="impl-UnwindSafe-for-TaskControlBlockInner" class="impl"><a href="#impl-UnwindSafe-for-TaskControlBlockInner" class="anchor">§</a><h3 class="code-header">impl !UnwindSafe for <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["sys_exit","sys_get_time","sys_sbrk","sys_yield"]};
+window.SIDEBAR_ITEMS = {"fn":["sys_exec","sys_exit","sys_fork","sys_get_time","sys_getpid","sys_waitpid","sys_yield"]};

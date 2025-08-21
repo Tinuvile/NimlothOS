@@ -67,41 +67,43 @@
 <a href=#67 id=67 data-nosnippet>67</a><span class="kw">use </span>address::{StepByOne, VPNRange};
 <a href=#68 id=68 data-nosnippet>68</a><span class="kw">pub use </span>frame_allocator::{FrameTracker, frame_alloc, frame_dealloc};
 <a href=#69 id=69 data-nosnippet>69</a><span class="kw">pub use </span>memory_set::{KERNEL_SPACE, MapPermission, MemorySet, remap_test};
-<a href=#70 id=70 data-nosnippet>70</a><span class="kw">pub use </span>page_table::{PTEFlags, PageTable, PageTableEntry, translated_byte_buffer};
-<a href=#71 id=71 data-nosnippet>71</a>
-<a href=#72 id=72 data-nosnippet>72</a><span class="doccomment">/// 初始化内存管理系统
-<a href=#73 id=73 data-nosnippet>73</a>///
-<a href=#74 id=74 data-nosnippet>74</a>/// 按照正确的顺序初始化内存管理的各个组件，确保系统能够正常进行
-<a href=#75 id=75 data-nosnippet>75</a>/// 内存分配和虚拟地址转换。
-<a href=#76 id=76 data-nosnippet>76</a>///
-<a href=#77 id=77 data-nosnippet>77</a>/// ## 初始化步骤
+<a href=#70 id=70 data-nosnippet>70</a><span class="kw">pub use </span>page_table::{
+<a href=#71 id=71 data-nosnippet>71</a>    PTEFlags, PageTable, PageTableEntry, translated_byte_buffer, translated_refmut, translated_str,
+<a href=#72 id=72 data-nosnippet>72</a>};
+<a href=#73 id=73 data-nosnippet>73</a>
+<a href=#74 id=74 data-nosnippet>74</a><span class="doccomment">/// 初始化内存管理系统
+<a href=#75 id=75 data-nosnippet>75</a>///
+<a href=#76 id=76 data-nosnippet>76</a>/// 按照正确的顺序初始化内存管理的各个组件，确保系统能够正常进行
+<a href=#77 id=77 data-nosnippet>77</a>/// 内存分配和虚拟地址转换。
 <a href=#78 id=78 data-nosnippet>78</a>///
-<a href=#79 id=79 data-nosnippet>79</a>/// 1. **堆分配器初始化** - 调用 [`heap_allocator::init_heap()`]
-<a href=#80 id=80 data-nosnippet>80</a>///    - 设置内核堆的起始地址和大小
-<a href=#81 id=81 data-nosnippet>81</a>///    - 启用 `alloc` crate 的动态内存分配功能
-<a href=#82 id=82 data-nosnippet>82</a>///    - 支持 `Vec`、`BTreeMap` 等集合类型
-<a href=#83 id=83 data-nosnippet>83</a>///
-<a href=#84 id=84 data-nosnippet>84</a>/// 2. **页帧分配器初始化** - 调用 [`frame_allocator::init_frame_allocator()`]
-<a href=#85 id=85 data-nosnippet>85</a>///    - 计算可分配的物理内存范围
-<a href=#86 id=86 data-nosnippet>86</a>///    - 初始化物理页帧的空闲列表
-<a href=#87 id=87 data-nosnippet>87</a>///    - 设置页帧分配和回收机制
-<a href=#88 id=88 data-nosnippet>88</a>///
-<a href=#89 id=89 data-nosnippet>89</a>/// 3. **内核地址空间激活** - 调用 [`KERNEL_SPACE.exclusive_access().activate()`]
-<a href=#90 id=90 data-nosnippet>90</a>///    - 创建内核地址空间的页表映射
-<a href=#91 id=91 data-nosnippet>91</a>///    - 设置 `satp` 寄存器启用分页机制
-<a href=#92 id=92 data-nosnippet>92</a>///    - 刷新 TLB 确保地址转换正确
-<a href=#93 id=93 data-nosnippet>93</a>///
-<a href=#94 id=94 data-nosnippet>94</a>/// ## 调用时机
+<a href=#79 id=79 data-nosnippet>79</a>/// ## 初始化步骤
+<a href=#80 id=80 data-nosnippet>80</a>///
+<a href=#81 id=81 data-nosnippet>81</a>/// 1. **堆分配器初始化** - 调用 [`heap_allocator::init_heap()`]
+<a href=#82 id=82 data-nosnippet>82</a>///    - 设置内核堆的起始地址和大小
+<a href=#83 id=83 data-nosnippet>83</a>///    - 启用 `alloc` crate 的动态内存分配功能
+<a href=#84 id=84 data-nosnippet>84</a>///    - 支持 `Vec`、`BTreeMap` 等集合类型
+<a href=#85 id=85 data-nosnippet>85</a>///
+<a href=#86 id=86 data-nosnippet>86</a>/// 2. **页帧分配器初始化** - 调用 [`frame_allocator::init_frame_allocator()`]
+<a href=#87 id=87 data-nosnippet>87</a>///    - 计算可分配的物理内存范围
+<a href=#88 id=88 data-nosnippet>88</a>///    - 初始化物理页帧的空闲列表
+<a href=#89 id=89 data-nosnippet>89</a>///    - 设置页帧分配和回收机制
+<a href=#90 id=90 data-nosnippet>90</a>///
+<a href=#91 id=91 data-nosnippet>91</a>/// 3. **内核地址空间激活** - 调用 [`KERNEL_SPACE.exclusive_access().activate()`]
+<a href=#92 id=92 data-nosnippet>92</a>///    - 创建内核地址空间的页表映射
+<a href=#93 id=93 data-nosnippet>93</a>///    - 设置 `satp` 寄存器启用分页机制
+<a href=#94 id=94 data-nosnippet>94</a>///    - 刷新 TLB 确保地址转换正确
 <a href=#95 id=95 data-nosnippet>95</a>///
-<a href=#96 id=96 data-nosnippet>96</a>/// 此函数应在内核初始化的早期阶段调用，通常在 BSS 段清零和日志系统
-<a href=#97 id=97 data-nosnippet>97</a>/// 初始化之后，但在任何需要动态内存分配的操作之前。
-<a href=#98 id=98 data-nosnippet>98</a>///
-<a href=#99 id=99 data-nosnippet>99</a>/// ## Panics
+<a href=#96 id=96 data-nosnippet>96</a>/// ## 调用时机
+<a href=#97 id=97 data-nosnippet>97</a>///
+<a href=#98 id=98 data-nosnippet>98</a>/// 此函数应在内核初始化的早期阶段调用，通常在 BSS 段清零和日志系统
+<a href=#99 id=99 data-nosnippet>99</a>/// 初始化之后，但在任何需要动态内存分配的操作之前。
 <a href=#100 id=100 data-nosnippet>100</a>///
-<a href=#101 id=101 data-nosnippet>101</a>/// 如果内存管理系统初始化失败（如物理内存不足、页表创建失败等），
-<a href=#102 id=102 data-nosnippet>102</a>/// 函数会触发 panic，因为这是系统运行的基础要求。
-<a href=#103 id=103 data-nosnippet>103</a></span><span class="kw">pub fn </span>init() {
-<a href=#104 id=104 data-nosnippet>104</a>    heap_allocator::init_heap();
-<a href=#105 id=105 data-nosnippet>105</a>    frame_allocator::init_frame_allocator();
-<a href=#106 id=106 data-nosnippet>106</a>    KERNEL_SPACE.exclusive_access().activate();
-<a href=#107 id=107 data-nosnippet>107</a>}</code></pre></div></section></main></body></html>
+<a href=#101 id=101 data-nosnippet>101</a>/// ## Panics
+<a href=#102 id=102 data-nosnippet>102</a>///
+<a href=#103 id=103 data-nosnippet>103</a>/// 如果内存管理系统初始化失败（如物理内存不足、页表创建失败等），
+<a href=#104 id=104 data-nosnippet>104</a>/// 函数会触发 panic，因为这是系统运行的基础要求。
+<a href=#105 id=105 data-nosnippet>105</a></span><span class="kw">pub fn </span>init() {
+<a href=#106 id=106 data-nosnippet>106</a>    heap_allocator::init_heap();
+<a href=#107 id=107 data-nosnippet>107</a>    frame_allocator::init_frame_allocator();
+<a href=#108 id=108 data-nosnippet>108</a>    KERNEL_SPACE.exclusive_access().activate();
+<a href=#109 id=109 data-nosnippet>109</a>}</code></pre></div></section></main></body></html>
