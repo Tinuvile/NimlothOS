@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["add_initproc","exit_current_and_run_next","suspend_current_and_run_next"],"mod":["context","manager","pid","processor","switch","task"],"struct":["INITPROC"]};
+window.SIDEBAR_ITEMS = {"constant":["IDLE_PID"],"fn":["add_initproc","exit_current_and_run_next","suspend_current_and_run_next"],"mod":["context","manager","pid","processor","switch","task"],"struct":["INITPROC"]};
