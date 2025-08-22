@@ -16,8 +16,10 @@
 //!
 //! - 类型：[`TaskContext`], [`Processor`]
 //! - 函数：[`add_task`], [`run_tasks`], [`schedule`], [`current_task`],
-//!   [`current_trap_cx`], [`current_user_token`], [`take_current_task`]
+//!   [`current_trap_cx`], [`current_user_token`], [`take_current_task`],
+//!   [`add_initproc`], [`suspend_current_and_run_next`], [`exit_current_and_run_next`]
 //! - PID/栈：[`PidAllocator`], [`PidHandle`], [`KernelStack`], [`pid_alloc`]
+//! - 常量：[`IDLE_PID`], [`INITPROC`]
 //!
 //! ## 调度模型
 //!
@@ -28,8 +30,15 @@
 //! ## 初始化与启动
 //!
 //! - 初始进程：[`INITPROC`]（从内置应用镜像加载 `initproc`）
+//! - 空闲进程：PID 为 [`IDLE_PID`]（值为 0）的特殊进程，负责系统空闲时的处理
 //! - 启动流程：调用 [`add_initproc()`] 将初始进程加入就绪队列，随后
 //!   通过 [`run_tasks()`] 进入主调度循环
+//!
+//! ## 任务生命周期管理
+//!
+//! - 任务挂起：[`suspend_current_and_run_next()`] 将当前任务状态置为 `Ready` 并重新入队
+//! - 任务退出：[`exit_current_and_run_next()`] 处理任务结束、孤儿进程托管和资源回收
+//! - 空闲进程退出：当 PID 为 [`IDLE_PID`] 的进程退出时，根据退出码决定系统关机行为
 //!
 //! ## 使用示例
 //!
@@ -39,7 +48,7 @@
 //! // run_tasks() 在本工程由处理器模块统一驱动
 //! ```
 //!
-use crate::loader::get_app_data_by_name;
+use crate::{loader::get_app_data_by_name, println, sbi::shutdown};
 use alloc::sync::Arc;
 use lazy_static::*;
 use task::{TaskControlBlock, TaskStatus};
@@ -98,12 +107,24 @@ pub fn suspend_current_and_run_next() {
     schedule(task_cx_ptr);
 }
 
+/// 空闲进程的 PID
+///
+/// 值为 0 的特殊 PID，用于标识系统中的空闲进程。当空闲进程退出时，
+/// 系统会根据其退出码决定是否关机：非零退出码触发错误关机，零退出码
+/// 触发正常关机。
+pub const IDLE_PID: usize = 0;
+
 /// 结束当前任务并切换到下一个任务
 ///
-/// 将当前任务标记为 `Zombie`，记录退出码，并进行“孤儿进程”托管：
+/// 将当前任务标记为 `Zombie`，记录退出码，并进行"孤儿进程"托管：
 /// 将其所有子进程的父指针重定向到 [`INITPROC`]。随后清空子进程列表、
 /// 释放任务私有地址空间的区域元数据（不主动取消映射），最后切换回
 /// 调度器，由调度器继续运行其他任务。
+///
+/// ## 特殊处理
+/// - 如果当前任务 PID 为 [`IDLE_PID`]，则根据退出码决定系统关机行为：
+///   - 非零退出码：触发错误关机
+///   - 零退出码：触发正常关机
 ///
 /// ## Arguments
 /// * `exit_code` - 任务退出码
@@ -113,6 +134,20 @@ pub fn suspend_current_and_run_next() {
 /// - 地址空间的底层页帧由 RAII 管理，任务生命周期结束时被回收
 pub fn exit_current_and_run_next(exit_code: i32) {
     let task = take_current_task().unwrap();
+
+    let pid = task.getpid();
+    if pid == IDLE_PID {
+        println!(
+            "[kernel] Idle process exit with exit_code {} ...",
+            exit_code
+        );
+        if exit_code != 0 {
+            shutdown(true)
+        } else {
+            shutdown(false)
+        }
+    }
+
     let mut inner = task.inner_exclusive_access();
     inner.task_status = TaskStatus::Zombie;
     inner.exit_code = exit_code;
