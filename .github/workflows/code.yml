@@ -17,15 +17,25 @@ jobs:
           toolchain: ${{ env.rust_toolchain }}
           components: rust-src, llvm-tools-preview
           target: riscv64gc-unknown-none-elf
-      - name: Build doc
+      - name: Build os doc
         run: |
           cd os
           cargo doc --no-deps --verbose -Z build-std=core,alloc
+      - name: Build easy-fs doc
+        run: |
+          cd easy-fs
+          cargo doc --no-deps --verbose
+      - name: Create combined doc directory
+        run: |
+          mkdir -p combined_docs
+          cp -r os/target/riscv64gc-unknown-none-elf/doc/* combined_docs/
+          mkdir -p combined_docs/easy-fs
+          cp -r easy-fs/target/doc/* combined_docs/easy-fs/
       - name: Deploy to Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./os/target/riscv64gc-unknown-none-elf/doc
+          publish_dir: ./combined_docs
           destination_dir: ${{ github.ref_name }}
 
   run-tests:
