@@ -1,3 +1,0 @@
-var srcIndex = new Map(JSON.parse('[["os",["",[["board",[],["qemu.rs"]],["mm",[],["address.rs","frame_allocator.rs","heap_allocator.rs","memory_set.rs","mod.rs","page_table.rs"]],["sync",[],["mod.rs","up.rs"]],["syscall",[],["fs.rs","mod.rs","process.rs"]],["task",[],["context.rs","manager.rs","mod.rs","pid.rs","processor.rs","switch.rs","task.rs"]],["trap",[],["context.rs","mod.rs"]]],["config.rs","console.rs","lang_items.rs","loader.rs","log.rs","main.rs","sbi.rs","stack_trace.rs","timer.rs"]]]]'));
-createSrcSidebar();
-//{"start":36,"fragment_lengths":[465]}
