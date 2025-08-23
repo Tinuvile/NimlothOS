@@ -32,8 +32,17 @@ jobs:
           mkdir -p combined_docs/os
           cp -r os/target/riscv64gc-unknown-none-elf/doc/* combined_docs/os/
           # 复制 easy-fs 文档到 combined_docs/easy-fs/
+          # 注意 easy-fs 包名在文档中会变成 easy_fs
           mkdir -p combined_docs/easy-fs
-          cp -r easy-fs/target/doc/* combined_docs/easy-fs/
+          cp -r easy-fs/target/doc/easy_fs/* combined_docs/easy-fs/
+          # 复制静态文件
+          cp -r easy-fs/target/doc/static.files combined_docs/easy-fs/
+          cp -r easy-fs/target/doc/trait.impl combined_docs/easy-fs/
+          cp -r easy-fs/target/doc/type.impl combined_docs/easy-fs/
+          cp easy-fs/target/doc/*.js combined_docs/easy-fs/
+          cp easy-fs/target/doc/*.html combined_docs/easy-fs/
+          cp -r easy-fs/target/doc/search.desc combined_docs/easy-fs/
+          cp -r easy-fs/target/doc/src combined_docs/easy-fs/
           # 创建主页面，重定向到 os 文档
           cat > combined_docs/index.html << 'EOF'
           <!DOCTYPE html>
@@ -41,10 +50,10 @@ jobs:
           <head>
               <meta charset="utf-8">
               <title>NimlothOS Documentation</title>
-              <meta http-equiv="refresh" content="0; url=./os/">
+              <meta http-equiv="refresh" content="0; url=./os/os/">
           </head>
           <body>
-              <p>Redirecting to <a href="./os/">OS Documentation</a>...</p>
+              <p>Redirecting to <a href="./os/os/">OS Documentation</a>...</p>
           </body>
           </html>
           EOF
