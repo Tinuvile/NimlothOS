@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BLOCK_SZ","DIRENT_SZ"],"enum":["DiskInodeType"],"fn":["block_cache_sync_all","get_block_cache"],"struct":["DirEntry","DiskInode","EasyFileSystem","SuperBlock"],"trait":["BlockDevice"],"type":["DataBlock"]};

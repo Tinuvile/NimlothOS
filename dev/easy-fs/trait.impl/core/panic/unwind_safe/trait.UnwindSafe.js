@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["easy_fs",[["impl !<a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.UnwindSafe.html\" title=\"trait core::panic::unwind_safe::UnwindSafe\">UnwindSafe</a> for <a class=\"struct\" href=\"easy_fs/struct.EasyFileSystem.html\" title=\"struct easy_fs::EasyFileSystem\">EasyFileSystem</a>",1,["easy_fs::efs::EasyFileSystem"]],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.UnwindSafe.html\" title=\"trait core::panic::unwind_safe::UnwindSafe\">UnwindSafe</a> for <a class=\"enum\" href=\"easy_fs/enum.DiskInodeType.html\" title=\"enum easy_fs::DiskInodeType\">DiskInodeType</a>",1,["easy_fs::layout::DiskInodeType"]],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.UnwindSafe.html\" title=\"trait core::panic::unwind_safe::UnwindSafe\">UnwindSafe</a> for <a class=\"struct\" href=\"easy_fs/struct.DirEntry.html\" title=\"struct easy_fs::DirEntry\">DirEntry</a>",1,["easy_fs::layout::DirEntry"]],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.UnwindSafe.html\" title=\"trait core::panic::unwind_safe::UnwindSafe\">UnwindSafe</a> for <a class=\"struct\" href=\"easy_fs/struct.DiskInode.html\" title=\"struct easy_fs::DiskInode\">DiskInode</a>",1,["easy_fs::layout::DiskInode"]],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/panic/unwind_safe/trait.UnwindSafe.html\" title=\"trait core::panic::unwind_safe::UnwindSafe\">UnwindSafe</a> for <a class=\"struct\" href=\"easy_fs/struct.SuperBlock.html\" title=\"struct easy_fs::SuperBlock\">SuperBlock</a>",1,["easy_fs::layout::SuperBlock"]]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1691]}
