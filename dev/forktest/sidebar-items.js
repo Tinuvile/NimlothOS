@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_CHILD"],"fn":["main"]};

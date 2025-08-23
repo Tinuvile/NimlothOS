@@ -1,1 +1,0 @@
-searchState.loadedDescShard("user_shell", 0, "")

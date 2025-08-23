@@ -1,2 +1,0 @@
-window.ALL_CRATES = ["cat_filea","easy_fs","exit","fantastic_text","filetest_simple","forktest","forktest2","forktest_simple","forktree","hello_world","huge_write","initproc","matrix","os","sleep","sleep_simple","stack_overflow","user_lib","user_shell","usertests","usertests_simple","yield"];
-//{"start":21,"fragment_lengths":[11,10,7,17,18,11,12,18,11,14,13,11,9,5,8,15,17,11,13,12,19,8]}

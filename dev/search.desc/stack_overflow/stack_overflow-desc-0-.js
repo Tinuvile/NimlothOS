@@ -1,1 +1,0 @@
-searchState.loadedDescShard("stack_overflow", 0, "")

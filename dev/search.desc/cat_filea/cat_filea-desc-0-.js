@@ -1,1 +1,0 @@
-searchState.loadedDescShard("cat_filea", 0, "")

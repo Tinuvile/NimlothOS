@@ -1,1 +1,0 @@
-searchState.loadedDescShard("forktest_simple", 0, "")

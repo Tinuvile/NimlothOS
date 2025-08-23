@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["N"],"fn":["main","work"],"static":["NUM","P"],"type":["Arr"]};

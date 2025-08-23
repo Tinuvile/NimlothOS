@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["DEPTH"],"fn":["fork_child","fork_tree","main"]};
