@@ -13,7 +13,7 @@ lazy_static = { version = "1.5.0", features = ["spin_no_std"] }
 buddy_system_allocator = "0.11.0"
 bitflags = "2.9"
 xmas-elf = "0.10"
-easy_fs = { path = "../easy-fs" }
+easy-fs = { path = "../easy-fs" }
 
 [profile.release]
 debug = true
