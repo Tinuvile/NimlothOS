@@ -6,7 +6,7 @@
 //!
 //! - **多任务支持**: 基于时间片轮转的抢占式多任务调度
 //! - **内存管理**: SV39 三级页表，支持虚拟内存和地址空间隔离
-//! - **系统调用**: 支持 read、write、exit、yield、get_time、getpid、fork、exec、waitpid 等系统调用
+//! - **系统调用**: 支持 read、write、exit、yield、time、pid、fork、exec、waitpid 等系统调用
 //! - **陷阱处理**: 完整的异常、中断和系统调用处理机制
 //! - **应用加载**: 支持从内核镜像中加载多个用户应用程序
 //!

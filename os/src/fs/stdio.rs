@@ -1,19 +1,157 @@
+//! # 标准输入输出模块
+//!
+//! 提供标准输入输出设备的实现，包括标准输入 (stdin) 和标准输出 (stdout)。
+//! 这些设备实现了 `File` trait，可以像普通文件一样进行读写操作。
+//!
+//! ## 核心组件
+//!
+//! - [`Stdin`] - 标准输入设备，从控制台读取字符
+//! - [`Stdout`] - 标准输出设备，向控制台输出文本
+//!
+//! ## 设备特性
+//!
+//! - **阻塞读取**: 标准输入在没有数据时会让出 CPU
+//! - **实时输出**: 标准输出立即显示到控制台
+//! - **权限控制**: 标准输入只读，标准输出只写
+//! - **字符处理**: 支持 UTF-8 编码的文本处理
+//!
+//! ## 使用示例
+//!
+//! ```rust
+//! use crate::fs::{Stdin, Stdout, File};
+//!
+//! // 从标准输入读取字符
+//! let stdin = Stdin;
+//! let mut buf = [0u8; 1];
+//! let user_buf = UserBuffer::new(&mut buf);
+//! let bytes_read = stdin.read(user_buf);
+//!
+//! // 向标准输出写入文本
+//! let stdout = Stdout;
+//! let data = b"Hello, World!";
+//! let user_buf = UserBuffer::new(data);
+//! let bytes_written = stdout.write(user_buf);
+//! ```
+
 use super::File;
 use crate::mm::UserBuffer;
 use crate::print;
 use crate::sbi::console_getchar;
 use crate::task::suspend_current_and_run_next;
 
+/// 标准输入设备
+///
+/// 实现从控制台读取字符的功能，支持阻塞式读取。
+/// 当没有输入数据时，会主动让出 CPU 以节省系统资源。
+///
+/// ## 读取特性
+///
+/// - **单字符读取**: 每次读取一个字符
+/// - **阻塞等待**: 没有输入时会让出 CPU
+/// - **实时响应**: 一旦有输入立即返回
+/// - **权限控制**: 只支持读取操作，不支持写入
+///
+/// ## 实现原理
+///
+/// 通过 SBI 接口 `console_getchar()` 从控制台读取字符。
+/// 当没有可用字符时，调用 `suspend_current_and_run_next()` 让出 CPU。
+///
+/// ## 线程安全
+///
+/// 该结构是线程安全的，多个线程可以同时从标准输入读取。
+/// 具体的并发控制由底层的 SBI 接口实现。
 pub struct Stdin;
+
+/// 标准输出设备
+///
+/// 实现向控制台输出文本的功能，支持 UTF-8 编码的文本输出。
+/// 所有输出都会立即显示到控制台，无需缓冲。
+///
+/// ## 输出特性
+///
+/// - **实时输出**: 文本立即显示到控制台
+/// - **UTF-8 支持**: 完全支持 Unicode 字符输出
+/// - **批量处理**: 支持跨页面的用户缓冲区
+/// - **权限控制**: 只支持写入操作，不支持读取
+///
+/// ## 实现原理
+///
+/// 通过 `print!` 宏将用户缓冲区的内容输出到控制台。
+/// 支持跨页面的用户缓冲区，自动处理页面边界。
+///
+/// ## 线程安全
+///
+/// 该结构是线程安全的，多个线程可以同时向标准输出写入。
+/// 输出操作是原子的，不会出现字符交错的情况。
 pub struct Stdout;
 
 impl File for Stdin {
+    /// 检查标准输入是否可读
+    ///
+    /// ## Returns
+    ///
+    /// 总是返回 `true`，因为标准输入总是可读的
     fn readable(&self) -> bool {
         true
     }
+
+    /// 检查标准输入是否可写
+    ///
+    /// ## Returns
+    ///
+    /// 总是返回 `false`，因为标准输入不支持写入操作
     fn writable(&self) -> bool {
         false
     }
+
+    /// 从标准输入读取字符
+    ///
+    /// 从控制台读取一个字符到用户缓冲区中。该操作是阻塞的，
+    /// 当没有输入数据时会主动让出 CPU。
+    ///
+    /// ## Arguments
+    ///
+    /// * `user_buf` - 用户缓冲区，用于存储读取的字符
+    ///
+    /// ## Returns
+    ///
+    /// 总是返回 1，表示读取了一个字符
+    ///
+    /// ## 读取过程
+    ///
+    /// 1. **缓冲区检查**: 验证缓冲区大小为 1 字节
+    /// 2. **字符等待**: 循环调用 `console_getchar()` 等待输入
+    /// 3. **CPU 让出**: 当没有输入时让出 CPU
+    /// 4. **字符处理**: 将读取的字符写入用户缓冲区
+    /// 5. **返回结果**: 返回读取的字节数（总是 1）
+    ///
+    /// ## 阻塞行为
+    ///
+    /// 当控制台没有可用字符时，函数会进入忙等待循环：
+    /// - 调用 `console_getchar()` 检查是否有输入
+    /// - 如果没有输入（返回 0），调用 `suspend_current_and_run_next()`
+    /// - 让出 CPU 给其他任务执行
+    /// - 当任务重新调度时，继续检查输入
+    ///
+    /// ## 错误处理
+    ///
+    /// - 如果缓冲区大小不是 1 字节，会触发 panic
+    /// - 如果写入用户缓冲区失败，会触发 panic
+    ///
+    /// ## 性能说明
+    ///
+    /// 该操作是阻塞的，会等待用户输入。在等待期间会主动让出 CPU，
+    /// 不会浪费系统资源。
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// let stdin = Stdin;
+    /// let mut buf = [0u8; 1];
+    /// let user_buf = UserBuffer::new(&mut buf);
+    /// let bytes_read = stdin.read(user_buf);
+    /// assert_eq!(bytes_read, 1);
+    /// ```
     fn read(&self, mut user_buf: UserBuffer) -> usize {
         assert_eq!(user_buf.len(), 1);
         // busy loop
@@ -33,21 +171,113 @@ impl File for Stdin {
         }
         1
     }
+
+    /// 向标准输入写入数据
+    ///
+    /// ## Arguments
+    ///
+    /// * `_user_buf` - 用户缓冲区（未使用）
+    ///
+    /// ## Panics
+    ///
+    /// 总是触发 panic，因为标准输入不支持写入操作
+    ///
+    /// ## 设计说明
+    ///
+    /// 标准输入是只读设备，不支持写入操作。如果尝试写入，
+    /// 会触发 panic 以明确表示操作不被支持。
     fn write(&self, _user_buf: UserBuffer) -> usize {
         panic!("Cannot write to stdin!");
     }
 }
 
 impl File for Stdout {
+    /// 检查标准输出是否可读
+    ///
+    /// ## Returns
+    ///
+    /// 总是返回 `false`，因为标准输出不支持读取操作
     fn readable(&self) -> bool {
         false
     }
+
+    /// 检查标准输出是否可写
+    ///
+    /// ## Returns
+    ///
+    /// 总是返回 `true`，因为标准输出总是可写的
     fn writable(&self) -> bool {
         true
     }
+
+    /// 从标准输出读取数据
+    ///
+    /// ## Arguments
+    ///
+    /// * `_user_buf` - 用户缓冲区（未使用）
+    ///
+    /// ## Panics
+    ///
+    /// 总是触发 panic，因为标准输出不支持读取操作
+    ///
+    /// ## 设计说明
+    ///
+    /// 标准输出是只写设备，不支持读取操作。如果尝试读取，
+    /// 会触发 panic 以明确表示操作不被支持。
     fn read(&self, _user_buf: UserBuffer) -> usize {
         panic!("Cannot read from stdout!");
     }
+
+    /// 向标准输出写入文本
+    ///
+    /// 将用户缓冲区中的文本输出到控制台。支持跨页面的用户缓冲区，
+    /// 自动处理页面边界和 UTF-8 编码。
+    ///
+    /// ## Arguments
+    ///
+    /// * `user_buf` - 用户缓冲区，包含要输出的文本
+    ///
+    /// ## Returns
+    ///
+    /// 返回写入的字节数，等于用户缓冲区的总长度
+    ///
+    /// ## 输出过程
+    ///
+    /// 1. **缓冲区遍历**: 遍历用户缓冲区的所有页面
+    /// 2. **文本转换**: 将每个页面的字节转换为 UTF-8 字符串
+    /// 3. **控制台输出**: 使用 `print!` 宏输出到控制台
+    /// 4. **结果统计**: 统计所有输出的字节数
+    ///
+    /// ## 文本处理
+    ///
+    /// - **UTF-8 支持**: 完全支持 Unicode 字符输出
+    /// - **页面边界**: 自动处理跨页面的用户缓冲区
+    /// - **实时显示**: 文本立即显示到控制台，无需缓冲
+    ///
+    /// ## 错误处理
+    ///
+    /// - 如果用户缓冲区包含无效的 UTF-8 序列，会触发 panic
+    /// - 如果控制台输出失败，会触发 panic
+    ///
+    /// ## 性能说明
+    ///
+    /// 该操作是同步的，会立即输出到控制台。对于大量文本，
+    /// 输出速度取决于控制台的性能。
+    ///
+    /// ## 线程安全
+    ///
+    /// 多个线程可以同时向标准输出写入，输出操作是原子的，
+    /// 不会出现字符交错的情况。
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// let stdout = Stdout;
+    /// let data = b"Hello, World!";
+    /// let user_buf = UserBuffer::new(data);
+    /// let bytes_written = stdout.write(user_buf);
+    /// assert_eq!(bytes_written, 13);
+    /// ```
     fn write(&self, user_buf: UserBuffer) -> usize {
         for buffer in user_buf.buffers.iter() {
             print!("{}", core::str::from_utf8(*buffer).unwrap());

@@ -1033,7 +1033,7 @@ impl MemorySet {
     /// ## Examples
     ///
     /// ```rust
-    /// let app_data = get_app_data(0); // 获取应用程序 ELF 数据
+    /// let app_data = app_data(0); // 获取应用程序 ELF 数据
     /// let (memory_set, user_stack_top, entry_point) = MemorySet::from_elf(app_data);
     ///
     /// println!("Entry point: {:#x}", entry_point);
@@ -1620,6 +1620,56 @@ pub fn remap_test() {
     println!("remap_test passed!");
 }
 
+/// 获取内核地址空间的页表标识符
+///
+/// 返回全局内核地址空间的页表标识符（`satp` 寄存器值），用于内核态和用户态之间的
+/// 地址空间切换。该函数提供了对内核地址空间的便捷访问接口。
+///
+/// ## Returns
+///
+/// `usize` - 内核地址空间的页表标识符，可直接写入 `satp` 寄存器
+///
+/// ## 使用场景
+///
+/// - **陷阱处理**: 从用户态返回内核态时恢复内核地址空间
+/// - **系统调用**: 在系统调用处理过程中确保内核地址空间活跃
+/// - **进程切换**: 进程调度器在切换回内核态时使用
+/// - **调试和监控**: 获取当前内核地址空间的标识符
+///
+/// ## 与 `KERNEL_SPACE` 的关系
+///
+/// 此函数是对全局内核地址空间的封装，提供了更简洁的访问方式：
+/// ```rust
+/// // 等价于：
+/// // KERNEL_SPACE.exclusive_access().token()
+/// let kernel_token = kernel_token();
+/// ```
+///
+/// ## 地址空间切换示例
+///
+/// ```rust
+/// // 在陷阱处理中从用户态返回内核态
+/// fn trap_return() {
+///     let kernel_token = kernel_token();
+///     unsafe {
+///         satp::write(kernel_token);
+///         asm!("sfence.vma");
+///     }
+///     // 现在处于内核地址空间
+/// }
+/// ```
+///
+/// ## 性能考虑
+///
+/// - 函数内部使用 `exclusive_access()` 获取独占访问权限
+/// - 调用频率较高，但开销相对较小
+/// - 返回的标识符在系统运行期间保持不变
+///
+/// ## 安全性
+///
+/// - 返回的标识符是有效的内核页表标识符
+/// - 直接写入 `satp` 寄存器是安全的
+/// - 在单处理器环境下，访问是线程安全的
 pub fn kernel_token() -> usize {
     KERNEL_SPACE.exclusive_access().token()
 }

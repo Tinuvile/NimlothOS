@@ -8,7 +8,7 @@
 //! - [`PTEFlags`] - 页表项标志位，控制页面的访问权限和属性
 //! - [`PageTableEntry`] - 页表项，存储物理页号和标志位
 //! - [`PageTable`] - 页表结构，管理三级页表的层次结构
-//! - [`translate_byte_buffer()`] - 跨页面缓冲区地址转换
+//! - [`translated_byte_buffer()`] - 跨页面缓冲区地址转换
 //!
 //! ## SV39 分页机制
 //!
@@ -863,7 +863,7 @@ impl PageTable {
 /// let len = 8192; // 跨越 3 个页面
 /// let token = current_user_token();
 ///
-/// let slices = translate_byte_buffer(token, user_buffer_ptr, len);
+/// let slices = translated_byte_buffer(token, user_buffer_ptr, len);
 /// for slice in slices {
 ///     // 访问每个物理页面中的数据
 ///     process_data(slice);
@@ -983,14 +983,82 @@ pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
         .mut_ref()
 }
 
+/// 用户缓冲区抽象
+///
+/// 表示一个可能跨越多个物理页面的用户态缓冲区，用于系统调用中
+/// 安全地访问用户传递的数据。每个缓冲区由多个物理页面切片组成。
+///
+/// ## 设计原理
+///
+/// 由于虚拟地址可能跨越多个物理页面，用户缓冲区需要被分解为
+/// 多个物理页面切片。`UserBuffer` 封装了这种复杂性，提供了
+/// 统一的缓冲区访问接口。
+///
+/// ## 内存布局
+///
+/// ```text
+/// User Virtual Buffer: [████████████████████████████]
+///                        │            │           │
+/// Physical Pages:     Page A     Page B       Page C
+/// UserBuffer:         buffers[0] buffers[1]  buffers[2]
+/// ```
+///
+/// ## 使用场景
+///
+/// - 系统调用中读取用户态传递的数据
+/// - 文件 I/O 操作中的用户缓冲区处理
+/// - 网络通信中的用户数据访问
+///
+/// ## 安全性
+///
+/// - 所有切片都指向有效的物理内存
+/// - 通过页表转换确保地址有效性
+/// - 支持跨页面边界的连续访问
 pub struct UserBuffer {
+    /// 物理页面切片列表
+    ///
+    /// 存储用户缓冲区在各个物理页面中的部分，按虚拟地址顺序排列。
+    /// 每个切片对应一个物理页面中的连续内存区域。
     pub buffers: Vec<&'static mut [u8]>,
 }
 
 impl UserBuffer {
+    /// 创建新的用户缓冲区
+    ///
+    /// 根据物理页面切片列表创建用户缓冲区实例。
+    ///
+    /// ## Arguments
+    ///
+    /// * `buffers` - 物理页面切片列表，按虚拟地址顺序排列
+    ///
+    /// ## Returns
+    ///
+    /// 新创建的用户缓冲区实例
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// let slices = translated_byte_buffer(token, ptr, len);
+    /// let user_buffer = UserBuffer::new(slices);
+    /// ```
     pub fn new(buffers: Vec<&'static mut [u8]>) -> Self {
         Self { buffers }
     }
+
+    /// 获取缓冲区总长度
+    ///
+    /// 计算所有物理页面切片的总字节数，即用户缓冲区的实际大小。
+    ///
+    /// ## Returns
+    ///
+    /// 缓冲区总字节数
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// let user_buffer = UserBuffer::new(slices);
+    /// println!("缓冲区大小: {} 字节", user_buffer.len());
+    /// ```
     pub fn len(&self) -> usize {
         let mut total: usize = 0;
         for b in self.buffers.iter() {
@@ -1000,15 +1068,54 @@ impl UserBuffer {
     }
 }
 
+/// 用户缓冲区迭代器
+///
+/// 实现对 [`UserBuffer`] 的字节级迭代访问，按顺序遍历缓冲区中的每个字节。
+/// 迭代器维护当前缓冲区索引和字节索引，支持跨页面边界的连续访问。
+///
+/// ## 迭代行为
+///
+/// - 按虚拟地址顺序遍历所有字节
+/// - 自动处理跨页面边界的访问
+/// - 返回指向每个字节的可变指针
+///
+/// ## 内部状态
+///
+/// - `current_buffer`: 当前正在访问的缓冲区索引
+/// - `current_idx`: 当前缓冲区中的字节索引
+/// - `buffers`: 所有物理页面切片的引用
 pub struct UserBufferIterator {
+    /// 物理页面切片列表
     buffers: Vec<&'static mut [u8]>,
+    /// 当前缓冲区索引
     current_buffer: usize,
+    /// 当前缓冲区中的字节索引
     current_idx: usize,
 }
 
 impl IntoIterator for UserBuffer {
     type Item = *mut u8;
     type IntoIter = UserBufferIterator;
+
+    /// 将用户缓冲区转换为迭代器
+    ///
+    /// 创建一个可以按字节顺序遍历用户缓冲区的迭代器。
+    /// 支持 `for` 循环语法，便于逐字节处理用户数据。
+    ///
+    /// ## Returns
+    ///
+    /// 用户缓冲区迭代器，按虚拟地址顺序产生每个字节的指针
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// let user_buffer = UserBuffer::new(slices);
+    /// for byte_ptr in user_buffer {
+    ///     // 处理每个字节
+    ///     let value = unsafe { *byte_ptr };
+    ///     process_byte(value);
+    /// }
+    /// ```
     fn into_iter(self) -> Self::IntoIter {
         UserBufferIterator {
             buffers: self.buffers,
@@ -1020,6 +1127,39 @@ impl IntoIterator for UserBuffer {
 
 impl Iterator for UserBufferIterator {
     type Item = *mut u8;
+
+    /// 返回迭代器的下一个字节指针
+    ///
+    /// 按虚拟地址顺序返回用户缓冲区中的下一个字节的可变指针。
+    /// 自动处理跨页面边界的访问，确保连续的字节访问。
+    ///
+    /// ## Returns
+    ///
+    /// - `Some(*mut u8)` - 下一个字节的可变指针
+    /// - `None` - 已遍历完所有字节
+    ///
+    /// ## 迭代逻辑
+    ///
+    /// 1. 检查当前缓冲区索引是否超出范围
+    /// 2. 返回当前字节的指针
+    /// 3. 更新索引位置：
+    ///    - 如果当前缓冲区还有字节，移动到下一个字节
+    ///    - 如果当前缓冲区已遍历完，移动到下一个缓冲区
+    ///
+    /// ## 跨页面处理
+    ///
+    /// 当遍历完一个物理页面切片时，自动切换到下一个切片，
+    /// 确保虚拟地址的连续性得到保持。
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// let mut iter = user_buffer.into_iter();
+    /// while let Some(byte_ptr) = iter.next() {
+    ///     // 处理字节指针
+    ///     unsafe { *byte_ptr = 0x42; }
+    /// }
+    /// ```
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_buffer >= self.buffers.len() {
             None

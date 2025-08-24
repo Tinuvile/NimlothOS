@@ -90,7 +90,7 @@
 //!
 //! ```rust
 //! // 创建新进程
-//! let elf_data = get_app_data(0);
+//! let elf_data = app_data(0);
 //! let task = Arc::new(TaskControlBlock::new(elf_data));
 //!
 //! // Fork 子进程
@@ -322,6 +322,36 @@ pub struct TaskControlBlockInner {
     /// 标准约定：0 表示正常退出，非零表示异常退出。
     pub exit_code: i32,
 
+    /// 文件描述符表
+    ///
+    /// 维护进程打开的所有文件描述符，每个元素对应一个文件描述符：
+    /// - `Some(file)` - 文件描述符已打开，指向对应的文件对象
+    /// - `None` - 文件描述符未使用，可以被重新分配
+    ///
+    /// ## 标准文件描述符
+    ///
+    /// 进程创建时自动分配以下标准文件描述符：
+    /// - `fd_table[0]` - 标准输入 (stdin)
+    /// - `fd_table[1]` - 标准输出 (stdout)
+    /// - `fd_table[2]` - 标准错误 (stderr)
+    ///
+    /// ## 文件描述符分配
+    ///
+    /// - 新文件描述符从索引 0 开始查找第一个 `None` 位置
+    /// - 如果所有位置都被占用，则扩展表大小
+    /// - 文件描述符关闭时设置为 `None`，可以被重用
+    ///
+    /// ## 并发安全
+    ///
+    /// 文件描述符表通过外层的 [`UPSafeCell`] 保护，确保并发访问安全。
+    /// 文件对象本身通过 [`Arc`] 实现引用计数，支持多进程共享。
+    ///
+    /// ## 使用场景
+    ///
+    /// - 系统调用中查找和验证文件描述符
+    /// - 进程 fork 时复制文件描述符表
+    /// - 进程退出时关闭所有打开的文件
+    /// - 文件描述符的分配和回收管理
     pub fd_table: Vec<Option<Arc<dyn File + Send + Sync>>>,
 }
 
@@ -537,6 +567,70 @@ impl TaskControlBlockInner {
         self.status() == TaskStatus::Zombie
     }
 
+    /// 分配新的文件描述符
+    ///
+    /// 在文件描述符表中查找第一个可用的位置，并返回对应的文件描述符编号。
+    /// 如果所有现有位置都被占用，则扩展表大小并返回新的文件描述符。
+    ///
+    /// ## Returns
+    ///
+    /// 返回新分配的文件描述符编号（非负整数）
+    ///
+    /// ## 分配策略
+    ///
+    /// 1. **查找策略**: 从索引 0 开始查找第一个 `None` 位置
+    /// 2. **扩展策略**: 如果所有位置都被占用，则向表末尾添加新的 `None` 条目
+    /// 3. **重用策略**: 优先重用已关闭的文件描述符，减少表大小增长
+    ///
+    /// ## 分配过程
+    ///
+    /// ```text
+    /// 文件描述符表状态示例:
+    /// ┌-─────-┬──-───--┬──--───-┬-─────-┬─────┐
+    /// │  fd0  │  fd1   │   fd2  │  fd3  │ fd4 │
+    /// ├──-───-┼─-────--┼──-──-─-┼──-───-┼─────┤
+    /// │ stdin │ stdout │ stderr │ file1 │ None│ ← 返回 fd4
+    /// └─-────-┴──-───--┴─-─--───┴─-────-┴─────┘
+    ///
+    /// 关闭 fd1 后:
+    /// ┌-─────-┬──-───--┬──--───-┬-─────-┬─────┐
+    /// │  fd0  │  fd1   │   fd2  │  fd3  │ fd4 │
+    /// ├──-───-┼─-────--┼──-──-─-┼──-───-┼─────┤
+    /// │ stdin │ stdout │ stderr │ file1 │ None│ ← 返回 fd1
+    /// └─-────-┴──-───--┴─-─--───┴─-────-┴─────┘
+    /// ```
+    ///
+    /// ## 使用场景
+    ///
+    /// - **open 系统调用**: 打开新文件时分配文件描述符
+    /// - **dup 系统调用**: 复制文件描述符时分配新的编号
+    /// - **pipe 系统调用**: 创建管道时分配读写端文件描述符
+    /// - **socket 系统调用**: 创建套接字时分配文件描述符
+    ///
+    /// ## 并发安全
+    ///
+    /// 此方法需要可变访问权限，调用者必须持有 [`UPSafeCell`] 的独占锁。
+    /// 分配过程是原子的，不会与其他进程的文件描述符分配产生冲突。
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// // 在 open 系统调用中使用
+    /// let mut inner = task.inner_exclusive_access();
+    /// let new_fd = inner.alloc_fd();
+    /// inner.fd_table[new_fd] = Some(file_object);
+    /// return new_fd as isize;
+    ///
+    /// // 检查分配结果
+    /// println!("Allocated file descriptor: {}", new_fd);
+    /// assert!(new_fd < inner.fd_table.len());
+    /// ```
+    ///
+    /// ## 性能特性
+    ///
+    /// - **时间复杂度**: O(n)，其中 n 是文件描述符表的当前大小
+    /// - **空间复杂度**: 最坏情况下需要扩展表大小
+    /// - **内存效率**: 优先重用已关闭的描述符，减少内存浪费
     pub fn alloc_fd(&mut self) -> usize {
         if let Some(fd) = (0..self.fd_table.len()).find(|fd| self.fd_table[*fd].is_none()) {
             fd
@@ -635,7 +729,7 @@ impl TaskControlBlock {
     /// use alloc::sync::Arc;
     ///
     /// // 从应用程序数据创建任务
-    /// let app_data = get_app_data(0);
+    /// let app_data = app_data(0);
     /// let task = Arc::new(TaskControlBlock::new(app_data));
     ///
     /// // 检查初始状态
@@ -1155,7 +1249,7 @@ impl TaskControlBlock {
     ///
     /// ```rust
     /// // 替换当前进程为新程序
-    /// let new_program = get_app_data("target_app");
+    /// let new_program = app_data("target_app");
     ///
     /// // 记录替换前的信息
     /// let old_pid = task.getpid();

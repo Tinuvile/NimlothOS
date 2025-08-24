@@ -479,7 +479,7 @@ impl KernelStack {
     /// let kernel_stack = KernelStack::new(&pid_handle);
     ///
     /// // 现在可以使用内核栈进行系统调用处理
-    /// let stack_top = kernel_stack.get_top();
+    /// let stack_top = kernel_stack.top();
     /// println!("Kernel stack top: 0x{:x}", stack_top);
     /// ```
     pub fn new(pid_handle: &PidHandle) -> Self {
@@ -528,7 +528,7 @@ impl KernelStack {
     /// ## Safety
     ///
     /// 此方法使用 `unsafe` 代码直接操作内存，但通过以下方式确保安全：
-    /// - 栈顶地址由 `get_top()` 正确计算
+    /// - 栈顶地址由 `top()` 正确计算
     /// - 减去数据大小确保不会越界
     /// - 目标地址在已映射的内核栈范围内
     ///

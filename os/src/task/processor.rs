@@ -634,7 +634,7 @@ pub fn current_task() -> Option<Arc<TaskControlBlock>> {
 ///     ↓
 /// task.inner_exclusive_access()
 ///     ↓
-/// inner.get_user_token()
+/// inner.user_token()
 ///     ↓
 /// memory_set.token()
 /// ```
@@ -975,7 +975,7 @@ pub fn run_tasks() {
 /// │           │                                                 │
 /// │           ▼                                                 │
 /// │  ┌─────────────────┐                                        │
-/// │  │ Get Idle        │ ──► processor.get_idle_task_cx_ptr()   │
+/// │  │ Get Idle        │ ──► processor.idle_task_cx_ptr()   │
 /// │  │ Context         │                                        │
 /// │  │ Pointer         │                                        │
 /// │  └─────────────────┘                                        │

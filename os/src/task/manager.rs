@@ -442,7 +442,7 @@ lazy_static! {
 /// use alloc::sync::Arc;
 ///
 /// // 创建并启动新进程
-/// let elf_data = get_app_data("user_app");
+/// let elf_data = app_data("user_app");
 /// let new_task = Arc::new(TaskControlBlock::new(elf_data));
 /// add_task(new_task);
 /// println!("新任务已加入调度队列");

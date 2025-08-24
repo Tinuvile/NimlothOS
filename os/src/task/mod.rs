@@ -14,11 +14,10 @@
 //!
 //! ## 公开接口（re-exports）
 //!
-//! - 类型：[`TaskContext`], [`Processor`]
+//! - 类型：[`TaskContext`]
 //! - 函数：[`add_task`], [`run_tasks`], [`schedule`], [`current_task`],
 //!   [`current_trap_cx`], [`current_user_token`], [`take_current_task`],
 //!   [`add_initproc`], [`suspend_current_and_run_next`], [`exit_current_and_run_next`]
-//! - PID/栈：[`PidAllocator`], [`PidHandle`], [`KernelStack`], [`pid_alloc`]
 //! - 常量：[`IDLE_PID`], [`INITPROC`]
 //!
 //! ## 调度模型
@@ -71,8 +70,7 @@ pub use processor::{
 lazy_static! {
     /// 初始进程（initproc）
     ///
-    /// 从内核内置应用仓库中加载名为 `initproc` 的程序，作为系统中的第一个
-    /// 用户进程。该进程通常负责拉起其他用户程序或提供最小的用户空间环境。
+    /// 调用open_file函数，打开initproc文件，并读取文件内容，创建TaskControlBlock
     pub static ref INITPROC: Arc<TaskControlBlock> = Arc::new({
         let inode = open_file("initproc", OpenFlags::RDONLY).unwrap();
         let data = inode.read_all();

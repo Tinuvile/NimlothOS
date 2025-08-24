@@ -39,7 +39,7 @@
 //!     }
 //!     
 //!     fn write_block(&self, block_id: usize, buf: &[u8]) {
-//!         if let Some(block) = self.blocks.get_mut(block_id) {
+//!         if let Some(block) = self.blocks._mut(block_id) {
 //!             block[..buf.len()].copy_from_slice(buf);
 //!         }
 //!     }

@@ -43,8 +43,8 @@
 //! let ppn = pa.floor(); // 向下对齐到页边界
 //!
 //! // 页号操作
-//! let bytes = ppn.get_bytes_array(); // 获取页面数据
-//! let ptes = ppn.get_pte_array();    // 获取页表项数组
+//! let bytes = ppn.bytes_array(); // 获取页面数据
+//! let ptes = ppn.pte_array();    // 获取页表项数组
 //!
 //! // 虚拟地址页表索引
 //! let va = VirtAddr::from(0x10000000usize);
@@ -110,9 +110,9 @@ pub struct VirtAddr(pub usize);
 ///
 /// ## 主要功能
 ///
-/// - 页面数据访问：[`get_bytes_array`]
-/// - 页表项访问：[`get_pte_array`]
-/// - 任意类型访问：[`get_mut<T>`]
+/// - 页面数据访问：[`bytes_array`]
+/// - 页表项访问：[`pte_array`]
+/// - 任意类型访问：[`mut_ref<T>`]
 ///
 /// ## 使用场景
 ///
@@ -256,13 +256,44 @@ impl PhysAddr {
     ///
     /// ```rust
     /// let pa = PhysAddr(0x8020_1000);
-    /// let value: &mut u64 = pa.get_mut::<u64>();
+    /// let value: &mut u64 = pa.mut_ref::<u64>();
     /// *value = 0xdead_beef_dead_beefu64;
     /// ```
     pub fn mut_ref<T>(&self) -> &'static mut T {
         unsafe { (self.0 as *mut T).as_mut().unwrap() }
     }
 
+    /// 获取指定类型的不可变引用
+    ///
+    /// 将物理地址直接转换为类型 `T` 的不可变引用，用于访问该地址处
+    /// 存放的内存对象。该方法属于低级原语，绕过了借用检查并依赖
+    /// 调用者保证内存安全。
+    ///
+    /// ## Type Parameters
+    ///
+    /// * `T` - 目标数据类型，必须与地址处的数据布局兼容
+    ///
+    /// ## Returns
+    ///
+    /// 指向类型 `T` 的不可变引用，生命周期为 `'static`，表示该引用
+    /// 在类型系统看来可长期存在（实际由调用者保证其有效期）。
+    ///
+    /// ## Safety
+    ///
+    /// 此方法内部使用 `unsafe` 执行裸指针到引用的转换，调用者必须确保：
+    /// - 该物理地址可被安全地当作 `*const T` 访问
+    /// - 目标内存已经按 `T` 的布局正确初始化
+    /// - 满足 `T` 的对齐要求，否则行为未定义
+    /// - 在引用存活期间无数据竞争（不存在其他可变别名）
+    /// - 地址指向的内存在引用存活期间保持有效
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// let pa = PhysAddr(0x8020_1000);
+    /// let value: &u64 = pa._ref::<u64>();
+    /// println!("Value: {}", *value);
+    /// ```
     pub fn _ref<T>(&self) -> &'static T {
         unsafe { (self.0 as *const T).as_ref().unwrap() }
     }
@@ -343,7 +374,7 @@ impl PhysPageNum {
     ///
     /// ```
     /// let ppn = PhysPageNum(0x80201);
-    /// let ptes = ppn.get_pte_array();
+    /// let ptes = ppn.pte_array();
     /// // 访问第一个页表项
     /// let pte = &mut ptes[0];
     /// ```
@@ -376,7 +407,7 @@ impl PhysPageNum {
     ///
     /// ```
     /// let ppn = PhysPageNum(0x80201);
-    /// let bytes = ppn.get_bytes_array();
+    /// let bytes = ppn.bytes_array();
     /// bytes[0] = 0x42; // 写入数据
     /// ```
     pub fn bytes_array(&self) -> &'static mut [u8] {
@@ -409,7 +440,7 @@ impl PhysPageNum {
     ///
     /// ```
     /// let ppn = PhysPageNum(0x80201);
-    /// let data: &mut u64 = ppn.get_mut::<u64>();
+    /// let data: &mut u64 = ppn.mut_ref::<u64>();
     /// *data = 0x1234_5678_9abc_def0;
     /// ```
     pub fn mut_ref<T>(&self) -> &'static mut T {
@@ -586,6 +617,9 @@ impl StepByOne for VirtPageNum {
 }
 
 impl StepByOne for PhysPageNum {
+    /// 物理页号递增
+    ///
+    /// 将页号加 1，移动到下一个物理页面。
     fn step(&mut self) {
         self.0 += 1;
     }
