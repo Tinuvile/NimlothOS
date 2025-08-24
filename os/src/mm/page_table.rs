@@ -79,7 +79,8 @@
 use crate::mm::{
     PhysAddr, PhysPageNum, VirtAddr, VirtPageNum,
     address::StepByOne,
-    frame_allocator::{FrameTracker, frame_alloc},
+    frame_allocator::{FrameTracker, StackFrameAllocator, frame_alloc},
+    page_table,
 };
 use alloc::string::String;
 use alloc::vec;
@@ -502,8 +503,8 @@ impl PageTable {
         let idxs = vpn.indexes();
         let mut ppn = self.root_ppn;
         let mut result: Option<&mut PageTableEntry> = None;
-        for i in 0..3 {
-            let pte = &mut ppn.pte_array()[idxs[i]];
+        for (i, idx) in idxs.iter().enumerate() {
+            let pte = &mut ppn.pte_array()[*idx];
             if i == 2 {
                 result = Some(pte);
                 break;
@@ -548,8 +549,8 @@ impl PageTable {
         let idxs = vpn.indexes();
         let mut ppn = self.root_ppn;
         let mut result: Option<&mut PageTableEntry> = None;
-        for i in 0..3 {
-            let pte = &mut ppn.pte_array()[idxs[i]];
+        for (i, idx) in idxs.iter().enumerate() {
+            let pte = &mut ppn.pte_array()[*idx];
             if i == 2 {
                 result = Some(pte);
                 break;
@@ -980,4 +981,57 @@ pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
         .translate_va(VirtAddr::from(va))
         .unwrap()
         .mut_ref()
+}
+
+pub struct UserBuffer {
+    pub buffers: Vec<&'static mut [u8]>,
+}
+
+impl UserBuffer {
+    pub fn new(buffers: Vec<&'static mut [u8]>) -> Self {
+        Self { buffers }
+    }
+    pub fn len(&self) -> usize {
+        let mut total: usize = 0;
+        for b in self.buffers.iter() {
+            total += b.len();
+        }
+        total
+    }
+}
+
+pub struct UserBufferIterator {
+    buffers: Vec<&'static mut [u8]>,
+    current_buffer: usize,
+    current_idx: usize,
+}
+
+impl IntoIterator for UserBuffer {
+    type Item = *mut u8;
+    type IntoIter = UserBufferIterator;
+    fn into_iter(self) -> Self::IntoIter {
+        UserBufferIterator {
+            buffers: self.buffers,
+            current_buffer: 0,
+            current_idx: 0,
+        }
+    }
+}
+
+impl Iterator for UserBufferIterator {
+    type Item = *mut u8;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_buffer >= self.buffers.len() {
+            None
+        } else {
+            let r = &mut self.buffers[self.current_buffer][self.current_idx] as *mut _;
+            if self.current_idx + 1 == self.buffers[self.current_buffer].len() {
+                self.current_idx = 0;
+                self.current_buffer += 1;
+            } else {
+                self.current_idx += 1;
+            }
+            Some(r)
+        }
+    }
 }

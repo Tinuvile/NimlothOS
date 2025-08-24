@@ -16,7 +16,6 @@
 //! - [`mm`] - 内存管理系统（页表、页帧分配、地址空间）
 //! - [`syscall`] - 系统调用处理和分发
 //! - [`trap`] - 陷阱处理（异常、中断、系统调用）
-//! - [`loader`] - 应用程序加载和管理
 //! - [`timer`] - 时钟管理和定时中断
 //! - [`console`] - 控制台输入输出
 //! - [`sync`] - 同步原语（UPSafeCell 等）
@@ -47,8 +46,9 @@
 #[macro_use]
 mod config;
 mod console;
+mod drivers;
+mod fs;
 mod lang_items;
-mod loader;
 mod log;
 mod mm;
 mod sbi;
@@ -68,7 +68,6 @@ extern crate alloc;
 extern crate bitflags;
 
 global_asm!(include_str!("entry.asm"));
-global_asm!(include_str!("link_app.S"));
 
 /// 内核主入口函数
 ///
@@ -85,7 +84,6 @@ global_asm!(include_str!("link_app.S"));
 /// 6. [`trap::init`] - 初始化陷阱处理系统
 /// 7. [`trap::enable_timer_interrupt`] - 启用时钟中断
 /// 8. [`timer::next_trigger`] - 设置第一次时钟中断
-/// 9. [`loader::list_apps`] - 列出可用的用户应用
 /// 10. [`task::run_tasks`] - 进入主调度循环
 ///
 /// ## Panics
@@ -98,11 +96,11 @@ pub fn rust_main() -> ! {
     info!("[kernel] Hello, world!");
     mm::init();
     mm::remap_test();
-    task::add_initproc();
     trap::init();
     trap::enable_timer_interrupt();
     timer::next_trigger();
-    loader::list_apps();
+    fs::list_apps();
+    task::add_initproc();
     task::run_tasks();
 
     panic!("Unreachable in rust_main!");
@@ -129,7 +127,8 @@ fn clear_bss() {
         safe fn sbss();
         safe fn ebss();
     }
-    (sbss as usize..ebss as usize).for_each(|a| unsafe {
-        (a as *mut u8).write_volatile(0);
-    });
+    unsafe {
+        core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
+            .fill(0);
+    }
 }

@@ -3,7 +3,7 @@
 //! 实现与进程生命周期管理相关的系统调用，包括进程退出、
 //! CPU 时间片让出和系统时间获取等功能。
 
-use crate::loader::app_data_by_name;
+use crate::fs::{OpenFlags, open_file};
 use crate::mm::{translated_refmut, translated_str};
 use crate::println;
 use crate::task::{
@@ -165,14 +165,16 @@ pub fn sys_fork() -> isize {
 /// ## 行为说明
 ///
 /// 1. 从用户态读取程序名字符串
-/// 2. 在内置应用仓库中查找对应的镜像数据
-/// 3. 调用任务的 `exec` 方法重建地址空间并跳转到新入口
+/// 2. 打开文件
+/// 3. 读取文件内容
+/// 4. 调用任务的 `exec` 方法重建地址空间并跳转到新入口
 pub fn sys_exec(path: *const u8) -> isize {
     let token = current_user_token();
     let path = translated_str(token, path);
-    if let Some(data) = app_data_by_name(path.as_str()) {
+    if let Some(data) = open_file(path.as_str(), OpenFlags::RDONLY) {
+        let all_data = data.read_all();
         let task = current_task().unwrap();
-        task.exec(data);
+        task.exec(all_data.as_slice());
         0
     } else {
         -1

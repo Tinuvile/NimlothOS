@@ -101,6 +101,7 @@ pub use block_cache::{block_cache, block_cache_sync_all};
 pub use block_dev::BlockDevice;
 pub use efs::EasyFileSystem;
 pub use layout::*;
+pub use vfs::Inode;
 
 /// 文件系统块大小（字节）
 ///

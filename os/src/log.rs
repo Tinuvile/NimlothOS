@@ -158,41 +158,31 @@ fn timestamp() -> usize {
 
 /// 获取 CPU ID
 ///
-/// 读取 `mhartid` CSR 寄存器获取当前 CPU 核心的 ID。
+/// 在单核系统中返回固定值 0，避免访问需要机器模式权限的 mhartid 寄存器。
 ///
 /// ## Returns
 ///
-/// 返回当前 CPU 核心的硬件线程 ID
-///
-/// ## Safety
-///
-/// 使用内联汇编读取 CSR 寄存器，这是一个特权操作。
+/// 返回 CPU ID（单核系统中固定为 0）
 fn cpu_id() -> usize {
-    unsafe {
-        let cpu_id: usize;
-        core::arch::asm!("csrr {}, mhartid", out(reg) cpu_id, options(nomem, nostack));
-        cpu_id
-    }
+    // 在 S-mode 下无法访问 mhartid，单核系统返回 0
+    0
 }
 
 /// 获取线程 ID
 ///
-/// 目前与 CPU ID 相同，读取 `mhartid` CSR 寄存器。
+/// 在单线程系统中返回固定值 0。
 /// 在真正的多线程实现中，这应该返回线程的唯一标识符。
 ///
 /// ## Returns
 ///
-/// 返回线程 ID（当前等同于 CPU ID）
+/// 返回线程 ID（单线程系统中固定为 0）
 ///
 /// ## Note
 ///
 /// 这是一个临时实现，真正的线程系统需要维护独立的线程 ID。
 fn thread_id() -> usize {
-    unsafe {
-        let thread_id: usize;
-        core::arch::asm!("csrr {}, mhartid", out(reg) thread_id, options(nomem, nostack));
-        thread_id
-    }
+    // 单线程系统返回 0
+    0
 }
 
 /// 初始化日志系统

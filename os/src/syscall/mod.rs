@@ -6,6 +6,8 @@
 //! ## 支持的系统调用
 //!
 //! - **文件系统**:
+//!   - [`sys_open`]     - 打开文件
+//!   - [`sys_close`]    - 关闭文件
 //!   - [`sys_read`]  - 从文件描述符读取数据
 //!   - [`sys_write`] - 向文件描述符写入数据
 //! - **进程管理**:
@@ -20,6 +22,8 @@
 //! ## 系统调用编号
 //!
 //! 遵循 Linux 系统调用编号约定：
+//! - `SYSCALL_OPEN` (56)       - 打开文件
+//! - `SYSCALL_CLOSE` (57)      - 关闭文件
 //! - `SYSCALL_READ` (63)       - 读操作
 //! - `SYSCALL_WRITE` (64)      - 写操作
 //! - `SYSCALL_EXIT` (93)       - 进程退出
@@ -36,46 +40,16 @@ use process::*;
 mod fs;
 mod process;
 
+const SYSCALL_OPEN: usize = 56;
+const SYSCALL_CLOSE: usize = 57;
 const SYSCALL_READ: usize = 63;
-
-/// 系统调用号：写操作
-///
-/// 对应 Linux 系统调用 `write(2)`，用于向文件描述符写入数据。
 const SYSCALL_WRITE: usize = 64;
-
-/// 系统调用号：进程退出
-///
-/// 对应 Linux 系统调用 `exit(2)`，用于终止当前进程。
 const SYSCALL_EXIT: usize = 93;
-
-/// 系统调用号：让出 CPU
-///
-/// 对应 Linux 系统调用 `sched_yield(2)`，当前任务主动让出 CPU 时间片。
 const SYSCALL_YIELD: usize = 124;
-
-/// 系统调用号：获取时间
-///
-/// 对应 Linux 系统调用 `gettimeofday(2)` 的简化版本，获取系统时间戳。
 const SYSCALL_TIME: usize = 169;
-
-/// 系统调用号：获取进程 PID
-///
-/// 对应 Linux 系统调用 `getpid(2)`，获取当前进程的 PID。
 const SYSCALL_PID: usize = 172;
-
-/// 系统调用号：创建子进程
-///
-/// 对应 Linux 系统调用 `fork(2)`，创建当前进程的一个子进程。
 const SYSCALL_FORK: usize = 220;
-
-/// 系统调用号：执行新程序
-///
-/// 对应 Linux 系统调用 `execve(2)`，用新程序替换当前进程。
 const SYSCALL_EXEC: usize = 221;
-
-/// 系统调用号：等待子进程结束
-///
-/// 对应 Linux 系统调用 `waitpid(2)`，等待指定 PID 的子进程结束。
 const SYSCALL_WAITPID: usize = 260;
 
 /// 系统调用分发器
@@ -115,6 +89,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
         SYSCALL_FORK => sys_fork(),
         SYSCALL_EXEC => sys_exec(args[0] as *const u8),
         SYSCALL_WAITPID => sys_waitpid(args[0] as isize, args[1] as *mut i32),
+        SYSCALL_OPEN => sys_open(args[0] as *const u8, args[1] as u32),
+        SYSCALL_CLOSE => sys_close(args[0]),
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
     }
 }

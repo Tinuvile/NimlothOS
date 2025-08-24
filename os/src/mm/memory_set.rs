@@ -1619,3 +1619,7 @@ pub fn remap_test() {
     );
     println!("remap_test passed!");
 }
+
+pub fn kernel_token() -> usize {
+    KERNEL_SPACE.exclusive_access().token()
+}

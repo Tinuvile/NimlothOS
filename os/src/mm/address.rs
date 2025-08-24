@@ -79,6 +79,7 @@ const VPN_WIDTH_SV39: usize = VA_WIDTH_SV39 - PAGE_SIZE_BITS;
 /// - [`ceil`] - 向上对齐到页边界  
 /// - [`page_offset`] - 获取页内偏移
 /// - [`aligned`] - 检查是否页对齐
+#[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysAddr(pub usize);
 
@@ -98,6 +99,7 @@ pub struct PhysAddr(pub usize);
 ///
 /// - 用户空间：0x0000_0000_0000_0000 - 0x0000_003F_FFFF_FFFF
 /// - 内核空间：0xFFFF_FFC0_0000_0000 - 0xFFFF_FFFF_FFFF_FFFF
+#[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtAddr(pub usize);
 
@@ -117,6 +119,7 @@ pub struct VirtAddr(pub usize);
 /// - 物理内存分配器
 /// - 页表管理
 /// - DMA 缓冲区管理
+#[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct PhysPageNum(pub usize);
 
@@ -136,6 +139,7 @@ pub struct PhysPageNum(pub usize);
 ///
 /// - [`indexes`] - 获取三级页表索引数组
 /// - [`step`] - 递增页号 (支持范围迭代)
+#[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct VirtPageNum(pub usize);
 
@@ -257,6 +261,10 @@ impl PhysAddr {
     /// ```
     pub fn mut_ref<T>(&self) -> &'static mut T {
         unsafe { (self.0 as *mut T).as_mut().unwrap() }
+    }
+
+    pub fn _ref<T>(&self) -> &'static T {
+        unsafe { (self.0 as *const T).as_ref().unwrap() }
     }
 }
 
@@ -572,6 +580,12 @@ impl StepByOne for VirtPageNum {
     /// 虚拟页号递增
     ///
     /// 将页号加 1，移动到下一个虚拟页面。
+    fn step(&mut self) {
+        self.0 += 1;
+    }
+}
+
+impl StepByOne for PhysPageNum {
     fn step(&mut self) {
         self.0 += 1;
     }

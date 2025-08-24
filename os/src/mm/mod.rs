@@ -63,11 +63,13 @@ mod heap_allocator;
 mod memory_set;
 mod page_table;
 
-pub use address::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
-use address::{StepByOne, VPNRange};
-pub use frame_allocator::{FrameTracker, frame_alloc};
-pub use memory_set::{KERNEL_SPACE, MapPermission, MemorySet, remap_test};
-pub use page_table::{PageTableEntry, translated_byte_buffer, translated_refmut, translated_str};
+pub use address::{PhysAddr, PhysPageNum, StepByOne, VPNRange, VirtAddr, VirtPageNum};
+pub use frame_allocator::{FrameTracker, frame_alloc, frame_dealloc};
+pub use memory_set::{KERNEL_SPACE, MapPermission, MemorySet, remap_test, kernel_token};
+pub use page_table::{
+    PageTable, PageTableEntry, UserBuffer, translated_byte_buffer, translated_refmut,
+    translated_str,
+};
 
 /// 初始化内存管理系统
 ///
