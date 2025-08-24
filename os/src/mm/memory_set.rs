@@ -431,7 +431,7 @@ impl MapArea {
     pub fn copy_data(&mut self, page_table: &PageTable, data: &[u8]) {
         assert_eq!(self.map_type, MapType::Framed);
         let mut start: usize = 0;
-        let mut current_vpn = self.vpn_range.get_start();
+        let mut current_vpn = self.vpn_range.start();
         let len = data.len();
         loop {
             let src = &data[start..len.min(start + PAGE_SIZE)];
@@ -439,7 +439,7 @@ impl MapArea {
                 .translate(current_vpn)
                 .unwrap()
                 .ppn()
-                .get_bytes_array()[..src.len()];
+                .bytes_array()[..src.len()];
             dst.copy_from_slice(src);
             start += PAGE_SIZE;
             if start >= len {
@@ -575,10 +575,10 @@ impl MapArea {
     /// ```
     #[allow(unused)]
     pub fn shrink_to(&mut self, page_table: &mut PageTable, new_end: VirtPageNum) {
-        for vpn in VPNRange::new(new_end, self.vpn_range.get_end()) {
+        for vpn in VPNRange::new(new_end, self.vpn_range.end()) {
             self.unmap_one(page_table, vpn)
         }
-        self.vpn_range = VPNRange::new(self.vpn_range.get_start(), new_end);
+        self.vpn_range = VPNRange::new(self.vpn_range.start(), new_end);
     }
 
     /// 扩展内存区域到指定结束位置
@@ -617,10 +617,10 @@ impl MapArea {
     /// ```
     #[allow(unused)]
     pub fn append_to(&mut self, page_table: &mut PageTable, new_end: VirtPageNum) {
-        for vpn in VPNRange::new(self.vpn_range.get_end(), new_end) {
+        for vpn in VPNRange::new(self.vpn_range.end(), new_end) {
             self.map_one(page_table, vpn)
         }
-        self.vpn_range = VPNRange::new(self.vpn_range.get_start(), new_end);
+        self.vpn_range = VPNRange::new(self.vpn_range.start(), new_end);
     }
 
     /// 从另一个内存区域创建新的映射区域
@@ -683,7 +683,7 @@ impl MapArea {
     /// 确保地址空间隔离和内存安全。
     pub fn from_another(another: &Self) -> Self {
         Self {
-            vpn_range: VPNRange::new(another.vpn_range.get_start(), another.vpn_range.get_end()),
+            vpn_range: VPNRange::new(another.vpn_range.start(), another.vpn_range.end()),
             data_frames: BTreeMap::new(),
             map_type: another.map_type,
             map_perm: another.map_perm,
@@ -1068,7 +1068,7 @@ impl MemorySet {
                     map_perm |= MapPermission::X;
                 }
                 let map_area = MapArea::new(start_va, end_va, MapType::Framed, map_perm);
-                max_end_vpn = map_area.vpn_range.get_end();
+                max_end_vpn = map_area.vpn_range.end();
                 memory_set.push(
                     map_area,
                     Some(&elf.input[ph.offset() as usize..(ph.offset() + ph.file_size()) as usize]),
@@ -1344,7 +1344,7 @@ impl MemorySet {
             .areas
             .iter_mut()
             .enumerate()
-            .find(|(_, area)| area.vpn_range.get_start() == start_vpn)
+            .find(|(_, area)| area.vpn_range.start() == start_vpn)
         {
             area.unmap(&mut self.page_table);
             self.areas.remove(idx);
@@ -1506,9 +1506,7 @@ impl MemorySet {
             for vpn in area.vpn_range {
                 let src_ppn = user_space.translate(vpn).unwrap().ppn();
                 let dst_ppn = memory_set.translate(vpn).unwrap().ppn();
-                dst_ppn
-                    .get_bytes_array()
-                    .copy_from_slice(src_ppn.get_bytes_array());
+                dst_ppn.bytes_array().copy_from_slice(src_ppn.bytes_array());
             }
         }
         memory_set

@@ -397,7 +397,7 @@ pub fn init_frame_allocator() {
 /// let frame = frame_alloc().expect("内存不足");
 ///
 /// // 通过物理页号访问页面数据
-/// let page_data = frame.ppn.get_bytes_array();
+/// let page_data = frame.ppn.bytes_array();
 /// page_data[0] = 42;
 ///
 /// // 离开作用域时页帧自动释放
@@ -441,7 +441,7 @@ impl FrameTracker {
     /// - `ppn` 对应有效的已分配页帧
     /// - 没有其他代码同时访问同一页帧
     pub fn new(ppn: PhysPageNum) -> Self {
-        let bytes_array = ppn.get_bytes_array();
+        let bytes_array = ppn.bytes_array();
         for i in bytes_array {
             *i = 0;
         }

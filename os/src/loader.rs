@@ -55,12 +55,12 @@
 //!
 //! ```rust
 //! // 获取应用程序数量
-//! let app_count = get_num_app();
+//! let app_count = num_app();
 //! println!("Found {} applications", app_count);
 //!
 //! // 加载特定应用程序
 //! for i in 0..app_count {
-//!     let app_data = get_app_data(i);
+//!     let app_data = app_data(i);
 //!     println!("App {}: {} bytes", i, app_data.len());
 //!     // 将应用程序数据加载到内存中...
 //! }
@@ -69,81 +69,51 @@ use super::println;
 use alloc::vec::Vec;
 use lazy_static::*;
 
-/// 获取嵌入的应用程序数量
+/// 获取应用程序总数
 ///
-/// 从内核镜像中读取应用程序数量，该数量在构建时确定并嵌入到镜像中。
-///
-/// ## 实现细节
-///
-/// 函数通过外部符号 `_num_app` 访问应用程序数量。该符号由构建脚本生成的
-/// 汇编代码定义，指向一个包含应用程序数量的内存位置。
+/// 返回系统中已注册的应用程序数量，用于遍历所有应用程序。
 ///
 /// ## Returns
 ///
-/// 嵌入到内核镜像中的应用程序数量
-///
-/// ## Safety
-///
-/// 此函数使用 `unsafe` 代码访问外部符号和原始内存，但通过以下方式确保安全：
-/// - 使用 `read_volatile()` 防止编译器优化
-/// - `_num_app` 符号由构建系统保证有效
-/// - 读取的是构建时确定的常量值
+/// 应用程序的总数量
 ///
 /// ## Examples
 ///
-/// ```rust
-/// let count = get_num_app();
-/// assert!(count > 0, "No applications found");
 /// ```
-pub fn get_num_app() -> usize {
+/// let count = num_app();
+/// println!("系统中共有 {} 个应用程序", count);
+/// ```
+pub fn num_app() -> usize {
     unsafe extern "C" {
-        safe fn _num_app();
+        fn _num_app();
     }
     unsafe { (_num_app as usize as *const usize).read_volatile() }
 }
 
 /// 获取指定应用程序的二进制数据
 ///
-/// 从内核镜像中提取指定 ID 的应用程序二进制数据，返回包含完整 ELF 文件的字节切片。
+/// 根据应用程序 ID 获取对应的 ELF 二进制数据。
+/// 应用程序 ID 从 0 开始，范围为 `[0, num_app())`。
 ///
 /// ## Arguments
 ///
-/// * `app_id` - 应用程序标识符，范围为 `[0, get_num_app())`
+/// * `app_id` - 应用程序标识符，范围为 `[0, num_app())`
 ///
 /// ## Returns
 ///
-/// 指向应用程序二进制数据的静态字节切片，包含完整的 ELF 文件内容
-///
-/// ## 实现原理
-///
-/// 1. **获取地址表**: 从 `_num_app` 符号开始读取地址数组
-/// 2. **边界检查**: 验证 `app_id` 在有效范围内
-/// 3. **计算范围**: 使用相邻两个地址计算应用程序数据的起始和结束位置
-/// 4. **创建切片**: 基于计算的地址范围创建字节切片
+/// 应用程序的 ELF 二进制数据切片
 ///
 /// ## Panics
 ///
-/// 如果 `app_id` 大于等于应用程序总数，函数会触发 panic
-///
-/// ## Safety
-///
-/// 函数使用大量 `unsafe` 代码，但通过以下方式确保内存安全：
-/// - 应用程序 ID 边界检查
-/// - 地址计算基于构建时生成的有效数据
-/// - 所有内存访问都在内核镜像的有效范围内
+/// 如果 `app_id` 超出有效范围则 panic
 ///
 /// ## Examples
 ///
-/// ```rust
-/// let app_count = get_num_app();
+/// ```
+/// let app_count = num_app();
 /// for i in 0..app_count {
-///     let app_data = get_app_data(i);
-///     println!("Application {}: {} bytes", i, app_data.len());
-///     
-///     // 验证 ELF 魔数
-///     if app_data.len() >= 4 {
-///         assert_eq!(&app_data[0..4], b"\x7fELF");
-///     }
+///     let app_data = app_data(i);
+///     println!("应用程序 {} 大小: {} 字节", i, app_data.len());
 /// }
 /// ```
 ///
@@ -154,12 +124,12 @@ pub fn get_num_app() -> usize {
 ///                        ↓
 ///                     [应用程序0数据] [应用程序1数据] ...
 /// ```
-pub fn get_app_data(app_id: usize) -> &'static [u8] {
+pub fn app_data(app_id: usize) -> &'static [u8] {
     unsafe extern "C" {
         safe fn _num_app();
     }
     let num_app_ptr = _num_app as usize as *const usize;
-    let num_app = get_num_app();
+    let num_app = num_app();
     let app_start = unsafe { core::slice::from_raw_parts(num_app_ptr.add(1), num_app + 1) };
     assert!(app_id < num_app);
     unsafe {
@@ -191,7 +161,7 @@ lazy_static! {
     ///
     /// ### 初始化过程
     ///
-    /// 1. **获取数量**: 通过 `get_num_app()` 确定应用程序总数
+    /// 1. **获取数量**: 通过 `num_app()` 确定应用程序总数
     /// 2. **遍历名称**: 从 `_app_names` 开始逐个读取 null 终止的字符串
     /// 3. **创建切片**: 为每个名称创建字符串切片
     /// 4. **UTF-8 转换**: 将字节切片转换为有效的 UTF-8 字符串
@@ -209,9 +179,9 @@ lazy_static! {
     /// - **零拷贝**: 直接引用内核镜像中的字符串数据
     /// - **一次性成本**: 初始化后的访问为 O(1) 复杂度
     static ref APP_NAMES: Vec<&'static str> = {
-        let num_app = get_num_app();
+        let num_app = num_app();
         unsafe extern "C" {
-            safe fn _app_names();
+            fn _app_names();
         }
         let mut start = _app_names as usize as *const u8;
         let mut v = Vec::new();
@@ -231,65 +201,46 @@ lazy_static! {
     };
 }
 
-/// 根据应用程序名称获取二进制数据
+/// 根据名称获取应用程序数据
 ///
-/// 通过应用程序名称查找并返回对应的二进制数据。此函数提供了比基于 ID 的
-/// `get_app_data()` 更友好的访问方式，支持通过字符串名称直接定位应用程序。
+/// 通过应用程序名称获取对应的 ELF 二进制数据。
+/// 这是对 `app_data()` 更友好的访问方式，支持通过字符串名称直接定位应用程序。
 ///
 /// ## Arguments
 ///
-/// * `name` - 要查找的应用程序名称，必须与构建时嵌入的名称完全匹配（区分大小写）
+/// * `name` - 应用程序名称
 ///
 /// ## Returns
 ///
-/// * `Some(&'static [u8])` - 如果找到匹配的应用程序，返回指向其二进制数据的切片
-/// * `None` - 如果没有找到匹配名称的应用程序
+/// - `Some(data)` - 找到应用程序，返回其二进制数据
+/// - `None` - 未找到指定名称的应用程序
 ///
-/// ## 实现细节
+/// ## 查找过程
 ///
-/// 1. **名称查找**: 在 `APP_NAMES` 向量中线性搜索匹配的名称
-/// 2. **ID 映射**: 将找到的名称索引作为应用程序 ID
-/// 3. **数据获取**: 调用 `get_app_data()` 获取对应的二进制数据
-///
-/// ## 性能考虑
-///
-/// - **时间复杂度**: O(n)，其中 n 是应用程序数量
-/// - **空间复杂度**: O(1)，不额外分配内存
-/// - **首次访问**: 触发 `APP_NAMES` 的延迟初始化
+/// 1. **获取数量**: 通过 `num_app()` 确定应用程序总数
+/// 2. **名称匹配**: 遍历所有应用程序名称，查找匹配项
+/// 3. **数据获取**: 调用 `app_data()` 获取对应的二进制数据
 ///
 /// ## Examples
 ///
-/// ```rust
-/// // 查找特定应用程序
-/// if let Some(app_data) = get_app_data_by_name("hello_world") {
-///     println!("Found hello_world: {} bytes", app_data.len());
-///     // 加载并执行应用程序...
-/// } else {
-///     println!("Application 'hello_world' not found");
+/// ```
+/// // 直接获取指定应用程序
+/// if let Some(app_data) = app_data_by_name("hello_world") {
+///     println!("找到 hello_world 应用程序，大小: {} 字节", app_data.len());
 /// }
 ///
-/// // 批量查找多个应用程序
+/// // 批量处理应用程序
 /// let apps_to_load = ["init", "shell", "user_program"];
 /// for app_name in apps_to_load.iter() {
-///     match get_app_data_by_name(app_name) {
-///         Some(data) => println!("Loaded {}: {} bytes", app_name, data.len()),
-///         None => println!("Warning: {} not found", app_name),
+///     match app_data_by_name(app_name) {
+///         Some(data) => println!("加载应用程序: {}", app_name),
+///         None => println!("未找到应用程序: {}", app_name),
 ///     }
 /// }
 /// ```
-///
-/// ## 使用场景
-///
-/// - **配置驱动加载**: 基于配置文件中的应用程序名称进行加载
-/// - **交互式选择**: 用户通过名称选择要运行的应用程序
-/// - **依赖解析**: 根据应用程序声明的依赖名称加载相关程序
-/// - **调试辅助**: 开发时通过可读名称快速定位特定应用程序
-#[allow(unused)]
-pub fn get_app_data_by_name(name: &str) -> Option<&'static [u8]> {
-    let num_app = get_num_app();
-    (0..num_app)
-        .find(|&i| APP_NAMES[i] == name)
-        .map(get_app_data)
+pub fn app_data_by_name(name: &str) -> Option<&'static [u8]> {
+    let num_app = num_app();
+    (0..num_app).find(|&i| APP_NAMES[i] == name).map(app_data)
 }
 
 /// 列出所有可用的应用程序名称

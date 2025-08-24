@@ -442,85 +442,43 @@ pub enum TaskStatus {
 impl TaskControlBlockInner {
     /// 获取陷阱上下文的可变引用
     ///
-    /// 通过陷阱上下文物理页号获取指向 [`TrapContext`] 的可变引用。
-    /// 陷阱上下文用于在用户态和内核态之间切换时保存和恢复寄存器状态。
+    /// 返回陷阱上下文物理页面的可变引用，用于修改用户态寄存器状态。
+    /// 陷阱上下文包含用户态所有寄存器的值，用于系统调用和异常处理。
     ///
     /// ## Returns
     ///
-    /// 返回陷阱上下文的可变引用，具有 `'static` 生命周期
+    /// 陷阱上下文的可变引用
     ///
-    /// ## 安全性
+    /// ## Safety
     ///
-    /// 返回的可变引用安全性基于以下保证：
-    /// - 陷阱上下文所在的物理页面在进程生命周期内有效
-    /// - 物理页号由内存集合管理，保证映射关系的正确性
-    /// - 同一时刻只有一个可变引用存在，避免别名引用
-    ///
-    /// ## 使用场景
-    ///
-    /// - **系统调用处理**: 读取和修改系统调用参数
-    /// - **异常处理**: 获取异常发生时的寄存器状态
-    /// - **进程初始化**: 设置新进程的初始寄存器状态
-    /// - **信号处理**: 修改进程的执行上下文
+    /// 调用者必须确保陷阱上下文物理页面已正确分配和初始化
     ///
     /// ## Examples
     ///
-    /// ```rust
-    /// let mut inner = task.inner_exclusive_access();
-    /// let trap_cx = inner.get_trap_cx();
-    ///
-    /// // 读取系统调用参数
-    /// let syscall_id = trap_cx.x[17];
-    /// let arg0 = trap_cx.x[10];
-    ///
-    /// // 设置系统调用返回值
-    /// trap_cx.x[10] = result;
     /// ```
-    pub fn get_trap_cx(&self) -> &'static mut TrapContext {
-        self.trap_cx_ppn.get_mut()
+    /// let trap_cx = inner.trap_cx();
+    /// trap_cx.x[10] = return_value;  // 设置系统调用返回值
+    /// ```
+    pub fn trap_cx(&self) -> &'static mut TrapContext {
+        self.trap_cx_ppn.mut_ref()
     }
 
-    /// 获取用户地址空间令牌
+    /// 获取用户地址空间的页表标识符
     ///
-    /// 返回当前进程地址空间的页表令牌，用于地址空间切换和地址转换。
-    /// 令牌包含页表模式、ASID 和根页表物理页号信息。
+    /// 返回用户地址空间的页表标识符，用于在用户态和内核态之间切换地址空间。
+    /// 该值通常被编码到 `satp` 寄存器中。
     ///
     /// ## Returns
     ///
-    /// 返回可直接写入 `satp` 寄存器的令牌值
-    ///
-    /// ## satp 寄存器格式
-    ///
-    /// ```text
-    /// 63      60 59           44 43                     0
-    /// ┌─────────┐┌────────────────┐┌────────────────────────────────────────────┐
-    /// │  MODE   ││      ASID      ││                   PPN                      │
-    /// │ (4bit)  ││    (16bit)     ││                 (44bit)                    │
-    /// └─────────┘└────────────────┘└────────────────────────────────────────────┘
-    /// ```
-    ///
-    /// ## 使用场景
-    ///
-    /// - **任务切换**: 在任务切换时保存当前地址空间信息
-    /// - **系统调用**: 为地址转换提供用户态页表信息
-    /// - **内存管理**: 访问用户态内存时指定地址空间
-    /// - **调试工具**: 显示进程地址空间信息
+    /// 用户地址空间的页表标识符
     ///
     /// ## Examples
     ///
-    /// ```rust
-    /// // 获取当前任务的地址空间令牌
-    /// let inner = task.inner_exclusive_access();
-    /// let user_token = inner.get_user_token();
-    ///
-    /// // 使用令牌进行地址转换
-    /// let translated_buffer = translated_byte_buffer(
-    ///     user_token,
-    ///     user_buffer_ptr,
-    ///     buffer_len
-    /// );
     /// ```
-    pub fn get_user_token(&self) -> usize {
+    /// let user_token = inner.user_token();
+    /// // 切换到用户地址空间
+    /// ```
+    pub fn user_token(&self) -> usize {
         self.memory_set.token()
     }
 
@@ -532,7 +490,7 @@ impl TaskControlBlockInner {
     /// ## Returns
     ///
     /// 返回当前的 [`TaskStatus`]
-    fn get_status(&self) -> TaskStatus {
+    fn status(&self) -> TaskStatus {
         self.task_status
     }
 
@@ -572,7 +530,7 @@ impl TaskControlBlockInner {
     /// }
     /// ```
     pub fn is_zombie(&self) -> bool {
-        self.get_status() == TaskStatus::Zombie
+        self.status() == TaskStatus::Zombie
     }
 }
 
@@ -691,7 +649,7 @@ impl TaskControlBlock {
             .ppn();
         let pid_handle = pid_alloc();
         let kernel_stack = KernelStack::new(&pid_handle);
-        let kernel_stack_top = kernel_stack.get_top();
+        let kernel_stack_top = kernel_stack.top();
         let task_control_block = Self {
             pid: pid_handle,
             kernel_stack,
@@ -708,7 +666,7 @@ impl TaskControlBlock {
                 })
             },
         };
-        let trap_cx = task_control_block.inner_exclusive_access().get_trap_cx();
+        let trap_cx = task_control_block.inner_exclusive_access().trap_cx();
         *trap_cx = TrapContext::app_init_context(
             entry_point,
             user_sp,
@@ -774,7 +732,7 @@ impl TaskControlBlock {
     /// // 访问陷阱上下文
     /// {
     ///     let inner = task.inner_exclusive_access();
-    ///     let trap_cx = inner.get_trap_cx();
+    ///     let trap_cx = inner.trap_cx();
     ///     let syscall_id = trap_cx.x[17];
     /// }
     ///
@@ -1028,7 +986,7 @@ impl TaskControlBlock {
             .ppn();
         let pid_handle = pid_alloc();
         let kernel_stack = KernelStack::new(&pid_handle);
-        let kernel_stack_top = kernel_stack.get_top();
+        let kernel_stack_top = kernel_stack.top();
         let task_control_block = Arc::new(TaskControlBlock {
             pid: pid_handle,
             kernel_stack,
@@ -1046,7 +1004,7 @@ impl TaskControlBlock {
             },
         });
         parent_inner.children.push(task_control_block.clone());
-        let trap_cx = task_control_block.inner_exclusive_access().get_trap_cx();
+        let trap_cx = task_control_block.inner_exclusive_access().trap_cx();
         trap_cx.kernel_sp = kernel_stack_top;
         task_control_block
     }
@@ -1184,7 +1142,7 @@ impl TaskControlBlock {
     /// // 检查新的执行状态
     /// {
     ///     let inner = task.inner_exclusive_access();
-    ///     let trap_cx = inner.get_trap_cx();
+    ///     let trap_cx = inner.trap_cx();
     ///     println!("New entry point: 0x{:x}", trap_cx.sepc);
     ///     println!("New stack pointer: 0x{:x}", trap_cx.x[2]);
     /// }
@@ -1226,12 +1184,12 @@ impl TaskControlBlock {
         inner.memory_set = memory_set;
         inner.trap_cx_ppn = trap_cx_ppn;
         inner.base_size = user_sp;
-        let trap_cx = inner.get_trap_cx();
+        let trap_cx = inner.trap_cx();
         *trap_cx = TrapContext::app_init_context(
             entry_point,
             user_sp,
             KERNEL_SPACE.exclusive_access().token(),
-            self.kernel_stack.get_top(),
+            self.kernel_stack.top(),
             trap_handler as usize,
         );
     }

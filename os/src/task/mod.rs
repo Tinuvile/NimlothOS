@@ -48,7 +48,7 @@
 //! // run_tasks() 在本工程由处理器模块统一驱动
 //! ```
 //!
-use crate::{loader::get_app_data_by_name, println, sbi::shutdown};
+use crate::{loader::app_data_by_name, println, sbi::shutdown};
 use alloc::sync::Arc;
 use lazy_static::*;
 use task::{TaskControlBlock, TaskStatus};
@@ -75,7 +75,7 @@ lazy_static! {
     /// 从内核内置应用仓库中加载名为 `initproc` 的程序，作为系统中的第一个
     /// 用户进程。该进程通常负责拉起其他用户程序或提供最小的用户空间环境。
     pub static ref INITPROC: Arc<TaskControlBlock> = Arc::new(TaskControlBlock::new(
-        get_app_data_by_name("initproc").unwrap()
+        app_data_by_name("initproc").unwrap()
     ));
 }
 

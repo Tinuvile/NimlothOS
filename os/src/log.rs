@@ -90,9 +90,9 @@ impl Log for SimpleLogger {
             };
 
             // 收集上下文信息
-            let timestamp = get_timestamp();
-            let cpu_id = get_cpu_id();
-            let thread_id = get_thread_id();
+            let timestamp = timestamp();
+            let cpu_id = cpu_id();
+            let thread_id = thread_id();
             let module = record.target();
 
             if let (Some(file), Some(line)) = (record.file(), record.line()) {
@@ -149,7 +149,7 @@ static mut TICK_COUNT: usize = 0;
 /// ## Safety
 ///
 /// 使用 `unsafe` 代码访问全局可变变量，在单线程环境下是安全的。
-fn get_timestamp() -> usize {
+fn timestamp() -> usize {
     unsafe {
         TICK_COUNT += 1;
         TICK_COUNT
@@ -167,7 +167,7 @@ fn get_timestamp() -> usize {
 /// ## Safety
 ///
 /// 使用内联汇编读取 CSR 寄存器，这是一个特权操作。
-fn get_cpu_id() -> usize {
+fn cpu_id() -> usize {
     unsafe {
         let cpu_id: usize;
         core::arch::asm!("csrr {}, mhartid", out(reg) cpu_id, options(nomem, nostack));
@@ -187,7 +187,7 @@ fn get_cpu_id() -> usize {
 /// ## Note
 ///
 /// 这是一个临时实现，真正的线程系统需要维护独立的线程 ID。
-fn get_thread_id() -> usize {
+fn thread_id() -> usize {
     unsafe {
         let thread_id: usize;
         core::arch::asm!("csrr {}, mhartid", out(reg) thread_id, options(nomem, nostack));

@@ -4,13 +4,13 @@
 #[macro_use]
 extern crate user_lib;
 
-use user_lib::{fork, getpid, wait};
+use user_lib::{fork, pid, wait};
 
 #[unsafe(no_mangle)]
 pub fn main() -> i32 {
     assert_eq!(wait(&mut 0i32), -1);
     println!("sys_wait without child process test passed!");
-    println!("parent start, pid = {}!", getpid());
+    println!("parent start, pid = {}!", pid());
     let pid = fork();
     if pid == 0 {
         // child process

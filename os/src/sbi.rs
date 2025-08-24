@@ -47,7 +47,7 @@ pub fn console_getchar() -> usize {
 ///
 /// ## Arguments
 /// * `timer` - 触发时间（绝对计数值）
-pub fn set_timer(timer: usize) {
+pub fn timer(timer: usize) {
     sbi_rt::set_timer(timer as _);
 }
 

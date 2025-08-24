@@ -25,10 +25,10 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::block_cache::{get_block_cache, block_cache_sync_all};
+//! use easy_fs::block_cache::{block_cache, block_cache_sync_all};
 //!
 //! // 获取块缓存
-//! let block_cache = get_block_cache(block_id, block_device);
+//! let block_cache = block_cache(block_id, block_device);
 //!
 //! // 读取数据
 //! let data = block_cache.lock().read(offset, |data: &DataBlock| {
@@ -182,10 +182,10 @@ impl BlockCache {
     /// ## Examples
     ///
     /// ```
-    /// let data: &u32 = block_cache.get_ref(0);  // 读取 u32 数据
-    /// let slice: &[u8; 10] = block_cache.get_ref(100);  // 读取字节数组
+    /// let data: &u32 = block_cache.ref_at(0);  // 读取 u32 数据
+    /// let slice: &[u8; 10] = block_cache.ref_at(100);  // 读取字节数组
     /// ```
-    pub fn get_ref<T>(&self, offset: usize) -> &T
+    pub fn ref_at<T>(&self, offset: usize) -> &T
     where
         T: Sized,
     {
@@ -223,10 +223,10 @@ impl BlockCache {
     /// ## Examples
     ///
     /// ```
-    /// let data: &mut u32 = block_cache.get_mut(0);
+    /// let data: &mut u32 = block_cache.mut_at(0);
     /// *data = 0x12345678;  // 修改数据
     /// ```
-    pub fn get_mut<T>(&mut self, offset: usize) -> &mut T
+    pub fn mut_at<T>(&mut self, offset: usize) -> &mut T
     where
         T: Sized,
     {
@@ -264,7 +264,7 @@ impl BlockCache {
     /// });
     /// ```
     pub fn read<T, V>(&self, offset: usize, f: impl FnOnce(&T) -> V) -> V {
-        f(self.get_ref(offset))
+        f(self.ref_at(offset))
     }
 
     /// 修改缓存数据
@@ -298,7 +298,7 @@ impl BlockCache {
     /// });
     /// ```
     pub fn modify<T, V>(&mut self, offset: usize, f: impl FnOnce(&mut T) -> V) -> V {
-        f(self.get_mut(offset))
+        f(self.mut_at(offset))
     }
 
     /// 同步缓存到磁盘
@@ -390,10 +390,10 @@ impl BlockCacheManager {
     /// ## Examples
     ///
     /// ```
-    /// let cache = manager.get_block_cache(block_id, block_device);
+    /// let cache = manager.block_cache(block_id, block_device);
     /// let data = cache.lock().read(0, |data: &DataBlock| data[0]);
     /// ```
-    pub fn get_block_cache(
+    pub fn block_cache(
         &mut self,
         block_id: usize,
         block_device: Arc<dyn BlockDevice>,
@@ -449,18 +449,15 @@ lazy_static! {
 /// ## Examples
 ///
 /// ```
-/// let cache = get_block_cache(block_id, block_device);
+/// let cache = block_cache(block_id, block_device);
 /// cache.lock().modify(0, |data: &mut DataBlock| {
 ///     data[0] = 0x42;
 /// });
 /// ```
-pub fn get_block_cache(
-    block_id: usize,
-    block_device: Arc<dyn BlockDevice>,
-) -> Arc<Mutex<BlockCache>> {
+pub fn block_cache(block_id: usize, block_device: Arc<dyn BlockDevice>) -> Arc<Mutex<BlockCache>> {
     BLOCK_CACHE_MANAGER
         .lock()
-        .get_block_cache(block_id, block_device)
+        .block_cache(block_id, block_device)
 }
 
 /// 同步所有缓存到磁盘

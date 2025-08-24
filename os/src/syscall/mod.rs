@@ -11,8 +11,8 @@
 //! - **进程管理**:
 //!   - [`sys_exit`]     - 进程退出
 //!   - [`sys_yield`]    - 让出 CPU
-//!   - [`sys_get_time`] - 获取系统时间
-//!   - [`sys_getpid`]   - 获取当前进程 PID
+//!   - [`sys_time`] - 获取系统时间
+//!   - [`sys_pid`]   - 获取当前进程 PID
 //!   - [`sys_fork`]     - 创建子进程（复制地址空间）
 //!   - [`sys_exec`]     - 替换为新程序镜像
 //!   - [`sys_waitpid`]  - 等待子进程结束并获取退出码
@@ -24,8 +24,8 @@
 //! - `SYSCALL_WRITE` (64)      - 写操作
 //! - `SYSCALL_EXIT` (93)       - 进程退出
 //! - `SYSCALL_YIELD` (124)     - 让出 CPU
-//! - `SYSCALL_GET_TIME` (169)  - 获取系统时间
-//! - `SYSCALL_GETPID` (172)    - 获取进程 PID
+//! - `SYSCALL_TIME` (169)  - 获取系统时间
+//! - `SYSCALL_PID` (172)    - 获取进程 PID
 //! - `SYSCALL_FORK` (220)      - 创建子进程
 //! - `SYSCALL_EXEC` (221)      - 执行新程序
 //! - `SYSCALL_WAITPID` (260)   - 等待子进程
@@ -56,14 +56,26 @@ const SYSCALL_YIELD: usize = 124;
 /// 系统调用号：获取时间
 ///
 /// 对应 Linux 系统调用 `gettimeofday(2)` 的简化版本，获取系统时间戳。
-const SYSCALL_GET_TIME: usize = 169;
+const SYSCALL_TIME: usize = 169;
 
-const SYSCALL_GETPID: usize = 172;
+/// 系统调用号：获取进程 PID
+///
+/// 对应 Linux 系统调用 `getpid(2)`，获取当前进程的 PID。
+const SYSCALL_PID: usize = 172;
 
+/// 系统调用号：创建子进程
+///
+/// 对应 Linux 系统调用 `fork(2)`，创建当前进程的一个子进程。
 const SYSCALL_FORK: usize = 220;
 
+/// 系统调用号：执行新程序
+///
+/// 对应 Linux 系统调用 `execve(2)`，用新程序替换当前进程。
 const SYSCALL_EXEC: usize = 221;
 
+/// 系统调用号：等待子进程结束
+///
+/// 对应 Linux 系统调用 `waitpid(2)`，等待指定 PID 的子进程结束。
 const SYSCALL_WAITPID: usize = 260;
 
 /// 系统调用分发器
@@ -98,8 +110,8 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
         SYSCALL_WRITE => sys_write(args[0], args[1] as *const u8, args[2]),
         SYSCALL_EXIT => sys_exit(args[0] as i32),
         SYSCALL_YIELD => sys_yield(),
-        SYSCALL_GET_TIME => sys_get_time(),
-        SYSCALL_GETPID => sys_getpid(),
+        SYSCALL_TIME => sys_time(),
+        SYSCALL_PID => sys_pid(),
         SYSCALL_FORK => sys_fork(),
         SYSCALL_EXEC => sys_exec(args[0] as *const u8),
         SYSCALL_WAITPID => sys_waitpid(args[0] as isize, args[1] as *mut i32),

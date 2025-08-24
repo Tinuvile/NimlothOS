@@ -30,7 +30,7 @@
 use crate::config::{TRAMPOLINE, TRAP_CONTEXT};
 use crate::syscall::syscall;
 use crate::task::{current_trap_cx, current_user_token, exit_current_and_run_next};
-use crate::timer::set_next_trigger;
+use crate::timer::next_trigger;
 use crate::{println, task::suspend_current_and_run_next};
 use core::arch::{asm, global_asm};
 use riscv::register::{
@@ -220,7 +220,7 @@ pub fn trap_handler() -> ! {
             exit_current_and_run_next(-3);
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
-            set_next_trigger();
+            next_trigger();
             suspend_current_and_run_next();
         }
         _ => {

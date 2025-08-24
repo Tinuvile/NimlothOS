@@ -4,21 +4,21 @@
 #[macro_use]
 extern crate user_lib;
 
-use user_lib::{exit, fork, get_time, getpid, sleep, wait};
+use user_lib::{exit, fork, pid, sleep, time, wait};
 
 static NUM: usize = 30;
 
 #[unsafe(no_mangle)]
 pub fn main() -> i32 {
     for _ in 0..NUM {
-        let pid = fork();
-        if pid == 0 {
-            let current_time = get_time();
+        let _pid = fork();
+        if _pid == 0 {
+            let current_time = time();
             let sleep_length =
                 (current_time as i32 as isize) * (current_time as i32 as isize) % 1000 + 1000;
-            println!("pid {} sleep for {} ms", getpid(), sleep_length);
+            println!("pid {} sleep for {} ms", pid(), sleep_length);
             sleep(sleep_length as usize);
-            println!("pid {} OK!", getpid());
+            println!("pid {} OK!", pid());
             exit(0);
         }
     }

@@ -23,7 +23,7 @@
 //! - 超时和延迟功能
 
 use crate::config::CLOCK_FREQ;
-use crate::sbi::set_timer;
+use crate::sbi::timer;
 use riscv::register::time;
 
 /// 每秒的时钟中断次数 (100Hz)
@@ -35,59 +35,46 @@ const TICKS_PER_SEC: usize = 100;
 /// 每秒的毫秒数常量
 const MSEC_PER_SEC: usize = 1000;
 
-/// 获取系统时间（时钟周期）
+/// 获取当前系统时间（时钟周期数）
 ///
-/// 读取 RISC-V 的 `time` CSR 寄存器，返回自系统启动以来经过的
-/// 时钟周期数。这是最精确的时间测量方式。
+/// 返回系统启动以来的时钟周期数，用于时间测量和定时器功能。
+/// 时钟频率由 `CLOCK_FREQ` 常量定义。
 ///
 /// ## Returns
 ///
-/// 返回时钟周期计数，单位为时钟周期（通常为纳秒级精度）
+/// 系统启动以来的时钟周期数
 ///
-/// ## Usage
+/// ## Examples
 ///
-/// ```rust
-/// let start = get_time();
-/// // 执行某些操作
-/// let end = get_time();
-/// let cycles = end - start;  // 经过的时钟周期数
 /// ```
-///
-/// ## Note
-///
-/// 时钟周期数会在长时间运行后溢出，但对于大多数应用场景足够使用。
-pub fn get_time() -> usize {
-    time::read()
+/// let start = time();
+/// // ... 执行一些操作 ...
+/// let end = time();
+/// let elapsed = end - start;
+/// ```
+pub fn time() -> usize {
+    riscv::register::time::read()
 }
 
-/// 获取系统时间（毫秒）
+/// 获取当前系统时间（毫秒）
 ///
-/// 将时钟周期数转换为毫秒，提供更直观的时间测量单位。
-/// 转换基于系统时钟频率 [`CLOCK_FREQ`] 进行。
+/// 将时钟周期数转换为毫秒，便于人类理解的时间表示。
+/// 转换公式：毫秒 = 时钟周期数 / (时钟频率 / 1000)
 ///
 /// ## Returns
 ///
-/// 返回自系统启动以来经过的毫秒数
+/// 系统启动以来的毫秒数
 ///
-/// ## Precision
+/// ## Examples
 ///
-/// 精度取决于时钟频率和整数除法的舍入误差，通常为毫秒级精度。
-///
-/// ## Usage
-///
-/// ```rust
-/// let start_ms = get_time_ms();
-/// // 执行某些操作
-/// let end_ms = get_time_ms();
-/// let elapsed_ms = end_ms - start_ms;  // 经过的毫秒数
 /// ```
-///
-/// ## Implementation
-///
-/// 通过除法 `time / (CLOCK_FREQ / MSEC_PER_SEC)` 将时钟周期转换为毫秒。
-/// 这等价于 `(time * MSEC_PER_SEC) / CLOCK_FREQ`，但避免了大数乘法的溢出风险。
-pub fn get_time_ms() -> usize {
-    time::read() / (CLOCK_FREQ / MSEC_PER_SEC)
+/// let start_ms = time_ms();
+/// // ... 执行一些操作 ...
+/// let end_ms = time_ms();
+/// let elapsed_ms = end_ms - start_ms;
+/// ```
+pub fn time_ms() -> usize {
+    time() / (CLOCK_FREQ / 1000)
 }
 
 /// 设置下一次时钟中断触发时间
@@ -97,7 +84,7 @@ pub fn get_time_ms() -> usize {
 ///
 /// ## 工作原理
 ///
-/// 1. 获取当前时间 (`get_time()`)
+/// 1. 获取当前时间 (`time()`)
 /// 2. 计算下次中断时间：当前时间 + 时间片间隔
 /// 3. 通过 SBI 接口设置时钟中断触发时间
 /// 4. 当时钟到达设定时间时，硬件触发时钟中断
@@ -117,6 +104,6 @@ pub fn get_time_ms() -> usize {
 /// ## Note
 ///
 /// 必须在每次时钟中断处理时调用此函数，否则时钟中断将不会再次触发。
-pub fn set_next_trigger() {
-    set_timer(get_time() + CLOCK_FREQ / TICKS_PER_SEC);
+pub fn next_trigger() {
+    timer(time() + CLOCK_FREQ / TICKS_PER_SEC);
 }

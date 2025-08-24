@@ -50,8 +50,8 @@
 //!
 
 use super::{
-    Bitmap, BlockDevice, DataBlock, DiskInode, DiskInodeType, SuperBlock, block_cache_sync_all,
-    get_block_cache,
+    Bitmap, BlockDevice, DataBlock, DiskInode, DiskInodeType, SuperBlock, block_cache,
+    block_cache_sync_all,
 };
 use crate::{BLOCK_SZ, vfs::Inode};
 use alloc::sync::Arc;
@@ -135,7 +135,7 @@ impl EasyFileSystem {
             data_area_start_block: 1 + inode_total_blocks + data_bitmap_blocks,
         };
         for i in 0..total_blocks {
-            get_block_cache(i as usize, Arc::clone(&block_device))
+            block_cache(i as usize, Arc::clone(&block_device))
                 .lock()
                 .modify(0, |data_block: &mut DataBlock| {
                     for byte in data_block.iter_mut() {
@@ -143,7 +143,7 @@ impl EasyFileSystem {
                     }
                 });
         }
-        get_block_cache(0, Arc::clone(&block_device)).lock().modify(
+        block_cache(0, Arc::clone(&block_device)).lock().modify(
             0,
             |super_block: &mut SuperBlock| {
                 super_block.initialize(
@@ -156,8 +156,8 @@ impl EasyFileSystem {
             },
         );
         assert_eq!(efs.alloc_inode(), 0);
-        let (root_inode_block_id, root_inode_offset) = efs.get_disk_inode_pos(0);
-        get_block_cache(root_inode_block_id as usize, Arc::clone(&block_device))
+        let (root_inode_block_id, root_inode_offset) = efs.disk_inode_pos(0);
+        block_cache(root_inode_block_id as usize, Arc::clone(&block_device))
             .lock()
             .modify(root_inode_offset, |disk_inode: &mut DiskInode| {
                 disk_inode.initialize(DiskInodeType::Directory);
@@ -191,10 +191,10 @@ impl EasyFileSystem {
     /// - 加载过程不会修改块设备上的数据
     /// - 文件系统加载后立即可用
     pub fn open(block_device: Arc<dyn BlockDevice>) -> Arc<Mutex<Self>> {
-        get_block_cache(0, Arc::clone(&block_device))
+        block_cache(0, Arc::clone(&block_device))
             .lock()
             .read(0, |super_block: &SuperBlock| {
-                assert!(super_block.is_valid(), "Error loading EFS!");
+                assert!(super_block.valid(), "Error loading EFS!");
                 let inode_total_blocks =
                     super_block.inode_bitmap_blocks + super_block.inode_area_blocks;
                 let efs = Self {
@@ -226,7 +226,7 @@ impl EasyFileSystem {
     /// - 每个块可以存储多个 inode（取决于 `DiskInode` 的大小）
     /// - 块号 = inode 区域起始块号 + inode_id / 每块 inode 数量
     /// - 偏移量 = (inode_id % 每块 inode 数量) × inode 大小
-    pub fn get_disk_inode_pos(&self, inode_id: u32) -> (u32, usize) {
+    pub fn disk_inode_pos(&self, inode_id: u32) -> (u32, usize) {
         let inode_size = core::mem::size_of::<DiskInode>();
         let inodes_per_block = (BLOCK_SZ / inode_size) as u32;
         let block_id = self.inode_area_start_block + inode_id / inodes_per_block;
@@ -246,7 +246,7 @@ impl EasyFileSystem {
     ///
     /// ## Returns
     /// 数据块在块设备上的实际块号
-    pub fn get_data_block_id(&self, data_block_id: u32) -> u32 {
+    pub fn data_block_id(&self, data_block_id: u32) -> u32 {
         self.data_area_start_block + data_block_id
     }
 
@@ -309,13 +309,13 @@ impl EasyFileSystem {
         /* TODO: Implement this -> support file delete
         self.inode_bitmap
             .dealloc(&self.block_device, inode_id as usize);
-        get_block_cache(
-            self.get_disk_inode_pos(inode_id).0 as usize,
+        block_cache(
+            self.disk_inode_pos(inode_id).0 as usize,
             Arc::clone(&self.block_device),
         )
         .lock()
         .modify(
-            self.get_disk_inode_pos(inode_id).1,
+            self.disk_inode_pos(inode_id).1,
             |disk_inode: &mut DiskInode| {
                 disk_inode.initialize(DiskInodeType::Free);
             },
@@ -342,7 +342,7 @@ impl EasyFileSystem {
     /// - 释放操作会清空数据块内容
     /// - 释放后的数据块可以重新分配使用
     pub fn dealloc_data(&mut self, block_id: u32) {
-        get_block_cache(block_id as usize, Arc::clone(&self.block_device))
+        block_cache(block_id as usize, Arc::clone(&self.block_device))
             .lock()
             .modify(0, |data_block: &mut DataBlock| {
                 data_block.iter_mut().for_each(|p| {
@@ -379,7 +379,7 @@ impl EasyFileSystem {
     /// ```
     pub fn root_inode(efs: &Arc<Mutex<Self>>) -> Inode {
         let block_device = Arc::clone(&efs.lock().block_device);
-        let (block_id, block_offset) = efs.lock().get_disk_inode_pos(0);
+        let (block_id, block_offset) = efs.lock().disk_inode_pos(0);
         Inode::new(block_id, block_offset, Arc::clone(efs), block_device)
     }
 }

@@ -3,14 +3,14 @@
 //! 实现与进程生命周期管理相关的系统调用，包括进程退出、
 //! CPU 时间片让出和系统时间获取等功能。
 
-use crate::loader::get_app_data_by_name;
+use crate::loader::app_data_by_name;
 use crate::mm::{translated_refmut, translated_str};
 use crate::println;
 use crate::task::{
     add_task, current_task, current_user_token, exit_current_and_run_next,
     suspend_current_and_run_next,
 };
-use crate::timer::get_time_ms;
+use crate::timer::time_ms;
 use alloc::sync::Arc;
 
 /// 系统调用：进程退出
@@ -88,41 +88,24 @@ pub fn sys_yield() -> isize {
     0
 }
 
-/// 系统调用：获取系统时间
+/// 获取系统时间系统调用
 ///
-/// 实现获取系统运行时间的系统调用，返回自系统启动以来经过的毫秒数。
-/// 这是 `gettimeofday(2)` 的简化版本。
+/// 返回系统启动以来的毫秒数，用于用户程序的时间测量。
 ///
 /// ## Returns
 ///
-/// 返回系统启动以来经过的毫秒数（作为 `isize` 类型）
-///
-/// ## Precision
-///
-/// 时间精度取决于系统时钟频率和定时器实现，通常为毫秒级精度。
-///
-/// ## Use Cases
-///
-/// - 测量代码执行时间
-/// - 实现定时器和超时机制
-/// - 性能分析和基准测试
-/// - 随机数生成的种子
+/// 系统启动以来的毫秒数
 ///
 /// ## Examples
 ///
-/// 从用户态调用：
 /// ```c
-/// long start_time = get_time();
-/// // 执行某些操作
-/// long end_time = get_time();
-/// long elapsed = end_time - start_time;  // 计算耗时
+/// long start_time = time();
+/// // ... 执行一些操作 ...
+/// long end_time = time();
+/// long elapsed = end_time - start_time;
 /// ```
-///
-/// ## Note
-///
-/// 返回的时间值可能会在长时间运行后溢出，调用者应该考虑处理这种情况。
-pub fn sys_get_time() -> isize {
-    get_time_ms() as isize
+pub fn sys_time() -> isize {
+    time_ms() as isize
 }
 
 /// 系统调用：获取进程 PID
@@ -130,7 +113,7 @@ pub fn sys_get_time() -> isize {
 /// 返回当前进程的进程标识符（PID）。
 /// - 成功时返回一个非负整数 PID。
 /// - 本实现中不会失败。
-pub fn sys_getpid() -> isize {
+pub fn sys_pid() -> isize {
     current_task().unwrap().pid.0 as isize
 }
 
@@ -159,7 +142,7 @@ pub fn sys_fork() -> isize {
     let current_task = current_task().unwrap();
     let new_task = current_task.fork();
     let new_pid = new_task.pid.0;
-    let trap_cx = new_task.inner_exclusive_access().get_trap_cx();
+    let trap_cx = new_task.inner_exclusive_access().trap_cx();
     trap_cx.x[10] = 0; // x[10] = a0
     add_task(new_task);
     new_pid as isize
@@ -187,7 +170,7 @@ pub fn sys_fork() -> isize {
 pub fn sys_exec(path: *const u8) -> isize {
     let token = current_user_token();
     let path = translated_str(token, path);
-    if let Some(data) = get_app_data_by_name(path.as_str()) {
+    if let Some(data) = app_data_by_name(path.as_str()) {
         let task = current_task().unwrap();
         task.exec(data);
         0

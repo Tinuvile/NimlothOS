@@ -52,8 +52,8 @@
 //! ```
 
 use super::{
-    BlockDevice, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, EasyFileSystem,
-    block_cache_sync_all, get_block_cache,
+    BlockDevice, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, EasyFileSystem, block_cache,
+    block_cache_sync_all,
 };
 use alloc::{string::String, sync::Arc, vec::Vec};
 use spin::{Mutex, MutexGuard};
@@ -154,7 +154,7 @@ impl Inode {
     /// });
     /// ```
     fn read_disk_inode<V>(&self, f: impl FnOnce(&DiskInode) -> V) -> V {
-        get_block_cache(self.block_id, Arc::clone(&self.block_device))
+        block_cache(self.block_id, Arc::clone(&self.block_device))
             .lock()
             .read(self.block_offset, f)
     }
@@ -188,7 +188,7 @@ impl Inode {
     /// });
     /// ```
     fn modify_disk_inode<V>(&self, f: impl FnOnce(&mut DiskInode) -> V) -> V {
-        get_block_cache(self.block_id, Arc::clone(&self.block_device))
+        block_cache(self.block_id, Arc::clone(&self.block_device))
             .lock()
             .modify(self.block_offset, f)
     }
@@ -232,7 +232,7 @@ impl Inode {
         let fs = self.fs.lock();
         self.read_disk_inode(|disk_inode| {
             self.find_inode_id(name, disk_inode).map(|inode_id| {
-                let (block_id, block_offset) = fs.get_disk_inode_pos(inode_id);
+                let (block_id, block_offset) = fs.disk_inode_pos(inode_id);
                 Arc::new(Self::new(
                     block_id,
                     block_offset,
@@ -269,7 +269,7 @@ impl Inode {
     ///
     /// 如果当前 inode 不是目录类型，则触发 panic
     fn find_inode_id(&self, name: &str, disk_inode: &DiskInode) -> Option<u32> {
-        assert!(disk_inode.is_dir());
+        assert!(disk_inode.dir());
         let file_count = (disk_inode.size as usize) / DIRENT_SZ;
         let mut dirent = DirEntry::empty();
         for i in 0..file_count {
@@ -373,7 +373,7 @@ impl Inode {
     pub fn create(&self, name: &str) -> Option<Arc<Inode>> {
         let mut fs = self.fs.lock();
         let op = |root_inode: &DiskInode| {
-            assert!(root_inode.is_dir());
+            assert!(root_inode.dir());
             self.find_inode_id(name, root_inode)
         };
         if self.read_disk_inode(op).is_some() {
@@ -381,8 +381,8 @@ impl Inode {
         }
 
         let new_inode_id = fs.alloc_inode();
-        let (new_inode_block_id, new_inode_block_offset) = fs.get_disk_inode_pos(new_inode_id);
-        get_block_cache(new_inode_block_id as usize, Arc::clone(&self.block_device))
+        let (new_inode_block_id, new_inode_block_offset) = fs.disk_inode_pos(new_inode_id);
+        block_cache(new_inode_block_id as usize, Arc::clone(&self.block_device))
             .lock()
             .modify(new_inode_block_offset, |new_inode: &mut DiskInode| {
                 new_inode.initialize(DiskInodeType::File);
@@ -399,7 +399,7 @@ impl Inode {
             );
         });
 
-        let (block_id, block_offset) = fs.get_disk_inode_pos(new_inode_id);
+        let (block_id, block_offset) = fs.disk_inode_pos(new_inode_id);
         block_cache_sync_all();
         Some(Arc::new(Self::new(
             block_id,

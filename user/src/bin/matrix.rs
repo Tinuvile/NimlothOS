@@ -5,7 +5,7 @@
 #[macro_use]
 extern crate user_lib;
 
-use user_lib::{exit, fork, get_time, getpid, wait, yield_};
+use user_lib::{exit, fork, pid, time, wait, yield_};
 
 static NUM: usize = 30;
 const N: usize = 10;
@@ -23,7 +23,7 @@ fn work(times: isize) {
         }
     }
     yield_();
-    println!("pid {} is running ({} times)!.", getpid(), times);
+    println!("pid {} is running ({} times)!.", pid(), times);
     for _ in 0..times {
         for i in 0..N {
             for j in 0..N {
@@ -41,7 +41,7 @@ fn work(times: isize) {
             }
         }
     }
-    println!("pid {} done!.", getpid());
+    println!("pid {} done!.", pid());
     exit(0);
 }
 
@@ -50,7 +50,7 @@ pub fn main() -> i32 {
     for _ in 0..NUM {
         let pid = fork();
         if pid == 0 {
-            let current_time = get_time();
+            let current_time = time();
             let times = (current_time as i32 as isize) * (current_time as i32 as isize) % 1000;
             work(times * 10);
         }

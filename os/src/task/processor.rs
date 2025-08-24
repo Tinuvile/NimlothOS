@@ -336,7 +336,7 @@ impl Processor {
     ///
     /// 返回的指针指向 `idle_task_cx` 字段的内存地址，
     /// 包含完整的 RISC-V 寄存器上下文信息。
-    fn get_idle_task_cx_ptr(&mut self) -> *mut TaskContext {
+    fn idle_task_cx_ptr(&mut self) -> *mut TaskContext {
         &mut self.idle_task_cx as *mut _
     }
 }
@@ -653,7 +653,7 @@ pub fn current_task() -> Option<Arc<TaskControlBlock>> {
 /// - 在地址空间切换后及时更新
 pub fn current_user_token() -> usize {
     let task = current_task().unwrap();
-    let token = task.inner_exclusive_access().get_user_token();
+    let token = task.inner_exclusive_access().user_token();
     token
 }
 
@@ -764,10 +764,7 @@ pub fn current_user_token() -> usize {
 /// - 仅应在内核态的中断/系统调用处理中使用
 /// - 修改陷阱上下文会直接影响用户程序的执行
 pub fn current_trap_cx() -> &'static mut TrapContext {
-    current_task()
-        .unwrap()
-        .inner_exclusive_access()
-        .get_trap_cx()
+    current_task().unwrap().inner_exclusive_access().trap_cx()
 }
 
 /// 主调度循环 - 系统调度器的核心
@@ -896,7 +893,7 @@ pub fn run_tasks() {
     loop {
         let mut processor = PROCESSOR.exclusive_access();
         if let Some(task) = fetch_task() {
-            let idle_task_cx_ptr = processor.get_idle_task_cx_ptr();
+            let idle_task_cx_ptr = processor.idle_task_cx_ptr();
             let mut task_inner = task.inner_exclusive_access();
             let next_task_cx_ptr = &task_inner.task_cx as *const TaskContext;
             task_inner.task_status = TaskStatus::Running;
@@ -1087,7 +1084,7 @@ pub fn run_tasks() {
 /// - `schedule()`: 从任务切换回调度器
 pub fn schedule(switched_task_cx_ptr: *mut TaskContext) {
     let mut processor = PROCESSOR.exclusive_access();
-    let idle_task_cx_ptr = processor.get_idle_task_cx_ptr();
+    let idle_task_cx_ptr = processor.idle_task_cx_ptr();
     drop(processor);
     unsafe {
         __switch(switched_task_cx_ptr, idle_task_cx_ptr);

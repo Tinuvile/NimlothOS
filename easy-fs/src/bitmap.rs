@@ -35,7 +35,7 @@
 //! bitmap.dealloc(&block_device, bit_id);
 //! ```
 
-use super::{BLOCK_SZ, BlockDevice, get_block_cache};
+use super::{BLOCK_SZ, BlockDevice, block_cache};
 use alloc::sync::Arc;
 
 /// 位图块类型，每个块包含 64 个 u64 整数
@@ -132,7 +132,7 @@ impl Bitmap {
     /// ```
     pub fn alloc(&self, block_device: &Arc<dyn BlockDevice>) -> Option<usize> {
         for block_id in 0..self.blocks {
-            let pos = get_block_cache(
+            let pos = block_cache(
                 block_id + self.start_block_id as usize,
                 Arc::clone(block_device),
             )
@@ -185,7 +185,7 @@ impl Bitmap {
     /// ```
     pub fn dealloc(&self, block_device: &Arc<dyn BlockDevice>, bit: usize) {
         let (block_pos, bits64_pos, inner_pos) = decomposition(bit);
-        get_block_cache(block_pos + self.start_block_id, Arc::clone(block_device))
+        block_cache(block_pos + self.start_block_id, Arc::clone(block_device))
             .lock()
             .modify(0, |bitmap_block: &mut BitmapBlock| {
                 assert!(bitmap_block[bits64_pos] & (1u64 << inner_pos) > 0);

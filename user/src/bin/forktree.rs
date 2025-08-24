@@ -4,7 +4,7 @@
 #[macro_use]
 extern crate user_lib;
 
-use user_lib::{exit, fork, getpid, sleep, yield_};
+use user_lib::{exit, fork, pid, sleep, yield_};
 
 const DEPTH: usize = 4;
 
@@ -24,7 +24,7 @@ fn fork_child(cur: &str, branch: char) {
 }
 
 fn fork_tree(cur: &str) {
-    println!("pid{}: {}", getpid(), cur);
+    println!("pid{}: {}", pid(), cur);
     fork_child(cur, '0');
     fork_child(cur, '1');
 }

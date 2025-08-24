@@ -564,7 +564,7 @@ impl KernelStack {
     where
         T: Sized,
     {
-        let kernel_stack_top = self.get_top();
+        let kernel_stack_top = self.top();
         let ptr_mut = (kernel_stack_top - core::mem::size_of::<T>()) as *mut T;
         unsafe {
             *ptr_mut = value;
@@ -574,38 +574,33 @@ impl KernelStack {
 
     /// 获取内核栈顶地址
     ///
-    /// 返回当前进程内核栈的顶部虚拟地址。栈顶是栈空间的最高地址，
-    /// 新数据从这里开始向下增长。
+    /// 返回内核栈的栈顶地址，用于任务切换和栈操作。
+    /// 栈顶地址指向内核栈的最高位置，栈从高地址向低地址增长。
     ///
     /// ## Returns
     ///
-    /// 内核栈顶的虚拟地址（`usize` 类型）
+    /// 内核栈的栈顶地址
     ///
-    /// ## 地址计算
+    /// ## 栈布局
     ///
-    /// 栈顶地址通过以下公式计算：
     /// ```text
-    /// stack_top = TRAMPOLINE - (KERNEL_STACK_SIZE + PAGE_SIZE) * pid
+    /// 高地址
+    /// ┌─────────────────┐ ← top (返回的地址)
+    /// │   Guard Page    │
+    /// ├─────────────────┤
+    /// │   Kernel Stack  │
+    /// │     Space       │
+    /// ├─────────────────┤
+    /// │   Guard Page    │
+    /// └─────────────────┘
+    /// 低地址
     /// ```
-    ///
-    /// 其中：
-    /// - `TRAMPOLINE`: 蹦床页的起始地址（虚拟地址空间最高处）
-    /// - `KERNEL_STACK_SIZE`: 单个内核栈的大小（通常 8KB）
-    /// - `PAGE_SIZE`: 页面大小（通常 4KB），用作保护页
-    /// - `pid`: 当前进程的 ID
-    ///
-    /// ## 使用场景
-    ///
-    /// - **栈指针初始化**: 设置任务切换时的栈指针
-    /// - **数据压栈**: 计算压入数据后的新地址
-    /// - **栈空间检查**: 验证栈使用情况和剩余空间
-    /// - **调试诊断**: 输出栈地址信息进行问题排查
     ///
     /// ## Examples
     ///
-    /// ```rust
+    /// ```
     /// let kernel_stack = KernelStack::new(&pid_handle);
-    /// let stack_top = kernel_stack.get_top();
+    /// let stack_top = kernel_stack.top();
     ///
     /// println!("Kernel stack top: 0x{:x}", stack_top);
     ///
@@ -620,7 +615,7 @@ impl KernelStack {
     /// - **O(1) 复杂度**: 地址计算是简单的算术运算
     /// - **无内存访问**: 不需要访问实际的物理内存
     /// - **缓存友好**: 频繁调用不会产生缓存开销
-    pub fn get_top(&self) -> usize {
+    pub fn top(&self) -> usize {
         let (_, kernel_stack_top) = kernel_stack_position(self.pid);
         kernel_stack_top
     }
@@ -654,10 +649,10 @@ impl KernelStack {
 /// 销毁前:                     销毁后:
 /// ┌─────────────────┐         ┌─────────────────┐
 /// │ Virtual Address │         │ Virtual Address │
-/// │ Space           │         │ Space           │
-/// │ ┌─────────────┐ │         │                 │
-/// │ │ Stack       │ │   -->   │  (Mapping       │
-/// │ │ Mapping     │ │         │   Removed)      │
+/// │ Space           │         │                 │
+/// │ ┌─────────────┐ │         │    (Mapping     │
+/// │ │ Stack       │ │   -->   │     Removed)    │
+/// │ │ Mapping     │ │         │                 │
 /// │ └─────────────┘ │         │                 │
 /// └─────────────────┘         └─────────────────┘
 ///       ↓                            

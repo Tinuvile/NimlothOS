@@ -84,7 +84,7 @@ global_asm!(include_str!("link_app.S"));
 /// 5. [`task::add_initproc`] - 注册初始用户进程
 /// 6. [`trap::init`] - 初始化陷阱处理系统
 /// 7. [`trap::enable_timer_interrupt`] - 启用时钟中断
-/// 8. [`timer::set_next_trigger`] - 设置第一次时钟中断
+/// 8. [`timer::next_trigger`] - 设置第一次时钟中断
 /// 9. [`loader::list_apps`] - 列出可用的用户应用
 /// 10. [`task::run_tasks`] - 进入主调度循环
 ///
@@ -101,7 +101,7 @@ pub fn rust_main() -> ! {
     task::add_initproc();
     trap::init();
     trap::enable_timer_interrupt();
-    timer::set_next_trigger();
+    timer::next_trigger();
     loader::list_apps();
     task::run_tasks();
 

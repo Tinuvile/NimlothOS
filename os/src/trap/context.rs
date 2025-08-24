@@ -128,7 +128,7 @@ impl TrapContext {
     /// ## Arguments
     ///
     /// * `sp` - 新的栈指针值，指向用户栈顶
-    pub fn set_sp(&mut self, sp: usize) {
+    pub fn sp(&mut self, sp: usize) {
         self.x[2] = sp;
     }
 
@@ -186,7 +186,7 @@ impl TrapContext {
             kernel_sp,
             trap_handler,
         };
-        cx.set_sp(sp); // 设置用户栈指针
+        cx.sp(sp); // 设置用户栈指针
         cx
     }
 }

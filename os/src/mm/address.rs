@@ -255,7 +255,7 @@ impl PhysAddr {
     /// let value: &mut u64 = pa.get_mut::<u64>();
     /// *value = 0xdead_beef_dead_beefu64;
     /// ```
-    pub fn get_mut<T>(&self) -> &'static mut T {
+    pub fn mut_ref<T>(&self) -> &'static mut T {
         unsafe { (self.0 as *mut T).as_mut().unwrap() }
     }
 }
@@ -339,9 +339,14 @@ impl PhysPageNum {
     /// // 访问第一个页表项
     /// let pte = &mut ptes[0];
     /// ```
-    pub fn get_pte_array(&self) -> &'static mut [PageTableEntry] {
-        let pa: PhysAddr = (*self).clone().into();
-        unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut PageTableEntry, 512) }
+    pub fn pte_array(&self) -> &'static mut [PageTableEntry] {
+        let pa: PhysAddr = self.clone().into();
+        unsafe {
+            core::slice::from_raw_parts_mut(
+                pa.0 as *mut PageTableEntry,
+                PAGE_SIZE / core::mem::size_of::<PageTableEntry>(),
+            )
+        }
     }
 
     /// 获取页面字节数组
@@ -366,8 +371,8 @@ impl PhysPageNum {
     /// let bytes = ppn.get_bytes_array();
     /// bytes[0] = 0x42; // 写入数据
     /// ```
-    pub fn get_bytes_array(&self) -> &'static mut [u8] {
-        let pa: PhysAddr = (*self).clone().into();
+    pub fn bytes_array(&self) -> &'static mut [u8] {
+        let pa: PhysAddr = self.clone().into();
         unsafe { core::slice::from_raw_parts_mut(pa.0 as *mut u8, PAGE_SIZE) }
     }
 
@@ -399,8 +404,8 @@ impl PhysPageNum {
     /// let data: &mut u64 = ppn.get_mut::<u64>();
     /// *data = 0x1234_5678_9abc_def0;
     /// ```
-    pub fn get_mut<T>(&self) -> &'static mut T {
-        let pa: PhysAddr = (*self).clone().into();
+    pub fn mut_ref<T>(&self) -> &'static mut T {
+        let pa: PhysAddr = self.clone().into();
         unsafe { (pa.0 as *mut T).as_mut().unwrap() }
     }
 }
@@ -650,7 +655,7 @@ where
     /// ## Returns
     ///
     /// 范围的起始值（包含在范围内）
-    pub fn get_start(&self) -> T {
+    pub fn start(&self) -> T {
         self.l
     }
 
@@ -659,7 +664,7 @@ where
     /// ## Returns
     ///
     /// 范围的结束值（不包含在范围内）
-    pub fn get_end(&self) -> T {
+    pub fn end(&self) -> T {
         self.r
     }
 }
