@@ -397,7 +397,7 @@
 <a href=#397 id=397 data-nosnippet>397</a>/// let frame = frame_alloc().expect("内存不足");
 <a href=#398 id=398 data-nosnippet>398</a>///
 <a href=#399 id=399 data-nosnippet>399</a>/// // 通过物理页号访问页面数据
-<a href=#400 id=400 data-nosnippet>400</a>/// let page_data = frame.ppn.get_bytes_array();
+<a href=#400 id=400 data-nosnippet>400</a>/// let page_data = frame.ppn.bytes_array();
 <a href=#401 id=401 data-nosnippet>401</a>/// page_data[0] = 42;
 <a href=#402 id=402 data-nosnippet>402</a>///
 <a href=#403 id=403 data-nosnippet>403</a>/// // 离开作用域时页帧自动释放
@@ -441,7 +441,7 @@
 <a href=#441 id=441 data-nosnippet>441</a>    /// - `ppn` 对应有效的已分配页帧
 <a href=#442 id=442 data-nosnippet>442</a>    /// - 没有其他代码同时访问同一页帧
 <a href=#443 id=443 data-nosnippet>443</a>    </span><span class="kw">pub fn </span>new(ppn: PhysPageNum) -&gt; <span class="self">Self </span>{
-<a href=#444 id=444 data-nosnippet>444</a>        <span class="kw">let </span>bytes_array = ppn.get_bytes_array();
+<a href=#444 id=444 data-nosnippet>444</a>        <span class="kw">let </span>bytes_array = ppn.bytes_array();
 <a href=#445 id=445 data-nosnippet>445</a>        <span class="kw">for </span>i <span class="kw">in </span>bytes_array {
 <a href=#446 id=446 data-nosnippet>446</a>            <span class="kw-2">*</span>i = <span class="number">0</span>;
 <a href=#447 id=447 data-nosnippet>447</a>        }

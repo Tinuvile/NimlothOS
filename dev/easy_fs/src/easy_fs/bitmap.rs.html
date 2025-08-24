@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>//! bitmap.dealloc(&amp;block_device, bit_id);
 <a href=#36 id=36 data-nosnippet>36</a>//! ```
 <a href=#37 id=37 data-nosnippet>37</a>
-<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">use super</span>::{BLOCK_SZ, BlockDevice, get_block_cache};
+<a href=#38 id=38 data-nosnippet>38</a></span><span class="kw">use super</span>::{BLOCK_SZ, BlockDevice, block_cache};
 <a href=#39 id=39 data-nosnippet>39</a><span class="kw">use </span>alloc::sync::Arc;
 <a href=#40 id=40 data-nosnippet>40</a>
 <a href=#41 id=41 data-nosnippet>41</a><span class="doccomment">/// 位图块类型，每个块包含 64 个 u64 整数
@@ -132,7 +132,7 @@
 <a href=#132 id=132 data-nosnippet>132</a>    /// ```
 <a href=#133 id=133 data-nosnippet>133</a>    </span><span class="kw">pub fn </span>alloc(<span class="kw-2">&amp;</span><span class="self">self</span>, block_device: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
 <a href=#134 id=134 data-nosnippet>134</a>        <span class="kw">for </span>block_id <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.blocks {
-<a href=#135 id=135 data-nosnippet>135</a>            <span class="kw">let </span>pos = get_block_cache(
+<a href=#135 id=135 data-nosnippet>135</a>            <span class="kw">let </span>pos = block_cache(
 <a href=#136 id=136 data-nosnippet>136</a>                block_id + <span class="self">self</span>.start_block_id <span class="kw">as </span>usize,
 <a href=#137 id=137 data-nosnippet>137</a>                Arc::clone(block_device),
 <a href=#138 id=138 data-nosnippet>138</a>            )
@@ -185,7 +185,7 @@
 <a href=#185 id=185 data-nosnippet>185</a>    /// ```
 <a href=#186 id=186 data-nosnippet>186</a>    </span><span class="kw">pub fn </span>dealloc(<span class="kw-2">&amp;</span><span class="self">self</span>, block_device: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;, bit: usize) {
 <a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span>(block_pos, bits64_pos, inner_pos) = decomposition(bit);
-<a href=#188 id=188 data-nosnippet>188</a>        get_block_cache(block_pos + <span class="self">self</span>.start_block_id, Arc::clone(block_device))
+<a href=#188 id=188 data-nosnippet>188</a>        block_cache(block_pos + <span class="self">self</span>.start_block_id, Arc::clone(block_device))
 <a href=#189 id=189 data-nosnippet>189</a>            .lock()
 <a href=#190 id=190 data-nosnippet>190</a>            .modify(<span class="number">0</span>, |bitmap_block: <span class="kw-2">&amp;mut </span>BitmapBlock| {
 <a href=#191 id=191 data-nosnippet>191</a>                <span class="macro">assert!</span>(bitmap_block[bits64_pos] &amp; (<span class="number">1u64 </span>&lt;&lt; inner_pos) &gt; <span class="number">0</span>);

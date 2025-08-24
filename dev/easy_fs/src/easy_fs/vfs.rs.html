@@ -52,8 +52,8 @@
 <a href=#52 id=52 data-nosnippet>52</a>//! ```
 <a href=#53 id=53 data-nosnippet>53</a>
 <a href=#54 id=54 data-nosnippet>54</a></span><span class="kw">use super</span>::{
-<a href=#55 id=55 data-nosnippet>55</a>    BlockDevice, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, EasyFileSystem,
-<a href=#56 id=56 data-nosnippet>56</a>    block_cache_sync_all, get_block_cache,
+<a href=#55 id=55 data-nosnippet>55</a>    BlockDevice, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, EasyFileSystem, block_cache,
+<a href=#56 id=56 data-nosnippet>56</a>    block_cache_sync_all,
 <a href=#57 id=57 data-nosnippet>57</a>};
 <a href=#58 id=58 data-nosnippet>58</a><span class="kw">use </span>alloc::{string::String, sync::Arc, vec::Vec};
 <a href=#59 id=59 data-nosnippet>59</a><span class="kw">use </span>spin::{Mutex, MutexGuard};
@@ -154,7 +154,7 @@
 <a href=#154 id=154 data-nosnippet>154</a>    /// });
 <a href=#155 id=155 data-nosnippet>155</a>    /// ```
 <a href=#156 id=156 data-nosnippet>156</a>    </span><span class="kw">fn </span>read_disk_inode&lt;V&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;</span>DiskInode) -&gt; V) -&gt; V {
-<a href=#157 id=157 data-nosnippet>157</a>        get_block_cache(<span class="self">self</span>.block_id, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
+<a href=#157 id=157 data-nosnippet>157</a>        block_cache(<span class="self">self</span>.block_id, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
 <a href=#158 id=158 data-nosnippet>158</a>            .lock()
 <a href=#159 id=159 data-nosnippet>159</a>            .read(<span class="self">self</span>.block_offset, f)
 <a href=#160 id=160 data-nosnippet>160</a>    }
@@ -188,7 +188,7 @@
 <a href=#188 id=188 data-nosnippet>188</a>    /// });
 <a href=#189 id=189 data-nosnippet>189</a>    /// ```
 <a href=#190 id=190 data-nosnippet>190</a>    </span><span class="kw">fn </span>modify_disk_inode&lt;V&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>DiskInode) -&gt; V) -&gt; V {
-<a href=#191 id=191 data-nosnippet>191</a>        get_block_cache(<span class="self">self</span>.block_id, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
+<a href=#191 id=191 data-nosnippet>191</a>        block_cache(<span class="self">self</span>.block_id, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
 <a href=#192 id=192 data-nosnippet>192</a>            .lock()
 <a href=#193 id=193 data-nosnippet>193</a>            .modify(<span class="self">self</span>.block_offset, f)
 <a href=#194 id=194 data-nosnippet>194</a>    }
@@ -232,7 +232,7 @@
 <a href=#232 id=232 data-nosnippet>232</a>        <span class="kw">let </span>fs = <span class="self">self</span>.fs.lock();
 <a href=#233 id=233 data-nosnippet>233</a>        <span class="self">self</span>.read_disk_inode(|disk_inode| {
 <a href=#234 id=234 data-nosnippet>234</a>            <span class="self">self</span>.find_inode_id(name, disk_inode).map(|inode_id| {
-<a href=#235 id=235 data-nosnippet>235</a>                <span class="kw">let </span>(block_id, block_offset) = fs.get_disk_inode_pos(inode_id);
+<a href=#235 id=235 data-nosnippet>235</a>                <span class="kw">let </span>(block_id, block_offset) = fs.disk_inode_pos(inode_id);
 <a href=#236 id=236 data-nosnippet>236</a>                Arc::new(<span class="self">Self</span>::new(
 <a href=#237 id=237 data-nosnippet>237</a>                    block_id,
 <a href=#238 id=238 data-nosnippet>238</a>                    block_offset,
@@ -269,7 +269,7 @@
 <a href=#269 id=269 data-nosnippet>269</a>    ///
 <a href=#270 id=270 data-nosnippet>270</a>    /// 如果当前 inode 不是目录类型，则触发 panic
 <a href=#271 id=271 data-nosnippet>271</a>    </span><span class="kw">fn </span>find_inode_id(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str, disk_inode: <span class="kw-2">&amp;</span>DiskInode) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
-<a href=#272 id=272 data-nosnippet>272</a>        <span class="macro">assert!</span>(disk_inode.is_dir());
+<a href=#272 id=272 data-nosnippet>272</a>        <span class="macro">assert!</span>(disk_inode.dir());
 <a href=#273 id=273 data-nosnippet>273</a>        <span class="kw">let </span>file_count = (disk_inode.size <span class="kw">as </span>usize) / DIRENT_SZ;
 <a href=#274 id=274 data-nosnippet>274</a>        <span class="kw">let </span><span class="kw-2">mut </span>dirent = DirEntry::empty();
 <a href=#275 id=275 data-nosnippet>275</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..file_count {
@@ -373,7 +373,7 @@
 <a href=#373 id=373 data-nosnippet>373</a>    </span><span class="kw">pub fn </span>create(<span class="kw-2">&amp;</span><span class="self">self</span>, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;Inode&gt;&gt; {
 <a href=#374 id=374 data-nosnippet>374</a>        <span class="kw">let </span><span class="kw-2">mut </span>fs = <span class="self">self</span>.fs.lock();
 <a href=#375 id=375 data-nosnippet>375</a>        <span class="kw">let </span>op = |root_inode: <span class="kw-2">&amp;</span>DiskInode| {
-<a href=#376 id=376 data-nosnippet>376</a>            <span class="macro">assert!</span>(root_inode.is_dir());
+<a href=#376 id=376 data-nosnippet>376</a>            <span class="macro">assert!</span>(root_inode.dir());
 <a href=#377 id=377 data-nosnippet>377</a>            <span class="self">self</span>.find_inode_id(name, root_inode)
 <a href=#378 id=378 data-nosnippet>378</a>        };
 <a href=#379 id=379 data-nosnippet>379</a>        <span class="kw">if </span><span class="self">self</span>.read_disk_inode(op).is_some() {
@@ -381,8 +381,8 @@
 <a href=#381 id=381 data-nosnippet>381</a>        }
 <a href=#382 id=382 data-nosnippet>382</a>
 <a href=#383 id=383 data-nosnippet>383</a>        <span class="kw">let </span>new_inode_id = fs.alloc_inode();
-<a href=#384 id=384 data-nosnippet>384</a>        <span class="kw">let </span>(new_inode_block_id, new_inode_block_offset) = fs.get_disk_inode_pos(new_inode_id);
-<a href=#385 id=385 data-nosnippet>385</a>        get_block_cache(new_inode_block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
+<a href=#384 id=384 data-nosnippet>384</a>        <span class="kw">let </span>(new_inode_block_id, new_inode_block_offset) = fs.disk_inode_pos(new_inode_id);
+<a href=#385 id=385 data-nosnippet>385</a>        block_cache(new_inode_block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
 <a href=#386 id=386 data-nosnippet>386</a>            .lock()
 <a href=#387 id=387 data-nosnippet>387</a>            .modify(new_inode_block_offset, |new_inode: <span class="kw-2">&amp;mut </span>DiskInode| {
 <a href=#388 id=388 data-nosnippet>388</a>                new_inode.initialize(DiskInodeType::File);
@@ -399,7 +399,7 @@
 <a href=#399 id=399 data-nosnippet>399</a>            );
 <a href=#400 id=400 data-nosnippet>400</a>        });
 <a href=#401 id=401 data-nosnippet>401</a>
-<a href=#402 id=402 data-nosnippet>402</a>        <span class="kw">let </span>(block_id, block_offset) = fs.get_disk_inode_pos(new_inode_id);
+<a href=#402 id=402 data-nosnippet>402</a>        <span class="kw">let </span>(block_id, block_offset) = fs.disk_inode_pos(new_inode_id);
 <a href=#403 id=403 data-nosnippet>403</a>        block_cache_sync_all();
 <a href=#404 id=404 data-nosnippet>404</a>        <span class="prelude-val">Some</span>(Arc::new(<span class="self">Self</span>::new(
 <a href=#405 id=405 data-nosnippet>405</a>            block_id,

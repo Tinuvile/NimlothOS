@@ -503,7 +503,7 @@
 <a href=#503 id=503 data-nosnippet>503</a>        <span class="kw">let </span><span class="kw-2">mut </span>ppn = <span class="self">self</span>.root_ppn;
 <a href=#504 id=504 data-nosnippet>504</a>        <span class="kw">let </span><span class="kw-2">mut </span>result: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>PageTableEntry&gt; = <span class="prelude-val">None</span>;
 <a href=#505 id=505 data-nosnippet>505</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">3 </span>{
-<a href=#506 id=506 data-nosnippet>506</a>            <span class="kw">let </span>pte = <span class="kw-2">&amp;mut </span>ppn.get_pte_array()[idxs[i]];
+<a href=#506 id=506 data-nosnippet>506</a>            <span class="kw">let </span>pte = <span class="kw-2">&amp;mut </span>ppn.pte_array()[idxs[i]];
 <a href=#507 id=507 data-nosnippet>507</a>            <span class="kw">if </span>i == <span class="number">2 </span>{
 <a href=#508 id=508 data-nosnippet>508</a>                result = <span class="prelude-val">Some</span>(pte);
 <a href=#509 id=509 data-nosnippet>509</a>                <span class="kw">break</span>;
@@ -549,7 +549,7 @@
 <a href=#549 id=549 data-nosnippet>549</a>        <span class="kw">let </span><span class="kw-2">mut </span>ppn = <span class="self">self</span>.root_ppn;
 <a href=#550 id=550 data-nosnippet>550</a>        <span class="kw">let </span><span class="kw-2">mut </span>result: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>PageTableEntry&gt; = <span class="prelude-val">None</span>;
 <a href=#551 id=551 data-nosnippet>551</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">3 </span>{
-<a href=#552 id=552 data-nosnippet>552</a>            <span class="kw">let </span>pte = <span class="kw-2">&amp;mut </span>ppn.get_pte_array()[idxs[i]];
+<a href=#552 id=552 data-nosnippet>552</a>            <span class="kw">let </span>pte = <span class="kw-2">&amp;mut </span>ppn.pte_array()[idxs[i]];
 <a href=#553 id=553 data-nosnippet>553</a>            <span class="kw">if </span>i == <span class="number">2 </span>{
 <a href=#554 id=554 data-nosnippet>554</a>                result = <span class="prelude-val">Some</span>(pte);
 <a href=#555 id=555 data-nosnippet>555</a>                <span class="kw">break</span>;
@@ -881,9 +881,9 @@
 <a href=#881 id=881 data-nosnippet>881</a>        <span class="kw">let </span><span class="kw-2">mut </span>end_va: VirtAddr = vpn.into();
 <a href=#882 id=882 data-nosnippet>882</a>        end_va = end_va.min(VirtAddr::from(end));
 <a href=#883 id=883 data-nosnippet>883</a>        <span class="kw">if </span>end_va.page_offset() == <span class="number">0 </span>{
-<a href=#884 id=884 data-nosnippet>884</a>            v.push(<span class="kw-2">&amp;mut </span>ppn.get_bytes_array()[start_va.page_offset()..]);
+<a href=#884 id=884 data-nosnippet>884</a>            v.push(<span class="kw-2">&amp;mut </span>ppn.bytes_array()[start_va.page_offset()..]);
 <a href=#885 id=885 data-nosnippet>885</a>        } <span class="kw">else </span>{
-<a href=#886 id=886 data-nosnippet>886</a>            v.push(<span class="kw-2">&amp;mut </span>ppn.get_bytes_array()[start_va.page_offset()..end_va.page_offset()]);
+<a href=#886 id=886 data-nosnippet>886</a>            v.push(<span class="kw-2">&amp;mut </span>ppn.bytes_array()[start_va.page_offset()..end_va.page_offset()]);
 <a href=#887 id=887 data-nosnippet>887</a>        }
 <a href=#888 id=888 data-nosnippet>888</a>        start = end_va.into();
 <a href=#889 id=889 data-nosnippet>889</a>    }
@@ -931,7 +931,7 @@
 <a href=#931 id=931 data-nosnippet>931</a>        <span class="kw">let </span>ch: u8 = <span class="kw-2">*</span>(page_table
 <a href=#932 id=932 data-nosnippet>932</a>            .translate_va(VirtAddr::from(va))
 <a href=#933 id=933 data-nosnippet>933</a>            .unwrap()
-<a href=#934 id=934 data-nosnippet>934</a>            .get_mut());
+<a href=#934 id=934 data-nosnippet>934</a>            .mut_ref());
 <a href=#935 id=935 data-nosnippet>935</a>        <span class="kw">if </span>ch == <span class="number">0 </span>{
 <a href=#936 id=936 data-nosnippet>936</a>            <span class="kw">break</span>;
 <a href=#937 id=937 data-nosnippet>937</a>        } <span class="kw">else </span>{
@@ -979,5 +979,5 @@
 <a href=#979 id=979 data-nosnippet>979</a>    page_table
 <a href=#980 id=980 data-nosnippet>980</a>        .translate_va(VirtAddr::from(va))
 <a href=#981 id=981 data-nosnippet>981</a>        .unwrap()
-<a href=#982 id=982 data-nosnippet>982</a>        .get_mut()
+<a href=#982 id=982 data-nosnippet>982</a>        .mut_ref()
 <a href=#983 id=983 data-nosnippet>983</a>}</code></pre></div></section></main></body></html>

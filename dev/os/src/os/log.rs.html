@@ -90,9 +90,9 @@
 <a href=#90 id=90 data-nosnippet>90</a>            </span>};
 <a href=#91 id=91 data-nosnippet>91</a>
 <a href=#92 id=92 data-nosnippet>92</a>            <span class="comment">// 收集上下文信息
-<a href=#93 id=93 data-nosnippet>93</a>            </span><span class="kw">let </span>timestamp = get_timestamp();
-<a href=#94 id=94 data-nosnippet>94</a>            <span class="kw">let </span>cpu_id = get_cpu_id();
-<a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">let </span>thread_id = get_thread_id();
+<a href=#93 id=93 data-nosnippet>93</a>            </span><span class="kw">let </span>timestamp = timestamp();
+<a href=#94 id=94 data-nosnippet>94</a>            <span class="kw">let </span>cpu_id = cpu_id();
+<a href=#95 id=95 data-nosnippet>95</a>            <span class="kw">let </span>thread_id = thread_id();
 <a href=#96 id=96 data-nosnippet>96</a>            <span class="kw">let </span>module = record.target();
 <a href=#97 id=97 data-nosnippet>97</a>
 <a href=#98 id=98 data-nosnippet>98</a>            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(file), <span class="prelude-val">Some</span>(line)) = (record.file(), record.line()) {
@@ -149,7 +149,7 @@
 <a href=#149 id=149 data-nosnippet>149</a>/// ## Safety
 <a href=#150 id=150 data-nosnippet>150</a>///
 <a href=#151 id=151 data-nosnippet>151</a>/// 使用 `unsafe` 代码访问全局可变变量，在单线程环境下是安全的。
-<a href=#152 id=152 data-nosnippet>152</a></span><span class="kw">fn </span>get_timestamp() -&gt; usize {
+<a href=#152 id=152 data-nosnippet>152</a></span><span class="kw">fn </span>timestamp() -&gt; usize {
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">unsafe </span>{
 <a href=#154 id=154 data-nosnippet>154</a>        TICK_COUNT += <span class="number">1</span>;
 <a href=#155 id=155 data-nosnippet>155</a>        TICK_COUNT
@@ -167,7 +167,7 @@
 <a href=#167 id=167 data-nosnippet>167</a>/// ## Safety
 <a href=#168 id=168 data-nosnippet>168</a>///
 <a href=#169 id=169 data-nosnippet>169</a>/// 使用内联汇编读取 CSR 寄存器，这是一个特权操作。
-<a href=#170 id=170 data-nosnippet>170</a></span><span class="kw">fn </span>get_cpu_id() -&gt; usize {
+<a href=#170 id=170 data-nosnippet>170</a></span><span class="kw">fn </span>cpu_id() -&gt; usize {
 <a href=#171 id=171 data-nosnippet>171</a>    <span class="kw">unsafe </span>{
 <a href=#172 id=172 data-nosnippet>172</a>        <span class="kw">let </span>cpu_id: usize;
 <a href=#173 id=173 data-nosnippet>173</a>        <span class="macro">core::arch::asm!</span>(<span class="string">"csrr {}, mhartid"</span>, out(reg) cpu_id, options(nomem, nostack));
@@ -187,7 +187,7 @@
 <a href=#187 id=187 data-nosnippet>187</a>/// ## Note
 <a href=#188 id=188 data-nosnippet>188</a>///
 <a href=#189 id=189 data-nosnippet>189</a>/// 这是一个临时实现，真正的线程系统需要维护独立的线程 ID。
-<a href=#190 id=190 data-nosnippet>190</a></span><span class="kw">fn </span>get_thread_id() -&gt; usize {
+<a href=#190 id=190 data-nosnippet>190</a></span><span class="kw">fn </span>thread_id() -&gt; usize {
 <a href=#191 id=191 data-nosnippet>191</a>    <span class="kw">unsafe </span>{
 <a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">let </span>thread_id: usize;
 <a href=#193 id=193 data-nosnippet>193</a>        <span class="macro">core::arch::asm!</span>(<span class="string">"csrr {}, mhartid"</span>, out(reg) thread_id, options(nomem, nostack));

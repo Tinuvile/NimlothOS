@@ -128,7 +128,7 @@
 <a href=#128 id=128 data-nosnippet>128</a>    /// ## Arguments
 <a href=#129 id=129 data-nosnippet>129</a>    ///
 <a href=#130 id=130 data-nosnippet>130</a>    /// * `sp` - 新的栈指针值，指向用户栈顶
-<a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">pub fn </span>set_sp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sp: usize) {
+<a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">pub fn </span>sp(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sp: usize) {
 <a href=#132 id=132 data-nosnippet>132</a>        <span class="self">self</span>.x[<span class="number">2</span>] = sp;
 <a href=#133 id=133 data-nosnippet>133</a>    }
 <a href=#134 id=134 data-nosnippet>134</a>
@@ -186,7 +186,7 @@
 <a href=#186 id=186 data-nosnippet>186</a>            kernel_sp,
 <a href=#187 id=187 data-nosnippet>187</a>            trap_handler,
 <a href=#188 id=188 data-nosnippet>188</a>        };
-<a href=#189 id=189 data-nosnippet>189</a>        cx.set_sp(sp); <span class="comment">// 设置用户栈指针
+<a href=#189 id=189 data-nosnippet>189</a>        cx.sp(sp); <span class="comment">// 设置用户栈指针
 <a href=#190 id=190 data-nosnippet>190</a>        </span>cx
 <a href=#191 id=191 data-nosnippet>191</a>    }
 <a href=#192 id=192 data-nosnippet>192</a>}</code></pre></div></section></main></body></html>

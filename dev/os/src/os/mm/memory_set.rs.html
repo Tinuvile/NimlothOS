@@ -431,7 +431,7 @@
 <a href=#431 id=431 data-nosnippet>431</a>    </span><span class="kw">pub fn </span>copy_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, page_table: <span class="kw-2">&amp;</span>PageTable, data: <span class="kw-2">&amp;</span>[u8]) {
 <a href=#432 id=432 data-nosnippet>432</a>        <span class="macro">assert_eq!</span>(<span class="self">self</span>.map_type, MapType::Framed);
 <a href=#433 id=433 data-nosnippet>433</a>        <span class="kw">let </span><span class="kw-2">mut </span>start: usize = <span class="number">0</span>;
-<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span><span class="kw-2">mut </span>current_vpn = <span class="self">self</span>.vpn_range.get_start();
+<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span><span class="kw-2">mut </span>current_vpn = <span class="self">self</span>.vpn_range.start();
 <a href=#435 id=435 data-nosnippet>435</a>        <span class="kw">let </span>len = data.len();
 <a href=#436 id=436 data-nosnippet>436</a>        <span class="kw">loop </span>{
 <a href=#437 id=437 data-nosnippet>437</a>            <span class="kw">let </span>src = <span class="kw-2">&amp;</span>data[start..len.min(start + PAGE_SIZE)];
@@ -439,7 +439,7 @@
 <a href=#439 id=439 data-nosnippet>439</a>                .translate(current_vpn)
 <a href=#440 id=440 data-nosnippet>440</a>                .unwrap()
 <a href=#441 id=441 data-nosnippet>441</a>                .ppn()
-<a href=#442 id=442 data-nosnippet>442</a>                .get_bytes_array()[..src.len()];
+<a href=#442 id=442 data-nosnippet>442</a>                .bytes_array()[..src.len()];
 <a href=#443 id=443 data-nosnippet>443</a>            dst.copy_from_slice(src);
 <a href=#444 id=444 data-nosnippet>444</a>            start += PAGE_SIZE;
 <a href=#445 id=445 data-nosnippet>445</a>            <span class="kw">if </span>start &gt;= len {
@@ -575,10 +575,10 @@
 <a href=#575 id=575 data-nosnippet>575</a>    /// ```
 <a href=#576 id=576 data-nosnippet>576</a>    </span><span class="attr">#[allow(unused)]
 <a href=#577 id=577 data-nosnippet>577</a>    </span><span class="kw">pub fn </span>shrink_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, page_table: <span class="kw-2">&amp;mut </span>PageTable, new_end: VirtPageNum) {
-<a href=#578 id=578 data-nosnippet>578</a>        <span class="kw">for </span>vpn <span class="kw">in </span>VPNRange::new(new_end, <span class="self">self</span>.vpn_range.get_end()) {
+<a href=#578 id=578 data-nosnippet>578</a>        <span class="kw">for </span>vpn <span class="kw">in </span>VPNRange::new(new_end, <span class="self">self</span>.vpn_range.end()) {
 <a href=#579 id=579 data-nosnippet>579</a>            <span class="self">self</span>.unmap_one(page_table, vpn)
 <a href=#580 id=580 data-nosnippet>580</a>        }
-<a href=#581 id=581 data-nosnippet>581</a>        <span class="self">self</span>.vpn_range = VPNRange::new(<span class="self">self</span>.vpn_range.get_start(), new_end);
+<a href=#581 id=581 data-nosnippet>581</a>        <span class="self">self</span>.vpn_range = VPNRange::new(<span class="self">self</span>.vpn_range.start(), new_end);
 <a href=#582 id=582 data-nosnippet>582</a>    }
 <a href=#583 id=583 data-nosnippet>583</a>
 <a href=#584 id=584 data-nosnippet>584</a>    <span class="doccomment">/// 扩展内存区域到指定结束位置
@@ -617,10 +617,10 @@
 <a href=#617 id=617 data-nosnippet>617</a>    /// ```
 <a href=#618 id=618 data-nosnippet>618</a>    </span><span class="attr">#[allow(unused)]
 <a href=#619 id=619 data-nosnippet>619</a>    </span><span class="kw">pub fn </span>append_to(<span class="kw-2">&amp;mut </span><span class="self">self</span>, page_table: <span class="kw-2">&amp;mut </span>PageTable, new_end: VirtPageNum) {
-<a href=#620 id=620 data-nosnippet>620</a>        <span class="kw">for </span>vpn <span class="kw">in </span>VPNRange::new(<span class="self">self</span>.vpn_range.get_end(), new_end) {
+<a href=#620 id=620 data-nosnippet>620</a>        <span class="kw">for </span>vpn <span class="kw">in </span>VPNRange::new(<span class="self">self</span>.vpn_range.end(), new_end) {
 <a href=#621 id=621 data-nosnippet>621</a>            <span class="self">self</span>.map_one(page_table, vpn)
 <a href=#622 id=622 data-nosnippet>622</a>        }
-<a href=#623 id=623 data-nosnippet>623</a>        <span class="self">self</span>.vpn_range = VPNRange::new(<span class="self">self</span>.vpn_range.get_start(), new_end);
+<a href=#623 id=623 data-nosnippet>623</a>        <span class="self">self</span>.vpn_range = VPNRange::new(<span class="self">self</span>.vpn_range.start(), new_end);
 <a href=#624 id=624 data-nosnippet>624</a>    }
 <a href=#625 id=625 data-nosnippet>625</a>
 <a href=#626 id=626 data-nosnippet>626</a>    <span class="doccomment">/// 从另一个内存区域创建新的映射区域
@@ -683,7 +683,7 @@
 <a href=#683 id=683 data-nosnippet>683</a>    /// 确保地址空间隔离和内存安全。
 <a href=#684 id=684 data-nosnippet>684</a>    </span><span class="kw">pub fn </span>from_another(another: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="self">Self </span>{
 <a href=#685 id=685 data-nosnippet>685</a>        <span class="self">Self </span>{
-<a href=#686 id=686 data-nosnippet>686</a>            vpn_range: VPNRange::new(another.vpn_range.get_start(), another.vpn_range.get_end()),
+<a href=#686 id=686 data-nosnippet>686</a>            vpn_range: VPNRange::new(another.vpn_range.start(), another.vpn_range.end()),
 <a href=#687 id=687 data-nosnippet>687</a>            data_frames: BTreeMap::new(),
 <a href=#688 id=688 data-nosnippet>688</a>            map_type: another.map_type,
 <a href=#689 id=689 data-nosnippet>689</a>            map_perm: another.map_perm,
@@ -1068,7 +1068,7 @@
 <a href=#1068 id=1068 data-nosnippet>1068</a>                    map_perm |= MapPermission::X;
 <a href=#1069 id=1069 data-nosnippet>1069</a>                }
 <a href=#1070 id=1070 data-nosnippet>1070</a>                <span class="kw">let </span>map_area = MapArea::new(start_va, end_va, MapType::Framed, map_perm);
-<a href=#1071 id=1071 data-nosnippet>1071</a>                max_end_vpn = map_area.vpn_range.get_end();
+<a href=#1071 id=1071 data-nosnippet>1071</a>                max_end_vpn = map_area.vpn_range.end();
 <a href=#1072 id=1072 data-nosnippet>1072</a>                memory_set.push(
 <a href=#1073 id=1073 data-nosnippet>1073</a>                    map_area,
 <a href=#1074 id=1074 data-nosnippet>1074</a>                    <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>elf.input[ph.offset() <span class="kw">as </span>usize..(ph.offset() + ph.file_size()) <span class="kw">as </span>usize]),
@@ -1344,7 +1344,7 @@
 <a href=#1344 id=1344 data-nosnippet>1344</a>            </span>.areas
 <a href=#1345 id=1345 data-nosnippet>1345</a>            .iter_mut()
 <a href=#1346 id=1346 data-nosnippet>1346</a>            .enumerate()
-<a href=#1347 id=1347 data-nosnippet>1347</a>            .find(|(<span class="kw">_</span>, area)| area.vpn_range.get_start() == start_vpn)
+<a href=#1347 id=1347 data-nosnippet>1347</a>            .find(|(<span class="kw">_</span>, area)| area.vpn_range.start() == start_vpn)
 <a href=#1348 id=1348 data-nosnippet>1348</a>        {
 <a href=#1349 id=1349 data-nosnippet>1349</a>            area.unmap(<span class="kw-2">&amp;mut </span><span class="self">self</span>.page_table);
 <a href=#1350 id=1350 data-nosnippet>1350</a>            <span class="self">self</span>.areas.remove(idx);
@@ -1506,118 +1506,116 @@
 <a href=#1506 id=1506 data-nosnippet>1506</a>            <span class="kw">for </span>vpn <span class="kw">in </span>area.vpn_range {
 <a href=#1507 id=1507 data-nosnippet>1507</a>                <span class="kw">let </span>src_ppn = user_space.translate(vpn).unwrap().ppn();
 <a href=#1508 id=1508 data-nosnippet>1508</a>                <span class="kw">let </span>dst_ppn = memory_set.translate(vpn).unwrap().ppn();
-<a href=#1509 id=1509 data-nosnippet>1509</a>                dst_ppn
-<a href=#1510 id=1510 data-nosnippet>1510</a>                    .get_bytes_array()
-<a href=#1511 id=1511 data-nosnippet>1511</a>                    .copy_from_slice(src_ppn.get_bytes_array());
-<a href=#1512 id=1512 data-nosnippet>1512</a>            }
-<a href=#1513 id=1513 data-nosnippet>1513</a>        }
-<a href=#1514 id=1514 data-nosnippet>1514</a>        memory_set
-<a href=#1515 id=1515 data-nosnippet>1515</a>    }
-<a href=#1516 id=1516 data-nosnippet>1516</a>
-<a href=#1517 id=1517 data-nosnippet>1517</a>    <span class="doccomment">/// 回收数据页（仅清空区域元数据）
-<a href=#1518 id=1518 data-nosnippet>1518</a>    ///
-<a href=#1519 id=1519 data-nosnippet>1519</a>    /// 清空 `areas` 列表中记录的内存映射区域元数据。该操作不会修改页表、不会取消映射、
-<a href=#1520 id=1520 data-nosnippet>1520</a>    /// 也不会主动释放任何物理页帧，仅用于丢弃地址空间的"区域描述信息"。
+<a href=#1509 id=1509 data-nosnippet>1509</a>                dst_ppn.bytes_array().copy_from_slice(src_ppn.bytes_array());
+<a href=#1510 id=1510 data-nosnippet>1510</a>            }
+<a href=#1511 id=1511 data-nosnippet>1511</a>        }
+<a href=#1512 id=1512 data-nosnippet>1512</a>        memory_set
+<a href=#1513 id=1513 data-nosnippet>1513</a>    }
+<a href=#1514 id=1514 data-nosnippet>1514</a>
+<a href=#1515 id=1515 data-nosnippet>1515</a>    <span class="doccomment">/// 回收数据页（仅清空区域元数据）
+<a href=#1516 id=1516 data-nosnippet>1516</a>    ///
+<a href=#1517 id=1517 data-nosnippet>1517</a>    /// 清空 `areas` 列表中记录的内存映射区域元数据。该操作不会修改页表、不会取消映射、
+<a href=#1518 id=1518 data-nosnippet>1518</a>    /// 也不会主动释放任何物理页帧，仅用于丢弃地址空间的"区域描述信息"。
+<a href=#1519 id=1519 data-nosnippet>1519</a>    ///
+<a href=#1520 id=1520 data-nosnippet>1520</a>    /// ## 适用场景
 <a href=#1521 id=1521 data-nosnippet>1521</a>    ///
-<a href=#1522 id=1522 data-nosnippet>1522</a>    /// ## 适用场景
-<a href=#1523 id=1523 data-nosnippet>1523</a>    ///
-<a href=#1524 id=1524 data-nosnippet>1524</a>    /// - 进程退出路径：`MemorySet` 即将被销毁，相关页帧由 RAII 自动释放
-<a href=#1525 id=1525 data-nosnippet>1525</a>    /// - 需要快速丢弃区域管理信息，防止后续逻辑再遍历/操作这些区域
+<a href=#1522 id=1522 data-nosnippet>1522</a>    /// - 进程退出路径：`MemorySet` 即将被销毁，相关页帧由 RAII 自动释放
+<a href=#1523 id=1523 data-nosnippet>1523</a>    /// - 需要快速丢弃区域管理信息，防止后续逻辑再遍历/操作这些区域
+<a href=#1524 id=1524 data-nosnippet>1524</a>    ///
+<a href=#1525 id=1525 data-nosnippet>1525</a>    /// ## 注意事项
 <a href=#1526 id=1526 data-nosnippet>1526</a>    ///
-<a href=#1527 id=1527 data-nosnippet>1527</a>    /// ## 注意事项
-<a href=#1528 id=1528 data-nosnippet>1528</a>    ///
-<a href=#1529 id=1529 data-nosnippet>1529</a>    /// - 不会调用 `unmap()`：页表映射仍然存在
-<a href=#1530 id=1530 data-nosnippet>1530</a>    /// - 不会释放物理页帧：仅清空区域列表
-<a href=#1531 id=1531 data-nosnippet>1531</a>    /// - 仅在后续不再使用该地址空间或即将销毁时调用
-<a href=#1532 id=1532 data-nosnippet>1532</a>    /// - 若仍需继续使用地址空间，请改用 `remove_area_with_start_vpn()`/`unmap()` 等精确接口
+<a href=#1527 id=1527 data-nosnippet>1527</a>    /// - 不会调用 `unmap()`：页表映射仍然存在
+<a href=#1528 id=1528 data-nosnippet>1528</a>    /// - 不会释放物理页帧：仅清空区域列表
+<a href=#1529 id=1529 data-nosnippet>1529</a>    /// - 仅在后续不再使用该地址空间或即将销毁时调用
+<a href=#1530 id=1530 data-nosnippet>1530</a>    /// - 若仍需继续使用地址空间，请改用 `remove_area_with_start_vpn()`/`unmap()` 等精确接口
+<a href=#1531 id=1531 data-nosnippet>1531</a>    ///
+<a href=#1532 id=1532 data-nosnippet>1532</a>    /// ## Examples
 <a href=#1533 id=1533 data-nosnippet>1533</a>    ///
-<a href=#1534 id=1534 data-nosnippet>1534</a>    /// ## Examples
-<a href=#1535 id=1535 data-nosnippet>1535</a>    ///
-<a href=#1536 id=1536 data-nosnippet>1536</a>    /// ```rust
-<a href=#1537 id=1537 data-nosnippet>1537</a>    /// // 在进程回收路径中：丢弃区域元数据
-<a href=#1538 id=1538 data-nosnippet>1538</a>    /// memory_set.recycle_data_pages();
-<a href=#1539 id=1539 data-nosnippet>1539</a>    /// ```
-<a href=#1540 id=1540 data-nosnippet>1540</a>    </span><span class="kw">pub fn </span>recycle_data_pages(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#1541 id=1541 data-nosnippet>1541</a>        <span class="self">self</span>.areas.clear();
-<a href=#1542 id=1542 data-nosnippet>1542</a>    }
-<a href=#1543 id=1543 data-nosnippet>1543</a>}
-<a href=#1544 id=1544 data-nosnippet>1544</a>
-<a href=#1545 id=1545 data-nosnippet>1545</a><span class="doccomment">/// 重映射测试函数
-<a href=#1546 id=1546 data-nosnippet>1546</a>///
-<a href=#1547 id=1547 data-nosnippet>1547</a>/// 验证内核地址空间中各个段的内存权限设置是否正确。通过检查内核的
-<a href=#1548 id=1548 data-nosnippet>1548</a>/// .text、.rodata 和 .data 段的中间地址的权限，确保内存保护机制正常工作。
+<a href=#1534 id=1534 data-nosnippet>1534</a>    /// ```rust
+<a href=#1535 id=1535 data-nosnippet>1535</a>    /// // 在进程回收路径中：丢弃区域元数据
+<a href=#1536 id=1536 data-nosnippet>1536</a>    /// memory_set.recycle_data_pages();
+<a href=#1537 id=1537 data-nosnippet>1537</a>    /// ```
+<a href=#1538 id=1538 data-nosnippet>1538</a>    </span><span class="kw">pub fn </span>recycle_data_pages(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#1539 id=1539 data-nosnippet>1539</a>        <span class="self">self</span>.areas.clear();
+<a href=#1540 id=1540 data-nosnippet>1540</a>    }
+<a href=#1541 id=1541 data-nosnippet>1541</a>}
+<a href=#1542 id=1542 data-nosnippet>1542</a>
+<a href=#1543 id=1543 data-nosnippet>1543</a><span class="doccomment">/// 重映射测试函数
+<a href=#1544 id=1544 data-nosnippet>1544</a>///
+<a href=#1545 id=1545 data-nosnippet>1545</a>/// 验证内核地址空间中各个段的内存权限设置是否正确。通过检查内核的
+<a href=#1546 id=1546 data-nosnippet>1546</a>/// .text、.rodata 和 .data 段的中间地址的权限，确保内存保护机制正常工作。
+<a href=#1547 id=1547 data-nosnippet>1547</a>///
+<a href=#1548 id=1548 data-nosnippet>1548</a>/// ## 测试内容
 <a href=#1549 id=1549 data-nosnippet>1549</a>///
-<a href=#1550 id=1550 data-nosnippet>1550</a>/// ## 测试内容
-<a href=#1551 id=1551 data-nosnippet>1551</a>///
-<a href=#1552 id=1552 data-nosnippet>1552</a>/// 1. **代码段权限测试** (.text)
-<a href=#1553 id=1553 data-nosnippet>1553</a>///    - 验证代码段不可写（只读+可执行）
-<a href=#1554 id=1554 data-nosnippet>1554</a>///    - 防止代码被恶意修改
-<a href=#1555 id=1555 data-nosnippet>1555</a>///
-<a href=#1556 id=1556 data-nosnippet>1556</a>/// 2. **只读数据段权限测试** (.rodata)  
-<a href=#1557 id=1557 data-nosnippet>1557</a>///    - 验证只读数据段不可写
-<a href=#1558 id=1558 data-nosnippet>1558</a>///    - 保护常量数据不被修改
-<a href=#1559 id=1559 data-nosnippet>1559</a>///
-<a href=#1560 id=1560 data-nosnippet>1560</a>/// 3. **数据段权限测试** (.data)
-<a href=#1561 id=1561 data-nosnippet>1561</a>///    - 验证数据段不可执行
-<a href=#1562 id=1562 data-nosnippet>1562</a>///    - 防止数据被当作代码执行（NX 保护）
+<a href=#1550 id=1550 data-nosnippet>1550</a>/// 1. **代码段权限测试** (.text)
+<a href=#1551 id=1551 data-nosnippet>1551</a>///    - 验证代码段不可写（只读+可执行）
+<a href=#1552 id=1552 data-nosnippet>1552</a>///    - 防止代码被恶意修改
+<a href=#1553 id=1553 data-nosnippet>1553</a>///
+<a href=#1554 id=1554 data-nosnippet>1554</a>/// 2. **只读数据段权限测试** (.rodata)  
+<a href=#1555 id=1555 data-nosnippet>1555</a>///    - 验证只读数据段不可写
+<a href=#1556 id=1556 data-nosnippet>1556</a>///    - 保护常量数据不被修改
+<a href=#1557 id=1557 data-nosnippet>1557</a>///
+<a href=#1558 id=1558 data-nosnippet>1558</a>/// 3. **数据段权限测试** (.data)
+<a href=#1559 id=1559 data-nosnippet>1559</a>///    - 验证数据段不可执行
+<a href=#1560 id=1560 data-nosnippet>1560</a>///    - 防止数据被当作代码执行（NX 保护）
+<a href=#1561 id=1561 data-nosnippet>1561</a>///
+<a href=#1562 id=1562 data-nosnippet>1562</a>/// ## 测试方法
 <a href=#1563 id=1563 data-nosnippet>1563</a>///
-<a href=#1564 id=1564 data-nosnippet>1564</a>/// ## 测试方法
-<a href=#1565 id=1565 data-nosnippet>1565</a>///
-<a href=#1566 id=1566 data-nosnippet>1566</a>/// - 计算每个段的中间地址作为测试点
-<a href=#1567 id=1567 data-nosnippet>1567</a>/// - 通过页表转换获取对应的页表项
-<a href=#1568 id=1568 data-nosnippet>1568</a>/// - 检查页表项的权限标志位
+<a href=#1564 id=1564 data-nosnippet>1564</a>/// - 计算每个段的中间地址作为测试点
+<a href=#1565 id=1565 data-nosnippet>1565</a>/// - 通过页表转换获取对应的页表项
+<a href=#1566 id=1566 data-nosnippet>1566</a>/// - 检查页表项的权限标志位
+<a href=#1567 id=1567 data-nosnippet>1567</a>///
+<a href=#1568 id=1568 data-nosnippet>1568</a>/// ## 安全意义
 <a href=#1569 id=1569 data-nosnippet>1569</a>///
-<a href=#1570 id=1570 data-nosnippet>1570</a>/// ## 安全意义
-<a href=#1571 id=1571 data-nosnippet>1571</a>///
-<a href=#1572 id=1572 data-nosnippet>1572</a>/// 这些权限检查实现了重要的安全机制：
-<a href=#1573 id=1573 data-nosnippet>1573</a>/// - **W^X 原则**: 内存页面要么可写，要么可执行，不能同时具备
-<a href=#1574 id=1574 data-nosnippet>1574</a>/// - **代码完整性**: 防止代码段被恶意修改
-<a href=#1575 id=1575 data-nosnippet>1575</a>/// - **数据执行保护**: 防止缓冲区溢出等攻击
+<a href=#1570 id=1570 data-nosnippet>1570</a>/// 这些权限检查实现了重要的安全机制：
+<a href=#1571 id=1571 data-nosnippet>1571</a>/// - **W^X 原则**: 内存页面要么可写，要么可执行，不能同时具备
+<a href=#1572 id=1572 data-nosnippet>1572</a>/// - **代码完整性**: 防止代码段被恶意修改
+<a href=#1573 id=1573 data-nosnippet>1573</a>/// - **数据执行保护**: 防止缓冲区溢出等攻击
+<a href=#1574 id=1574 data-nosnippet>1574</a>///
+<a href=#1575 id=1575 data-nosnippet>1575</a>/// ## Panics
 <a href=#1576 id=1576 data-nosnippet>1576</a>///
-<a href=#1577 id=1577 data-nosnippet>1577</a>/// ## Panics
+<a href=#1577 id=1577 data-nosnippet>1577</a>/// 如果任何权限检查失败，函数会触发 panic，表明内存保护机制存在问题
 <a href=#1578 id=1578 data-nosnippet>1578</a>///
-<a href=#1579 id=1579 data-nosnippet>1579</a>/// 如果任何权限检查失败，函数会触发 panic，表明内存保护机制存在问题
+<a href=#1579 id=1579 data-nosnippet>1579</a>/// ## 使用场景
 <a href=#1580 id=1580 data-nosnippet>1580</a>///
-<a href=#1581 id=1581 data-nosnippet>1581</a>/// ## 使用场景
-<a href=#1582 id=1582 data-nosnippet>1582</a>///
-<a href=#1583 id=1583 data-nosnippet>1583</a>/// - 系统初始化后的自检
-<a href=#1584 id=1584 data-nosnippet>1584</a>/// - 调试内存权限配置
-<a href=#1585 id=1585 data-nosnippet>1585</a>/// - 验证页表设置的正确性
+<a href=#1581 id=1581 data-nosnippet>1581</a>/// - 系统初始化后的自检
+<a href=#1582 id=1582 data-nosnippet>1582</a>/// - 调试内存权限配置
+<a href=#1583 id=1583 data-nosnippet>1583</a>/// - 验证页表设置的正确性
+<a href=#1584 id=1584 data-nosnippet>1584</a>///
+<a href=#1585 id=1585 data-nosnippet>1585</a>/// ## Examples
 <a href=#1586 id=1586 data-nosnippet>1586</a>///
-<a href=#1587 id=1587 data-nosnippet>1587</a>/// ## Examples
-<a href=#1588 id=1588 data-nosnippet>1588</a>///
-<a href=#1589 id=1589 data-nosnippet>1589</a>/// ```rust
-<a href=#1590 id=1590 data-nosnippet>1590</a>/// // 通常在内核初始化完成后调用
-<a href=#1591 id=1591 data-nosnippet>1591</a>/// remap_test(); // 如果通过，打印 "remap_test passed!"
-<a href=#1592 id=1592 data-nosnippet>1592</a>/// ```
-<a href=#1593 id=1593 data-nosnippet>1593</a></span><span class="kw">pub fn </span>remap_test() {
-<a href=#1594 id=1594 data-nosnippet>1594</a>    <span class="kw">let </span>kernel_space = KERNEL_SPACE.exclusive_access();
-<a href=#1595 id=1595 data-nosnippet>1595</a>    <span class="kw">let </span>mid_text: VirtAddr = ((stext <span class="kw">as </span>usize + etext <span class="kw">as </span>usize) / <span class="number">2</span>).into();
-<a href=#1596 id=1596 data-nosnippet>1596</a>    <span class="kw">let </span>mid_rodata: VirtAddr = ((srodata <span class="kw">as </span>usize + erodata <span class="kw">as </span>usize) / <span class="number">2</span>).into();
-<a href=#1597 id=1597 data-nosnippet>1597</a>    <span class="kw">let </span>mid_data: VirtAddr = ((sdata <span class="kw">as </span>usize + edata <span class="kw">as </span>usize) / <span class="number">2</span>).into();
-<a href=#1598 id=1598 data-nosnippet>1598</a>    <span class="macro">assert_eq!</span>(
-<a href=#1599 id=1599 data-nosnippet>1599</a>        kernel_space
-<a href=#1600 id=1600 data-nosnippet>1600</a>            .page_table
-<a href=#1601 id=1601 data-nosnippet>1601</a>            .translate(mid_text.floor())
-<a href=#1602 id=1602 data-nosnippet>1602</a>            .unwrap()
-<a href=#1603 id=1603 data-nosnippet>1603</a>            .writable(),
-<a href=#1604 id=1604 data-nosnippet>1604</a>        <span class="bool-val">false
-<a href=#1605 id=1605 data-nosnippet>1605</a>    </span>);
-<a href=#1606 id=1606 data-nosnippet>1606</a>    <span class="macro">assert_eq!</span>(
-<a href=#1607 id=1607 data-nosnippet>1607</a>        kernel_space
-<a href=#1608 id=1608 data-nosnippet>1608</a>            .page_table
-<a href=#1609 id=1609 data-nosnippet>1609</a>            .translate(mid_rodata.floor())
-<a href=#1610 id=1610 data-nosnippet>1610</a>            .unwrap()
-<a href=#1611 id=1611 data-nosnippet>1611</a>            .writable(),
-<a href=#1612 id=1612 data-nosnippet>1612</a>        <span class="bool-val">false</span>,
-<a href=#1613 id=1613 data-nosnippet>1613</a>    );
-<a href=#1614 id=1614 data-nosnippet>1614</a>    <span class="macro">assert_eq!</span>(
-<a href=#1615 id=1615 data-nosnippet>1615</a>        kernel_space
-<a href=#1616 id=1616 data-nosnippet>1616</a>            .page_table
-<a href=#1617 id=1617 data-nosnippet>1617</a>            .translate(mid_data.floor())
-<a href=#1618 id=1618 data-nosnippet>1618</a>            .unwrap()
-<a href=#1619 id=1619 data-nosnippet>1619</a>            .executable(),
-<a href=#1620 id=1620 data-nosnippet>1620</a>        <span class="bool-val">false</span>,
-<a href=#1621 id=1621 data-nosnippet>1621</a>    );
-<a href=#1622 id=1622 data-nosnippet>1622</a>    <span class="macro">println!</span>(<span class="string">"remap_test passed!"</span>);
-<a href=#1623 id=1623 data-nosnippet>1623</a>}</code></pre></div></section></main></body></html>
+<a href=#1587 id=1587 data-nosnippet>1587</a>/// ```rust
+<a href=#1588 id=1588 data-nosnippet>1588</a>/// // 通常在内核初始化完成后调用
+<a href=#1589 id=1589 data-nosnippet>1589</a>/// remap_test(); // 如果通过，打印 "remap_test passed!"
+<a href=#1590 id=1590 data-nosnippet>1590</a>/// ```
+<a href=#1591 id=1591 data-nosnippet>1591</a></span><span class="kw">pub fn </span>remap_test() {
+<a href=#1592 id=1592 data-nosnippet>1592</a>    <span class="kw">let </span>kernel_space = KERNEL_SPACE.exclusive_access();
+<a href=#1593 id=1593 data-nosnippet>1593</a>    <span class="kw">let </span>mid_text: VirtAddr = ((stext <span class="kw">as </span>usize + etext <span class="kw">as </span>usize) / <span class="number">2</span>).into();
+<a href=#1594 id=1594 data-nosnippet>1594</a>    <span class="kw">let </span>mid_rodata: VirtAddr = ((srodata <span class="kw">as </span>usize + erodata <span class="kw">as </span>usize) / <span class="number">2</span>).into();
+<a href=#1595 id=1595 data-nosnippet>1595</a>    <span class="kw">let </span>mid_data: VirtAddr = ((sdata <span class="kw">as </span>usize + edata <span class="kw">as </span>usize) / <span class="number">2</span>).into();
+<a href=#1596 id=1596 data-nosnippet>1596</a>    <span class="macro">assert_eq!</span>(
+<a href=#1597 id=1597 data-nosnippet>1597</a>        kernel_space
+<a href=#1598 id=1598 data-nosnippet>1598</a>            .page_table
+<a href=#1599 id=1599 data-nosnippet>1599</a>            .translate(mid_text.floor())
+<a href=#1600 id=1600 data-nosnippet>1600</a>            .unwrap()
+<a href=#1601 id=1601 data-nosnippet>1601</a>            .writable(),
+<a href=#1602 id=1602 data-nosnippet>1602</a>        <span class="bool-val">false
+<a href=#1603 id=1603 data-nosnippet>1603</a>    </span>);
+<a href=#1604 id=1604 data-nosnippet>1604</a>    <span class="macro">assert_eq!</span>(
+<a href=#1605 id=1605 data-nosnippet>1605</a>        kernel_space
+<a href=#1606 id=1606 data-nosnippet>1606</a>            .page_table
+<a href=#1607 id=1607 data-nosnippet>1607</a>            .translate(mid_rodata.floor())
+<a href=#1608 id=1608 data-nosnippet>1608</a>            .unwrap()
+<a href=#1609 id=1609 data-nosnippet>1609</a>            .writable(),
+<a href=#1610 id=1610 data-nosnippet>1610</a>        <span class="bool-val">false</span>,
+<a href=#1611 id=1611 data-nosnippet>1611</a>    );
+<a href=#1612 id=1612 data-nosnippet>1612</a>    <span class="macro">assert_eq!</span>(
+<a href=#1613 id=1613 data-nosnippet>1613</a>        kernel_space
+<a href=#1614 id=1614 data-nosnippet>1614</a>            .page_table
+<a href=#1615 id=1615 data-nosnippet>1615</a>            .translate(mid_data.floor())
+<a href=#1616 id=1616 data-nosnippet>1616</a>            .unwrap()
+<a href=#1617 id=1617 data-nosnippet>1617</a>            .executable(),
+<a href=#1618 id=1618 data-nosnippet>1618</a>        <span class="bool-val">false</span>,
+<a href=#1619 id=1619 data-nosnippet>1619</a>    );
+<a href=#1620 id=1620 data-nosnippet>1620</a>    <span class="macro">println!</span>(<span class="string">"remap_test passed!"</span>);
+<a href=#1621 id=1621 data-nosnippet>1621</a>}</code></pre></div></section></main></body></html>

@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>//! ```
 <a href=#51 id=51 data-nosnippet>51</a>//!
 <a href=#52 id=52 data-nosnippet>52</a>
-<a href=#53 id=53 data-nosnippet>53</a></span><span class="kw">use crate</span>::{BLOCK_SZ, BlockDevice, get_block_cache};
+<a href=#53 id=53 data-nosnippet>53</a></span><span class="kw">use crate</span>::{BLOCK_SZ, BlockDevice, block_cache};
 <a href=#54 id=54 data-nosnippet>54</a><span class="kw">use </span>alloc::{sync::Arc, vec::Vec};
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a><span class="doccomment">/// 文件系统魔数，用于标识 Easy File System
@@ -202,7 +202,7 @@
 <a href=#202 id=202 data-nosnippet>202</a>    ///
 <a href=#203 id=203 data-nosnippet>203</a>    /// ## Returns
 <a href=#204 id=204 data-nosnippet>204</a>    /// 如果魔数匹配返回 `true`，否则返回 `false`
-<a href=#205 id=205 data-nosnippet>205</a>    </span><span class="kw">pub fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#205 id=205 data-nosnippet>205</a>    </span><span class="kw">pub fn </span>valid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#206 id=206 data-nosnippet>206</a>        <span class="self">self</span>.magic == EFS_MAGIC
 <a href=#207 id=207 data-nosnippet>207</a>    }
 <a href=#208 id=208 data-nosnippet>208</a>}
@@ -226,7 +226,7 @@
 <a href=#226 id=226 data-nosnippet>226</a>    ///
 <a href=#227 id=227 data-nosnippet>227</a>    /// ## Returns
 <a href=#228 id=228 data-nosnippet>228</a>    /// 如果是目录返回 `true`，否则返回 `false`
-<a href=#229 id=229 data-nosnippet>229</a>    </span><span class="kw">pub fn </span>is_dir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#229 id=229 data-nosnippet>229</a>    </span><span class="kw">pub fn </span>dir(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#230 id=230 data-nosnippet>230</a>        <span class="self">self</span>.type_ == DiskInodeType::Directory
 <a href=#231 id=231 data-nosnippet>231</a>    }
 <a href=#232 id=232 data-nosnippet>232</a>
@@ -234,7 +234,7 @@
 <a href=#234 id=234 data-nosnippet>234</a>    ///
 <a href=#235 id=235 data-nosnippet>235</a>    /// ## Returns
 <a href=#236 id=236 data-nosnippet>236</a>    /// 如果是普通文件返回 `true`，否则返回 `false`
-<a href=#237 id=237 data-nosnippet>237</a>    </span><span class="kw">pub fn </span>is_file(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#237 id=237 data-nosnippet>237</a>    </span><span class="kw">pub fn </span>file(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#238 id=238 data-nosnippet>238</a>        <span class="self">self</span>.type_ == DiskInodeType::File
 <a href=#239 id=239 data-nosnippet>239</a>    }
 <a href=#240 id=240 data-nosnippet>240</a>
@@ -254,24 +254,24 @@
 <a href=#254 id=254 data-nosnippet>254</a>    /// - 0-27：直接块，从 `direct` 数组获取
 <a href=#255 id=255 data-nosnippet>255</a>    /// - 28-1023：一级间接块，通过 `indirect1` 查找
 <a href=#256 id=256 data-nosnippet>256</a>    /// - 1024+：二级间接块，通过 `indirect2` 查找
-<a href=#257 id=257 data-nosnippet>257</a>    </span><span class="kw">pub fn </span>get_block_id(<span class="kw-2">&amp;</span><span class="self">self</span>, inner_id: u32, block_device: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;) -&gt; u32 {
+<a href=#257 id=257 data-nosnippet>257</a>    </span><span class="kw">pub fn </span>block_id(<span class="kw-2">&amp;</span><span class="self">self</span>, inner_id: u32, block_device: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;) -&gt; u32 {
 <a href=#258 id=258 data-nosnippet>258</a>        <span class="kw">let </span>inner_id = inner_id <span class="kw">as </span>usize;
 <a href=#259 id=259 data-nosnippet>259</a>        <span class="kw">if </span>inner_id &lt; INODE_DIRECT_COUNT {
 <a href=#260 id=260 data-nosnippet>260</a>            <span class="self">self</span>.direct[inner_id]
 <a href=#261 id=261 data-nosnippet>261</a>        } <span class="kw">else if </span>inner_id &lt; INDIRECT1_BOUND {
-<a href=#262 id=262 data-nosnippet>262</a>            get_block_cache(<span class="self">self</span>.indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#262 id=262 data-nosnippet>262</a>            block_cache(<span class="self">self</span>.indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#263 id=263 data-nosnippet>263</a>                .lock()
 <a href=#264 id=264 data-nosnippet>264</a>                .read(<span class="number">0</span>, |indirect_block: <span class="kw-2">&amp;</span>IndirectBlock| {
 <a href=#265 id=265 data-nosnippet>265</a>                    indirect_block[inner_id - INODE_DIRECT_COUNT]
 <a href=#266 id=266 data-nosnippet>266</a>                })
 <a href=#267 id=267 data-nosnippet>267</a>        } <span class="kw">else </span>{
 <a href=#268 id=268 data-nosnippet>268</a>            <span class="kw">let </span>last = inner_id - INDIRECT1_BOUND;
-<a href=#269 id=269 data-nosnippet>269</a>            <span class="kw">let </span>indirect1 = get_block_cache(<span class="self">self</span>.indirect2 <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#269 id=269 data-nosnippet>269</a>            <span class="kw">let </span>indirect1 = block_cache(<span class="self">self</span>.indirect2 <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#270 id=270 data-nosnippet>270</a>                .lock()
 <a href=#271 id=271 data-nosnippet>271</a>                .read(<span class="number">0</span>, |indirect2: <span class="kw-2">&amp;</span>IndirectBlock| {
 <a href=#272 id=272 data-nosnippet>272</a>                    indirect2[last / INODE_INDIRECT1_COUNT]
 <a href=#273 id=273 data-nosnippet>273</a>                });
-<a href=#274 id=274 data-nosnippet>274</a>            get_block_cache(indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#274 id=274 data-nosnippet>274</a>            block_cache(indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#275 id=275 data-nosnippet>275</a>                .lock()
 <a href=#276 id=276 data-nosnippet>276</a>                .read(<span class="number">0</span>, |indirect1: <span class="kw-2">&amp;</span>IndirectBlock| {
 <a href=#277 id=277 data-nosnippet>277</a>                    indirect1[last % INODE_INDIRECT1_COUNT]
@@ -383,7 +383,7 @@
 <a href=#383 id=383 data-nosnippet>383</a>        } <span class="kw">else </span>{
 <a href=#384 id=384 data-nosnippet>384</a>            <span class="kw">return</span>;
 <a href=#385 id=385 data-nosnippet>385</a>        }
-<a href=#386 id=386 data-nosnippet>386</a>        get_block_cache(<span class="self">self</span>.indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#386 id=386 data-nosnippet>386</a>        block_cache(<span class="self">self</span>.indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#387 id=387 data-nosnippet>387</a>            .lock()
 <a href=#388 id=388 data-nosnippet>388</a>            .modify(<span class="number">0</span>, |indirect1: <span class="kw-2">&amp;mut </span>IndirectBlock| {
 <a href=#389 id=389 data-nosnippet>389</a>                <span class="kw">while </span>current_blocks &lt; total_blocks.min(INODE_INDIRECT1_COUNT <span class="kw">as </span>u32) {
@@ -405,14 +405,14 @@
 <a href=#405 id=405 data-nosnippet>405</a>        <span class="kw">let </span><span class="kw-2">mut </span>b0 = current_blocks <span class="kw">as </span>usize % INODE_INDIRECT1_COUNT;
 <a href=#406 id=406 data-nosnippet>406</a>        <span class="kw">let </span>a1 = total_blocks <span class="kw">as </span>usize / INODE_INDIRECT1_COUNT;
 <a href=#407 id=407 data-nosnippet>407</a>        <span class="kw">let </span>b1 = total_blocks <span class="kw">as </span>usize % INODE_INDIRECT1_COUNT;
-<a href=#408 id=408 data-nosnippet>408</a>        get_block_cache(<span class="self">self</span>.indirect2 <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#408 id=408 data-nosnippet>408</a>        block_cache(<span class="self">self</span>.indirect2 <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#409 id=409 data-nosnippet>409</a>            .lock()
 <a href=#410 id=410 data-nosnippet>410</a>            .modify(<span class="number">0</span>, |indirect2: <span class="kw-2">&amp;mut </span>IndirectBlock| {
 <a href=#411 id=411 data-nosnippet>411</a>                <span class="kw">while </span>(a0 &lt; a1) || (a0 == a1 &amp;&amp; b0 &lt; b1) {
 <a href=#412 id=412 data-nosnippet>412</a>                    <span class="kw">if </span>b0 == <span class="number">0 </span>{
 <a href=#413 id=413 data-nosnippet>413</a>                        indirect2[a0] = new_blocks.next().unwrap();
 <a href=#414 id=414 data-nosnippet>414</a>                    }
-<a href=#415 id=415 data-nosnippet>415</a>                    get_block_cache(indirect2[a0] <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#415 id=415 data-nosnippet>415</a>                    block_cache(indirect2[a0] <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#416 id=416 data-nosnippet>416</a>                        .lock()
 <a href=#417 id=417 data-nosnippet>417</a>                        .modify(<span class="number">0</span>, |indirect1: <span class="kw-2">&amp;mut </span>IndirectBlock| {
 <a href=#418 id=418 data-nosnippet>418</a>                            indirect1[b0] = new_blocks.next().unwrap();
@@ -460,7 +460,7 @@
 <a href=#460 id=460 data-nosnippet>460</a>        } <span class="kw">else </span>{
 <a href=#461 id=461 data-nosnippet>461</a>            <span class="kw">return </span>v;
 <a href=#462 id=462 data-nosnippet>462</a>        }
-<a href=#463 id=463 data-nosnippet>463</a>        get_block_cache(<span class="self">self</span>.indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#463 id=463 data-nosnippet>463</a>        block_cache(<span class="self">self</span>.indirect1 <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#464 id=464 data-nosnippet>464</a>            .lock()
 <a href=#465 id=465 data-nosnippet>465</a>            .modify(<span class="number">0</span>, |indirect1: <span class="kw-2">&amp;mut </span>IndirectBlock| {
 <a href=#466 id=466 data-nosnippet>466</a>                <span class="kw">while </span>current_blocks &lt; data_blocks.min(INODE_INDIRECT1_COUNT) {
@@ -479,12 +479,12 @@
 <a href=#479 id=479 data-nosnippet>479</a>        <span class="macro">assert!</span>(data_blocks &lt;= INODE_INDIRECT2_COUNT);
 <a href=#480 id=480 data-nosnippet>480</a>        <span class="kw">let </span>a1 = data_blocks / INODE_INDIRECT1_COUNT;
 <a href=#481 id=481 data-nosnippet>481</a>        <span class="kw">let </span>b1 = data_blocks % INODE_INDIRECT1_COUNT;
-<a href=#482 id=482 data-nosnippet>482</a>        get_block_cache(<span class="self">self</span>.indirect2 <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#482 id=482 data-nosnippet>482</a>        block_cache(<span class="self">self</span>.indirect2 <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#483 id=483 data-nosnippet>483</a>            .lock()
 <a href=#484 id=484 data-nosnippet>484</a>            .modify(<span class="number">0</span>, |indirect2: <span class="kw-2">&amp;mut </span>IndirectBlock| {
 <a href=#485 id=485 data-nosnippet>485</a>                <span class="kw">for </span>entry <span class="kw">in </span>indirect2.iter_mut().take(a1) {
 <a href=#486 id=486 data-nosnippet>486</a>                    v.push(<span class="kw-2">*</span>entry);
-<a href=#487 id=487 data-nosnippet>487</a>                    get_block_cache(<span class="kw-2">*</span>entry <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#487 id=487 data-nosnippet>487</a>                    block_cache(<span class="kw-2">*</span>entry <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#488 id=488 data-nosnippet>488</a>                        .lock()
 <a href=#489 id=489 data-nosnippet>489</a>                        .modify(<span class="number">0</span>, |indirect1: <span class="kw-2">&amp;mut </span>IndirectBlock| {
 <a href=#490 id=490 data-nosnippet>490</a>                            <span class="kw">for </span>entry <span class="kw">in </span>indirect1.iter() {
@@ -494,7 +494,7 @@
 <a href=#494 id=494 data-nosnippet>494</a>                }
 <a href=#495 id=495 data-nosnippet>495</a>                <span class="kw">if </span>b1 &gt; <span class="number">0 </span>{
 <a href=#496 id=496 data-nosnippet>496</a>                    v.push(indirect2[a1]);
-<a href=#497 id=497 data-nosnippet>497</a>                    get_block_cache(indirect2[a1] <span class="kw">as </span>usize, Arc::clone(block_device))
+<a href=#497 id=497 data-nosnippet>497</a>                    block_cache(indirect2[a1] <span class="kw">as </span>usize, Arc::clone(block_device))
 <a href=#498 id=498 data-nosnippet>498</a>                        .lock()
 <a href=#499 id=499 data-nosnippet>499</a>                        .modify(<span class="number">0</span>, |indirect1: <span class="kw-2">&amp;mut </span>IndirectBlock| {
 <a href=#500 id=500 data-nosnippet>500</a>                            <span class="kw">for </span>entry <span class="kw">in </span>indirect1.iter().take(b1) {
@@ -548,8 +548,8 @@
 <a href=#548 id=548 data-nosnippet>548</a>
 <a href=#549 id=549 data-nosnippet>549</a>            <span class="kw">let </span>block_read_size = end_current_block - start;
 <a href=#550 id=550 data-nosnippet>550</a>            <span class="kw">let </span>dst = <span class="kw-2">&amp;mut </span>buf[read_size..read_size + block_read_size];
-<a href=#551 id=551 data-nosnippet>551</a>            get_block_cache(
-<a href=#552 id=552 data-nosnippet>552</a>                <span class="self">self</span>.get_block_id(start_block <span class="kw">as </span>u32, block_device) <span class="kw">as </span>usize,
+<a href=#551 id=551 data-nosnippet>551</a>            block_cache(
+<a href=#552 id=552 data-nosnippet>552</a>                <span class="self">self</span>.block_id(start_block <span class="kw">as </span>u32, block_device) <span class="kw">as </span>usize,
 <a href=#553 id=553 data-nosnippet>553</a>                Arc::clone(block_device),
 <a href=#554 id=554 data-nosnippet>554</a>            )
 <a href=#555 id=555 data-nosnippet>555</a>            .lock()
@@ -607,8 +607,8 @@
 <a href=#607 id=607 data-nosnippet>607</a>            end_current_block = end_current_block.min(end);
 <a href=#608 id=608 data-nosnippet>608</a>
 <a href=#609 id=609 data-nosnippet>609</a>            <span class="kw">let </span>block_write_size = end_current_block - start;
-<a href=#610 id=610 data-nosnippet>610</a>            get_block_cache(
-<a href=#611 id=611 data-nosnippet>611</a>                <span class="self">self</span>.get_block_id(start_block <span class="kw">as </span>u32, block_device) <span class="kw">as </span>usize,
+<a href=#610 id=610 data-nosnippet>610</a>            block_cache(
+<a href=#611 id=611 data-nosnippet>611</a>                <span class="self">self</span>.block_id(start_block <span class="kw">as </span>u32, block_device) <span class="kw">as </span>usize,
 <a href=#612 id=612 data-nosnippet>612</a>                Arc::clone(block_device),
 <a href=#613 id=613 data-nosnippet>613</a>            )
 <a href=#614 id=614 data-nosnippet>614</a>            .lock()

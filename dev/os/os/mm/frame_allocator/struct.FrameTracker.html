@@ -26,7 +26,7 @@
 </span><span class="kw">let </span>frame = frame_alloc().expect(<span class="string">"内存不足"</span>);
 
 <span class="comment">// 通过物理页号访问页面数据
-</span><span class="kw">let </span>page_data = frame.ppn.get_bytes_array();
+</span><span class="kw">let </span>page_data = frame.ppn.bytes_array();
 page_data[<span class="number">0</span>] = <span class="number">42</span>;
 
 <span class="comment">// 离开作用域时页帧自动释放

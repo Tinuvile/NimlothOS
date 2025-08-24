@@ -50,8 +50,8 @@
 <a href=#50 id=50 data-nosnippet>50</a>//!
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">use super</span>::{
-<a href=#53 id=53 data-nosnippet>53</a>    Bitmap, BlockDevice, DataBlock, DiskInode, DiskInodeType, SuperBlock, block_cache_sync_all,
-<a href=#54 id=54 data-nosnippet>54</a>    get_block_cache,
+<a href=#53 id=53 data-nosnippet>53</a>    Bitmap, BlockDevice, DataBlock, DiskInode, DiskInodeType, SuperBlock, block_cache,
+<a href=#54 id=54 data-nosnippet>54</a>    block_cache_sync_all,
 <a href=#55 id=55 data-nosnippet>55</a>};
 <a href=#56 id=56 data-nosnippet>56</a><span class="kw">use crate</span>::{BLOCK_SZ, vfs::Inode};
 <a href=#57 id=57 data-nosnippet>57</a><span class="kw">use </span>alloc::sync::Arc;
@@ -135,7 +135,7 @@
 <a href=#135 id=135 data-nosnippet>135</a>            data_area_start_block: <span class="number">1 </span>+ inode_total_blocks + data_bitmap_blocks,
 <a href=#136 id=136 data-nosnippet>136</a>        };
 <a href=#137 id=137 data-nosnippet>137</a>        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..total_blocks {
-<a href=#138 id=138 data-nosnippet>138</a>            get_block_cache(i <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span>block_device))
+<a href=#138 id=138 data-nosnippet>138</a>            block_cache(i <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span>block_device))
 <a href=#139 id=139 data-nosnippet>139</a>                .lock()
 <a href=#140 id=140 data-nosnippet>140</a>                .modify(<span class="number">0</span>, |data_block: <span class="kw-2">&amp;mut </span>DataBlock| {
 <a href=#141 id=141 data-nosnippet>141</a>                    <span class="kw">for </span>byte <span class="kw">in </span>data_block.iter_mut() {
@@ -143,7 +143,7 @@
 <a href=#143 id=143 data-nosnippet>143</a>                    }
 <a href=#144 id=144 data-nosnippet>144</a>                });
 <a href=#145 id=145 data-nosnippet>145</a>        }
-<a href=#146 id=146 data-nosnippet>146</a>        get_block_cache(<span class="number">0</span>, Arc::clone(<span class="kw-2">&amp;</span>block_device)).lock().modify(
+<a href=#146 id=146 data-nosnippet>146</a>        block_cache(<span class="number">0</span>, Arc::clone(<span class="kw-2">&amp;</span>block_device)).lock().modify(
 <a href=#147 id=147 data-nosnippet>147</a>            <span class="number">0</span>,
 <a href=#148 id=148 data-nosnippet>148</a>            |super_block: <span class="kw-2">&amp;mut </span>SuperBlock| {
 <a href=#149 id=149 data-nosnippet>149</a>                super_block.initialize(
@@ -156,8 +156,8 @@
 <a href=#156 id=156 data-nosnippet>156</a>            },
 <a href=#157 id=157 data-nosnippet>157</a>        );
 <a href=#158 id=158 data-nosnippet>158</a>        <span class="macro">assert_eq!</span>(efs.alloc_inode(), <span class="number">0</span>);
-<a href=#159 id=159 data-nosnippet>159</a>        <span class="kw">let </span>(root_inode_block_id, root_inode_offset) = efs.get_disk_inode_pos(<span class="number">0</span>);
-<a href=#160 id=160 data-nosnippet>160</a>        get_block_cache(root_inode_block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span>block_device))
+<a href=#159 id=159 data-nosnippet>159</a>        <span class="kw">let </span>(root_inode_block_id, root_inode_offset) = efs.disk_inode_pos(<span class="number">0</span>);
+<a href=#160 id=160 data-nosnippet>160</a>        block_cache(root_inode_block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span>block_device))
 <a href=#161 id=161 data-nosnippet>161</a>            .lock()
 <a href=#162 id=162 data-nosnippet>162</a>            .modify(root_inode_offset, |disk_inode: <span class="kw-2">&amp;mut </span>DiskInode| {
 <a href=#163 id=163 data-nosnippet>163</a>                disk_inode.initialize(DiskInodeType::Directory);
@@ -191,10 +191,10 @@
 <a href=#191 id=191 data-nosnippet>191</a>    /// - 加载过程不会修改块设备上的数据
 <a href=#192 id=192 data-nosnippet>192</a>    /// - 文件系统加载后立即可用
 <a href=#193 id=193 data-nosnippet>193</a>    </span><span class="kw">pub fn </span>open(block_device: Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;) -&gt; Arc&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#194 id=194 data-nosnippet>194</a>        get_block_cache(<span class="number">0</span>, Arc::clone(<span class="kw-2">&amp;</span>block_device))
+<a href=#194 id=194 data-nosnippet>194</a>        block_cache(<span class="number">0</span>, Arc::clone(<span class="kw-2">&amp;</span>block_device))
 <a href=#195 id=195 data-nosnippet>195</a>            .lock()
 <a href=#196 id=196 data-nosnippet>196</a>            .read(<span class="number">0</span>, |super_block: <span class="kw-2">&amp;</span>SuperBlock| {
-<a href=#197 id=197 data-nosnippet>197</a>                <span class="macro">assert!</span>(super_block.is_valid(), <span class="string">"Error loading EFS!"</span>);
+<a href=#197 id=197 data-nosnippet>197</a>                <span class="macro">assert!</span>(super_block.valid(), <span class="string">"Error loading EFS!"</span>);
 <a href=#198 id=198 data-nosnippet>198</a>                <span class="kw">let </span>inode_total_blocks =
 <a href=#199 id=199 data-nosnippet>199</a>                    super_block.inode_bitmap_blocks + super_block.inode_area_blocks;
 <a href=#200 id=200 data-nosnippet>200</a>                <span class="kw">let </span>efs = <span class="self">Self </span>{
@@ -226,7 +226,7 @@
 <a href=#226 id=226 data-nosnippet>226</a>    /// - 每个块可以存储多个 inode（取决于 `DiskInode` 的大小）
 <a href=#227 id=227 data-nosnippet>227</a>    /// - 块号 = inode 区域起始块号 + inode_id / 每块 inode 数量
 <a href=#228 id=228 data-nosnippet>228</a>    /// - 偏移量 = (inode_id % 每块 inode 数量) × inode 大小
-<a href=#229 id=229 data-nosnippet>229</a>    </span><span class="kw">pub fn </span>get_disk_inode_pos(<span class="kw-2">&amp;</span><span class="self">self</span>, inode_id: u32) -&gt; (u32, usize) {
+<a href=#229 id=229 data-nosnippet>229</a>    </span><span class="kw">pub fn </span>disk_inode_pos(<span class="kw-2">&amp;</span><span class="self">self</span>, inode_id: u32) -&gt; (u32, usize) {
 <a href=#230 id=230 data-nosnippet>230</a>        <span class="kw">let </span>inode_size = core::mem::size_of::&lt;DiskInode&gt;();
 <a href=#231 id=231 data-nosnippet>231</a>        <span class="kw">let </span>inodes_per_block = (BLOCK_SZ / inode_size) <span class="kw">as </span>u32;
 <a href=#232 id=232 data-nosnippet>232</a>        <span class="kw">let </span>block_id = <span class="self">self</span>.inode_area_start_block + inode_id / inodes_per_block;
@@ -246,7 +246,7 @@
 <a href=#246 id=246 data-nosnippet>246</a>    ///
 <a href=#247 id=247 data-nosnippet>247</a>    /// ## Returns
 <a href=#248 id=248 data-nosnippet>248</a>    /// 数据块在块设备上的实际块号
-<a href=#249 id=249 data-nosnippet>249</a>    </span><span class="kw">pub fn </span>get_data_block_id(<span class="kw-2">&amp;</span><span class="self">self</span>, data_block_id: u32) -&gt; u32 {
+<a href=#249 id=249 data-nosnippet>249</a>    </span><span class="kw">pub fn </span>data_block_id(<span class="kw-2">&amp;</span><span class="self">self</span>, data_block_id: u32) -&gt; u32 {
 <a href=#250 id=250 data-nosnippet>250</a>        <span class="self">self</span>.data_area_start_block + data_block_id
 <a href=#251 id=251 data-nosnippet>251</a>    }
 <a href=#252 id=252 data-nosnippet>252</a>
@@ -309,13 +309,13 @@
 <a href=#309 id=309 data-nosnippet>309</a>        <span class="comment">/* TODO: Implement this -&gt; support file delete
 <a href=#310 id=310 data-nosnippet>310</a>        self.inode_bitmap
 <a href=#311 id=311 data-nosnippet>311</a>            .dealloc(&amp;self.block_device, inode_id as usize);
-<a href=#312 id=312 data-nosnippet>312</a>        get_block_cache(
-<a href=#313 id=313 data-nosnippet>313</a>            self.get_disk_inode_pos(inode_id).0 as usize,
+<a href=#312 id=312 data-nosnippet>312</a>        block_cache(
+<a href=#313 id=313 data-nosnippet>313</a>            self.disk_inode_pos(inode_id).0 as usize,
 <a href=#314 id=314 data-nosnippet>314</a>            Arc::clone(&amp;self.block_device),
 <a href=#315 id=315 data-nosnippet>315</a>        )
 <a href=#316 id=316 data-nosnippet>316</a>        .lock()
 <a href=#317 id=317 data-nosnippet>317</a>        .modify(
-<a href=#318 id=318 data-nosnippet>318</a>            self.get_disk_inode_pos(inode_id).1,
+<a href=#318 id=318 data-nosnippet>318</a>            self.disk_inode_pos(inode_id).1,
 <a href=#319 id=319 data-nosnippet>319</a>            |disk_inode: &amp;mut DiskInode| {
 <a href=#320 id=320 data-nosnippet>320</a>                disk_inode.initialize(DiskInodeType::Free);
 <a href=#321 id=321 data-nosnippet>321</a>            },
@@ -342,7 +342,7 @@
 <a href=#342 id=342 data-nosnippet>342</a>    /// - 释放操作会清空数据块内容
 <a href=#343 id=343 data-nosnippet>343</a>    /// - 释放后的数据块可以重新分配使用
 <a href=#344 id=344 data-nosnippet>344</a>    </span><span class="kw">pub fn </span>dealloc_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block_id: u32) {
-<a href=#345 id=345 data-nosnippet>345</a>        get_block_cache(block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
+<a href=#345 id=345 data-nosnippet>345</a>        block_cache(block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
 <a href=#346 id=346 data-nosnippet>346</a>            .lock()
 <a href=#347 id=347 data-nosnippet>347</a>            .modify(<span class="number">0</span>, |data_block: <span class="kw-2">&amp;mut </span>DataBlock| {
 <a href=#348 id=348 data-nosnippet>348</a>                data_block.iter_mut().for_each(|p| {
@@ -379,7 +379,7 @@
 <a href=#379 id=379 data-nosnippet>379</a>    /// ```
 <a href=#380 id=380 data-nosnippet>380</a>    </span><span class="kw">pub fn </span>root_inode(efs: <span class="kw-2">&amp;</span>Arc&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt;) -&gt; Inode {
 <a href=#381 id=381 data-nosnippet>381</a>        <span class="kw">let </span>block_device = Arc::clone(<span class="kw-2">&amp;</span>efs.lock().block_device);
-<a href=#382 id=382 data-nosnippet>382</a>        <span class="kw">let </span>(block_id, block_offset) = efs.lock().get_disk_inode_pos(<span class="number">0</span>);
+<a href=#382 id=382 data-nosnippet>382</a>        <span class="kw">let </span>(block_id, block_offset) = efs.lock().disk_inode_pos(<span class="number">0</span>);
 <a href=#383 id=383 data-nosnippet>383</a>        Inode::new(block_id, block_offset, Arc::clone(efs), block_device)
 <a href=#384 id=384 data-nosnippet>384</a>    }
 <a href=#385 id=385 data-nosnippet>385</a>}</code></pre></div></section></main></body></html>

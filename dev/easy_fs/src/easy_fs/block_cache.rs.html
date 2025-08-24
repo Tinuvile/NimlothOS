@@ -25,10 +25,10 @@
 <a href=#25 id=25 data-nosnippet>25</a>//! ## 使用示例
 <a href=#26 id=26 data-nosnippet>26</a>//!
 <a href=#27 id=27 data-nosnippet>27</a>//! ```rust
-<a href=#28 id=28 data-nosnippet>28</a>//! use easy_fs::block_cache::{get_block_cache, block_cache_sync_all};
+<a href=#28 id=28 data-nosnippet>28</a>//! use easy_fs::block_cache::{block_cache, block_cache_sync_all};
 <a href=#29 id=29 data-nosnippet>29</a>//!
 <a href=#30 id=30 data-nosnippet>30</a>//! // 获取块缓存
-<a href=#31 id=31 data-nosnippet>31</a>//! let block_cache = get_block_cache(block_id, block_device);
+<a href=#31 id=31 data-nosnippet>31</a>//! let block_cache = block_cache(block_id, block_device);
 <a href=#32 id=32 data-nosnippet>32</a>//!
 <a href=#33 id=33 data-nosnippet>33</a>//! // 读取数据
 <a href=#34 id=34 data-nosnippet>34</a>//! let data = block_cache.lock().read(offset, |data: &amp;DataBlock| {
@@ -182,10 +182,10 @@
 <a href=#182 id=182 data-nosnippet>182</a>    /// ## Examples
 <a href=#183 id=183 data-nosnippet>183</a>    ///
 <a href=#184 id=184 data-nosnippet>184</a>    /// ```
-<a href=#185 id=185 data-nosnippet>185</a>    /// let data: &amp;u32 = block_cache.get_ref(0);  // 读取 u32 数据
-<a href=#186 id=186 data-nosnippet>186</a>    /// let slice: &amp;[u8; 10] = block_cache.get_ref(100);  // 读取字节数组
+<a href=#185 id=185 data-nosnippet>185</a>    /// let data: &amp;u32 = block_cache.ref_at(0);  // 读取 u32 数据
+<a href=#186 id=186 data-nosnippet>186</a>    /// let slice: &amp;[u8; 10] = block_cache.ref_at(100);  // 读取字节数组
 <a href=#187 id=187 data-nosnippet>187</a>    /// ```
-<a href=#188 id=188 data-nosnippet>188</a>    </span><span class="kw">pub fn </span>get_ref&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, offset: usize) -&gt; <span class="kw-2">&amp;</span>T
+<a href=#188 id=188 data-nosnippet>188</a>    </span><span class="kw">pub fn </span>ref_at&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, offset: usize) -&gt; <span class="kw-2">&amp;</span>T
 <a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">where
 <a href=#190 id=190 data-nosnippet>190</a>        </span>T: Sized,
 <a href=#191 id=191 data-nosnippet>191</a>    {
@@ -223,10 +223,10 @@
 <a href=#223 id=223 data-nosnippet>223</a>    /// ## Examples
 <a href=#224 id=224 data-nosnippet>224</a>    ///
 <a href=#225 id=225 data-nosnippet>225</a>    /// ```
-<a href=#226 id=226 data-nosnippet>226</a>    /// let data: &amp;mut u32 = block_cache.get_mut(0);
+<a href=#226 id=226 data-nosnippet>226</a>    /// let data: &amp;mut u32 = block_cache.mut_at(0);
 <a href=#227 id=227 data-nosnippet>227</a>    /// *data = 0x12345678;  // 修改数据
 <a href=#228 id=228 data-nosnippet>228</a>    /// ```
-<a href=#229 id=229 data-nosnippet>229</a>    </span><span class="kw">pub fn </span>get_mut&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: usize) -&gt; <span class="kw-2">&amp;mut </span>T
+<a href=#229 id=229 data-nosnippet>229</a>    </span><span class="kw">pub fn </span>mut_at&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: usize) -&gt; <span class="kw-2">&amp;mut </span>T
 <a href=#230 id=230 data-nosnippet>230</a>    <span class="kw">where
 <a href=#231 id=231 data-nosnippet>231</a>        </span>T: Sized,
 <a href=#232 id=232 data-nosnippet>232</a>    {
@@ -264,7 +264,7 @@
 <a href=#264 id=264 data-nosnippet>264</a>    /// });
 <a href=#265 id=265 data-nosnippet>265</a>    /// ```
 <a href=#266 id=266 data-nosnippet>266</a>    </span><span class="kw">pub fn </span>read&lt;T, V&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, offset: usize, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;</span>T) -&gt; V) -&gt; V {
-<a href=#267 id=267 data-nosnippet>267</a>        f(<span class="self">self</span>.get_ref(offset))
+<a href=#267 id=267 data-nosnippet>267</a>        f(<span class="self">self</span>.ref_at(offset))
 <a href=#268 id=268 data-nosnippet>268</a>    }
 <a href=#269 id=269 data-nosnippet>269</a>
 <a href=#270 id=270 data-nosnippet>270</a>    <span class="doccomment">/// 修改缓存数据
@@ -298,7 +298,7 @@
 <a href=#298 id=298 data-nosnippet>298</a>    /// });
 <a href=#299 id=299 data-nosnippet>299</a>    /// ```
 <a href=#300 id=300 data-nosnippet>300</a>    </span><span class="kw">pub fn </span>modify&lt;T, V&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, offset: usize, f: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>T) -&gt; V) -&gt; V {
-<a href=#301 id=301 data-nosnippet>301</a>        f(<span class="self">self</span>.get_mut(offset))
+<a href=#301 id=301 data-nosnippet>301</a>        f(<span class="self">self</span>.mut_at(offset))
 <a href=#302 id=302 data-nosnippet>302</a>    }
 <a href=#303 id=303 data-nosnippet>303</a>
 <a href=#304 id=304 data-nosnippet>304</a>    <span class="doccomment">/// 同步缓存到磁盘
@@ -390,10 +390,10 @@
 <a href=#390 id=390 data-nosnippet>390</a>    /// ## Examples
 <a href=#391 id=391 data-nosnippet>391</a>    ///
 <a href=#392 id=392 data-nosnippet>392</a>    /// ```
-<a href=#393 id=393 data-nosnippet>393</a>    /// let cache = manager.get_block_cache(block_id, block_device);
+<a href=#393 id=393 data-nosnippet>393</a>    /// let cache = manager.block_cache(block_id, block_device);
 <a href=#394 id=394 data-nosnippet>394</a>    /// let data = cache.lock().read(0, |data: &amp;DataBlock| data[0]);
 <a href=#395 id=395 data-nosnippet>395</a>    /// ```
-<a href=#396 id=396 data-nosnippet>396</a>    </span><span class="kw">pub fn </span>get_block_cache(
+<a href=#396 id=396 data-nosnippet>396</a>    </span><span class="kw">pub fn </span>block_cache(
 <a href=#397 id=397 data-nosnippet>397</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#398 id=398 data-nosnippet>398</a>        block_id: usize,
 <a href=#399 id=399 data-nosnippet>399</a>        block_device: Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;,
@@ -449,44 +449,41 @@
 <a href=#449 id=449 data-nosnippet>449</a>/// ## Examples
 <a href=#450 id=450 data-nosnippet>450</a>///
 <a href=#451 id=451 data-nosnippet>451</a>/// ```
-<a href=#452 id=452 data-nosnippet>452</a>/// let cache = get_block_cache(block_id, block_device);
+<a href=#452 id=452 data-nosnippet>452</a>/// let cache = block_cache(block_id, block_device);
 <a href=#453 id=453 data-nosnippet>453</a>/// cache.lock().modify(0, |data: &amp;mut DataBlock| {
 <a href=#454 id=454 data-nosnippet>454</a>///     data[0] = 0x42;
 <a href=#455 id=455 data-nosnippet>455</a>/// });
 <a href=#456 id=456 data-nosnippet>456</a>/// ```
-<a href=#457 id=457 data-nosnippet>457</a></span><span class="kw">pub fn </span>get_block_cache(
-<a href=#458 id=458 data-nosnippet>458</a>    block_id: usize,
-<a href=#459 id=459 data-nosnippet>459</a>    block_device: Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;,
-<a href=#460 id=460 data-nosnippet>460</a>) -&gt; Arc&lt;Mutex&lt;BlockCache&gt;&gt; {
-<a href=#461 id=461 data-nosnippet>461</a>    BLOCK_CACHE_MANAGER
-<a href=#462 id=462 data-nosnippet>462</a>        .lock()
-<a href=#463 id=463 data-nosnippet>463</a>        .get_block_cache(block_id, block_device)
-<a href=#464 id=464 data-nosnippet>464</a>}
-<a href=#465 id=465 data-nosnippet>465</a>
-<a href=#466 id=466 data-nosnippet>466</a><span class="doccomment">/// 同步所有缓存到磁盘
+<a href=#457 id=457 data-nosnippet>457</a></span><span class="kw">pub fn </span>block_cache(block_id: usize, block_device: Arc&lt;<span class="kw">dyn </span>BlockDevice&gt;) -&gt; Arc&lt;Mutex&lt;BlockCache&gt;&gt; {
+<a href=#458 id=458 data-nosnippet>458</a>    BLOCK_CACHE_MANAGER
+<a href=#459 id=459 data-nosnippet>459</a>        .lock()
+<a href=#460 id=460 data-nosnippet>460</a>        .block_cache(block_id, block_device)
+<a href=#461 id=461 data-nosnippet>461</a>}
+<a href=#462 id=462 data-nosnippet>462</a>
+<a href=#463 id=463 data-nosnippet>463</a><span class="doccomment">/// 同步所有缓存到磁盘
+<a href=#464 id=464 data-nosnippet>464</a>///
+<a href=#465 id=465 data-nosnippet>465</a>/// 遍历所有缓存的块，将修改过的块写回磁盘。
+<a href=#466 id=466 data-nosnippet>466</a>/// 通常在文件系统关闭或重要操作完成后调用。
 <a href=#467 id=467 data-nosnippet>467</a>///
-<a href=#468 id=468 data-nosnippet>468</a>/// 遍历所有缓存的块，将修改过的块写回磁盘。
-<a href=#469 id=469 data-nosnippet>469</a>/// 通常在文件系统关闭或重要操作完成后调用。
-<a href=#470 id=470 data-nosnippet>470</a>///
-<a href=#471 id=471 data-nosnippet>471</a>/// ## 同步过程
-<a href=#472 id=472 data-nosnippet>472</a>///
-<a href=#473 id=473 data-nosnippet>473</a>/// 1. 获取全局缓存管理器的锁
-<a href=#474 id=474 data-nosnippet>474</a>/// 2. 遍历所有缓存的块
-<a href=#475 id=475 data-nosnippet>475</a>/// 3. 对每个块调用 `sync()` 方法
-<a href=#476 id=476 data-nosnippet>476</a>/// 4. 释放锁
-<a href=#477 id=477 data-nosnippet>477</a>///
-<a href=#478 id=478 data-nosnippet>478</a>/// ## Examples
-<a href=#479 id=479 data-nosnippet>479</a>///
-<a href=#480 id=480 data-nosnippet>480</a>/// ```
-<a href=#481 id=481 data-nosnippet>481</a>/// // 执行文件操作
-<a href=#482 id=482 data-nosnippet>482</a>/// file.write_at(0, &amp;data);
-<a href=#483 id=483 data-nosnippet>483</a>///
-<a href=#484 id=484 data-nosnippet>484</a>/// // 同步所有缓存到磁盘
-<a href=#485 id=485 data-nosnippet>485</a>/// block_cache_sync_all();
-<a href=#486 id=486 data-nosnippet>486</a>/// ```
-<a href=#487 id=487 data-nosnippet>487</a></span><span class="kw">pub fn </span>block_cache_sync_all() {
-<a href=#488 id=488 data-nosnippet>488</a>    <span class="kw">let </span>manager = BLOCK_CACHE_MANAGER.lock();
-<a href=#489 id=489 data-nosnippet>489</a>    <span class="kw">for </span>(<span class="kw">_</span>, cache) <span class="kw">in </span>manager.queue.iter() {
-<a href=#490 id=490 data-nosnippet>490</a>        cache.lock().sync();
-<a href=#491 id=491 data-nosnippet>491</a>    }
-<a href=#492 id=492 data-nosnippet>492</a>}</code></pre></div></section></main></body></html>
+<a href=#468 id=468 data-nosnippet>468</a>/// ## 同步过程
+<a href=#469 id=469 data-nosnippet>469</a>///
+<a href=#470 id=470 data-nosnippet>470</a>/// 1. 获取全局缓存管理器的锁
+<a href=#471 id=471 data-nosnippet>471</a>/// 2. 遍历所有缓存的块
+<a href=#472 id=472 data-nosnippet>472</a>/// 3. 对每个块调用 `sync()` 方法
+<a href=#473 id=473 data-nosnippet>473</a>/// 4. 释放锁
+<a href=#474 id=474 data-nosnippet>474</a>///
+<a href=#475 id=475 data-nosnippet>475</a>/// ## Examples
+<a href=#476 id=476 data-nosnippet>476</a>///
+<a href=#477 id=477 data-nosnippet>477</a>/// ```
+<a href=#478 id=478 data-nosnippet>478</a>/// // 执行文件操作
+<a href=#479 id=479 data-nosnippet>479</a>/// file.write_at(0, &amp;data);
+<a href=#480 id=480 data-nosnippet>480</a>///
+<a href=#481 id=481 data-nosnippet>481</a>/// // 同步所有缓存到磁盘
+<a href=#482 id=482 data-nosnippet>482</a>/// block_cache_sync_all();
+<a href=#483 id=483 data-nosnippet>483</a>/// ```
+<a href=#484 id=484 data-nosnippet>484</a></span><span class="kw">pub fn </span>block_cache_sync_all() {
+<a href=#485 id=485 data-nosnippet>485</a>    <span class="kw">let </span>manager = BLOCK_CACHE_MANAGER.lock();
+<a href=#486 id=486 data-nosnippet>486</a>    <span class="kw">for </span>(<span class="kw">_</span>, cache) <span class="kw">in </span>manager.queue.iter() {
+<a href=#487 id=487 data-nosnippet>487</a>        cache.lock().sync();
+<a href=#488 id=488 data-nosnippet>488</a>    }
+<a href=#489 id=489 data-nosnippet>489</a>}</code></pre></div></section></main></body></html>

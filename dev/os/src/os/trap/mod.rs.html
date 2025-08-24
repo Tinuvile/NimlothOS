@@ -30,7 +30,7 @@
 <a href=#30 id=30 data-nosnippet>30</a></span><span class="kw">use </span><span class="kw">crate</span>::config::{TRAMPOLINE, TRAP_CONTEXT};
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span><span class="kw">crate</span>::syscall::syscall;
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">use </span><span class="kw">crate</span>::task::{current_trap_cx, current_user_token, exit_current_and_run_next};
-<a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span><span class="kw">crate</span>::timer::set_next_trigger;
+<a href=#33 id=33 data-nosnippet>33</a><span class="kw">use </span><span class="kw">crate</span>::timer::next_trigger;
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">use crate</span>::{println, task::suspend_current_and_run_next};
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span>core::arch::{asm, global_asm};
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>riscv::register::{
@@ -220,7 +220,7 @@
 <a href=#220 id=220 data-nosnippet>220</a>            exit_current_and_run_next(-<span class="number">3</span>);
 <a href=#221 id=221 data-nosnippet>221</a>        }
 <a href=#222 id=222 data-nosnippet>222</a>        Trap::Interrupt(Interrupt::SupervisorTimer) =&gt; {
-<a href=#223 id=223 data-nosnippet>223</a>            set_next_trigger();
+<a href=#223 id=223 data-nosnippet>223</a>            next_trigger();
 <a href=#224 id=224 data-nosnippet>224</a>            suspend_current_and_run_next();
 <a href=#225 id=225 data-nosnippet>225</a>        }
 <a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">_ </span>=&gt; {
