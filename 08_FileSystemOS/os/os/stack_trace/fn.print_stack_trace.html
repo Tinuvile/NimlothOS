@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="打印函数调用栈追踪信息"><title>print_stack_trace in os::stack_trace - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">print_<wbr>stack_<wbr>trace</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#工作原理" title="工作原理">工作原理</a></li><li><a href="#输出格式" title="输出格式">输出格式</a></li><li><a href="#safety" title="Safety">Safety</a></li><li><a href="#栈帧布局假设" title="栈帧布局假设">栈帧布局假设</a></li><li><a href="#限制" title="限制">限制</a></li><li><a href="#usage" title="Usage">Usage</a></li><li><a href="#note" title="Note">Note</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>stack_<wbr>trace</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">os</a>::<wbr><a href="index.html">stack_trace</a></div><h1>Function <span class="fn">print_stack_trace</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/os/stack_trace.rs.html#102-127">Source</a> </span></div><pre class="rust item-decl"><code>pub unsafe fn print_stack_trace()</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>打印函数调用栈追踪信息</p>
+<p>通过遍历栈帧链表来重构函数调用链，输出每一级调用的地址信息。
+主要用于调试 panic 和异常情况，帮助开发者定位问题代码的位置。</p>
+<h3 id="工作原理"><a class="doc-anchor" href="#工作原理">§</a>工作原理</h3>
+<ol>
+<li><strong>获取当前栈帧</strong>: 从 <code>s0</code> 寄存器读取当前栈帧指针</li>
+<li><strong>遍历栈帧链</strong>: 沿着保存的栈帧指针向上遍历</li>
+<li><strong>提取地址信息</strong>: 从每个栈帧读取返回地址和前一个栈帧指针</li>
+<li><strong>格式化输出</strong>: 将地址信息以十六进制格式输出</li>
+</ol>
+<h3 id="输出格式"><a class="doc-anchor" href="#输出格式">§</a>输出格式</h3><div class="example-wrap"><pre class="language-text"><code>=== Call Stack Trace Tool ===
+0x0000000080200abc (0x000000008020def0)
+0x0000000080201234 (0x000000008020e100)
+...
+=== End of Call Stack Trace ===</code></pre></div>
+<p>每行包含：</p>
+<ul>
+<li>第一个地址：函数返回地址 (ra)，指向调用点之后的指令</li>
+<li>第二个地址：前一个栈帧指针 (fp)</li>
+</ul>
+<h3 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h3>
+<p>这是一个 <code>unsafe</code> 函数，因为它：</p>
+<ul>
+<li>直接访问和解引用栈指针</li>
+<li>假设栈帧结构符合 RISC-V ABI 约定</li>
+<li>在栈损坏的情况下可能导致内存访问错误</li>
+</ul>
+<h3 id="栈帧布局假设"><a class="doc-anchor" href="#栈帧布局假设">§</a>栈帧布局假设</h3>
+<p>该函数假设每个栈帧遵循以下布局：</p>
+<ul>
+<li><code>fp - 8</code>: 保存的返回地址 (ra)</li>
+<li><code>fp - 16</code>: 保存的前一个栈帧指针 (s0)</li>
+</ul>
+<h3 id="限制"><a class="doc-anchor" href="#限制">§</a>限制</h3>
+<ul>
+<li>只能追踪使用标准栈帧的函数</li>
+<li>内联函数和优化代码可能不会出现在追踪中</li>
+<li>叶子函数（不调用其他函数）可能没有标准栈帧</li>
+<li>栈指针损坏会导致不准确或危险的输出</li>
+</ul>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 在 panic 处理程序中使用
+</span><span class="kw">unsafe </span>{
+    print_stack_trace();
+}</code></pre></div>
+<h3 id="note"><a class="doc-anchor" href="#note">§</a>Note</h3>
+<ul>
+<li>当前该功能在 <code>lang_items.rs</code> 中被注释掉，可根据需要启用</li>
+<li>在生产环境中使用时应谨慎，可能影响系统稳定性</li>
+<li>地址信息需要结合符号表或反汇编工具才能转换为具体的函数名</li>
+</ul>
+</div></details></section></div></main></body></html>
