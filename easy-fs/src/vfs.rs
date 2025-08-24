@@ -479,7 +479,9 @@ impl Inode {
             let size = disk_inode.size;
             let data_blocks_dealloc = disk_inode.clear_size(&self.block_device);
             assert!(data_blocks_dealloc.len() == DiskInode::total_blocks(size) as usize);
-            for data_block in data_blocks_dealloc.into_iter() {}
+            for data_block in data_blocks_dealloc.into_iter() {
+                fs.dealloc_data(data_block);
+            }
         });
         block_cache_sync_all();
     }

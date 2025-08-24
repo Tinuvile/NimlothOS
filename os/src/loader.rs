@@ -126,7 +126,7 @@ pub fn num_app() -> usize {
 /// ```
 pub fn app_data(app_id: usize) -> &'static [u8] {
     unsafe extern "C" {
-        safe fn _num_app();
+        fn _num_app();
     }
     let num_app_ptr = _num_app as usize as *const usize;
     let num_app = num_app();

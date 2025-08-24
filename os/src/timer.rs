@@ -24,7 +24,6 @@
 
 use crate::config::CLOCK_FREQ;
 use crate::sbi::timer;
-use riscv::register::time;
 
 /// 每秒的时钟中断次数 (100Hz)
 ///
@@ -33,6 +32,7 @@ use riscv::register::time;
 const TICKS_PER_SEC: usize = 100;
 
 /// 每秒的毫秒数常量
+#[allow(unused)]
 const MSEC_PER_SEC: usize = 1000;
 
 /// 获取当前系统时间（时钟周期数）

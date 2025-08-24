@@ -115,9 +115,9 @@ macro_rules! print {
 /// ## Examples
 ///
 /// ```rust
-/// println!("Hello, world!");           // 输出: Hello, world!\n
-/// println!("Answer: {}", 42);          // 输出: Answer: 42\n
-/// println!("Debug: {:?}", some_value); // 输出: Debug: SomeValue\n
+/// println!("Hello, world!")           // 输出: Hello, world!
+/// println!("Answer: {}", 42)          // 输出: Answer: 42
+/// println!("Debug: {:?}", some_value) // 输出: Debug: SomeValue
 /// ```
 ///
 /// ## Implementation
@@ -127,6 +127,6 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::console::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
+        $crate::console::print(format_args!(concat!($fmt, "\n") $(, $($arg)+)?))
     }
 }

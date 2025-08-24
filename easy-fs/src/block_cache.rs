@@ -44,8 +44,6 @@
 //! block_cache_sync_all();
 //! ```
 
-use crate::block_dev;
-
 use super::{BLOCK_SZ, BlockDevice};
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
