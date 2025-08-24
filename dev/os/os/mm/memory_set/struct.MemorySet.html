@@ -214,7 +214,7 @@ Trap Context 和 Trampoline。所有用户段都使用 Framed 映射，实现地
 <li>物理页帧分配失败</li>
 </ul>
 <h6 id="examples-3"><a class="doc-anchor" href="#examples-3">§</a>Examples</h6>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>app_data = get_app_data(<span class="number">0</span>); <span class="comment">// 获取应用程序 ELF 数据
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>app_data = app_data(<span class="number">0</span>); <span class="comment">// 获取应用程序 ELF 数据
 </span><span class="kw">let </span>(memory_set, user_stack_top, entry_point) = MemorySet::from_elf(app_data);
 
 <span class="macro">println!</span>(<span class="string">"Entry point: {:#x}"</span>, entry_point);

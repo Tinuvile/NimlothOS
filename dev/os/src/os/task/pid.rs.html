@@ -479,7 +479,7 @@
 <a href=#479 id=479 data-nosnippet>479</a>    /// let kernel_stack = KernelStack::new(&amp;pid_handle);
 <a href=#480 id=480 data-nosnippet>480</a>    ///
 <a href=#481 id=481 data-nosnippet>481</a>    /// // 现在可以使用内核栈进行系统调用处理
-<a href=#482 id=482 data-nosnippet>482</a>    /// let stack_top = kernel_stack.get_top();
+<a href=#482 id=482 data-nosnippet>482</a>    /// let stack_top = kernel_stack.top();
 <a href=#483 id=483 data-nosnippet>483</a>    /// println!("Kernel stack top: 0x{:x}", stack_top);
 <a href=#484 id=484 data-nosnippet>484</a>    /// ```
 <a href=#485 id=485 data-nosnippet>485</a>    </span><span class="kw">pub fn </span>new(pid_handle: <span class="kw-2">&amp;</span>PidHandle) -&gt; <span class="self">Self </span>{
@@ -528,7 +528,7 @@
 <a href=#528 id=528 data-nosnippet>528</a>    /// ## Safety
 <a href=#529 id=529 data-nosnippet>529</a>    ///
 <a href=#530 id=530 data-nosnippet>530</a>    /// 此方法使用 `unsafe` 代码直接操作内存，但通过以下方式确保安全：
-<a href=#531 id=531 data-nosnippet>531</a>    /// - 栈顶地址由 `get_top()` 正确计算
+<a href=#531 id=531 data-nosnippet>531</a>    /// - 栈顶地址由 `top()` 正确计算
 <a href=#532 id=532 data-nosnippet>532</a>    /// - 减去数据大小确保不会越界
 <a href=#533 id=533 data-nosnippet>533</a>    /// - 目标地址在已映射的内核栈范围内
 <a href=#534 id=534 data-nosnippet>534</a>    ///

@@ -11,7 +11,7 @@
 <span class="kw">use </span>alloc::sync::Arc;
 
 <span class="comment">// 创建并启动新进程
-</span><span class="kw">let </span>elf_data = get_app_data(<span class="string">"user_app"</span>);
+</span><span class="kw">let </span>elf_data = app_data(<span class="string">"user_app"</span>);
 <span class="kw">let </span>new_task = Arc::new(TaskControlBlock::new(elf_data));
 add_task(new_task);
 <span class="macro">println!</span>(<span class="string">"新任务已加入调度队列"</span>);</code></pre></div>

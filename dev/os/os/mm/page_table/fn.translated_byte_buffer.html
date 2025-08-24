@@ -45,7 +45,7 @@ Return Slice:   slice[0]   slice[1]     slice[2]</code></pre></div><h3 id="使�
 <span class="kw">let </span>len = <span class="number">8192</span>; <span class="comment">// 跨越 3 个页面
 </span><span class="kw">let </span>token = current_user_token();
 
-<span class="kw">let </span>slices = translate_byte_buffer(token, user_buffer_ptr, len);
+<span class="kw">let </span>slices = translated_byte_buffer(token, user_buffer_ptr, len);
 <span class="kw">for </span>slice <span class="kw">in </span>slices {
     <span class="comment">// 访问每个物理页面中的数据
     </span>process_data(slice);

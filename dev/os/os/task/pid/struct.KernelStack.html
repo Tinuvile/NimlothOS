@@ -68,7 +68,7 @@
 </span><span class="kw">let </span>kernel_stack = KernelStack::new(<span class="kw-2">&amp;</span>pid_handle);
 
 <span class="comment">// 现在可以使用内核栈进行系统调用处理
-</span><span class="kw">let </span>stack_top = kernel_stack.get_top();
+</span><span class="kw">let </span>stack_top = kernel_stack.top();
 <span class="macro">println!</span>(<span class="string">"Kernel stack top: 0x{:x}"</span>, stack_top);</code></pre></div>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.push_on_top" class="method"><a class="src rightside" href="../../../src/os/task/pid.rs.html#563-573">Source</a><h4 class="code-header">pub fn <a href="#method.push_on_top" class="fn">push_on_top</a>&lt;T&gt;(&amp;self, value: T) -&gt; *mut T<div class="where">where
     T: Sized,</div></h4></section></summary><div class="docblock"><p>在内核栈顶压入数据</p>
@@ -96,7 +96,7 @@
 ↑ 栈顶                   ↑ 栈底</code></pre></div><h6 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h6>
 <p>此方法使用 <code>unsafe</code> 代码直接操作内存，但通过以下方式确保安全：</p>
 <ul>
-<li>栈顶地址由 <code>get_top()</code> 正确计算</li>
+<li>栈顶地址由 <code>top()</code> 正确计算</li>
 <li>减去数据大小确保不会越界</li>
 <li>目标地址在已映射的内核栈范围内</li>
 </ul>

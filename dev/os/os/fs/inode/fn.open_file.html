@@ -1,1 +1,45 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `open_file` fn in crate `os`."><title>open_file in os::fs::inode - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>fs::<wbr>inode</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">fs</a>::<wbr><a href="index.html">inode</a></div><h1>Function <span class="fn">open_file</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/fs/inode.rs.html#121-140">Source</a> </span></div><pre class="rust item-decl"><code>pub fn open_file(name: &amp;str, flags: <a class="struct" href="struct.OpenFlags.html" title="struct os::fs::inode::OpenFlags">OpenFlags</a>) -&gt; Option&lt;Arc&lt;<a class="struct" href="struct.OSInode.html" title="struct os::fs::inode::OSInode">OSInode</a>&gt;&gt;</code></pre></section></div></main></body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="打开文件"><title>open_file in os::fs::inode - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">open_<wbr>file</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#打开流程" title="打开流程">打开流程</a></li><li><a href="#标志位处理" title="标志位处理">标志位处理</a></li><li><a href="#错误处理" title="错误处理">错误处理</a></li><li><a href="#examples" title="Examples">Examples</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>fs::<wbr>inode</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">fs</a>::<wbr><a href="index.html">inode</a></div><h1>Function <span class="fn">open_file</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/fs/inode.rs.html#482-501">Source</a> </span></div><pre class="rust item-decl"><code>pub fn open_file(name: &amp;str, flags: <a class="struct" href="struct.OpenFlags.html" title="struct os::fs::inode::OpenFlags">OpenFlags</a>) -&gt; Option&lt;Arc&lt;<a class="struct" href="struct.OSInode.html" title="struct os::fs::inode::OSInode">OSInode</a>&gt;&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>打开文件</p>
+<p>根据文件名和打开标志位打开文件，返回文件的操作接口。
+该函数是文件系统的主要入口点，支持文件的创建、查找和权限控制。</p>
+<h3 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h3>
+<ul>
+<li><code>name</code> - 文件名</li>
+<li><code>flags</code> - 文件打开标志位</li>
+</ul>
+<h3 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h3>
+<ul>
+<li><code>Some(file)</code> - 成功打开文件，返回文件操作接口</li>
+<li><code>None</code> - 文件不存在且未指定 <code>CREATE</code> 标志，或创建失败</li>
+</ul>
+<h3 id="打开流程"><a class="doc-anchor" href="#打开流程">§</a>打开流程</h3>
+<ol>
+<li><strong>权限解析</strong>: 根据标志位解析读写权限</li>
+<li><strong>文件查找</strong>: 在根目录下查找指定文件</li>
+<li><strong>文件创建</strong>: 如果指定 <code>CREATE</code> 标志且文件不存在，则创建新文件</li>
+<li><strong>文件截断</strong>: 如果指定 <code>TRUNC</code> 标志，则清空现有文件内容</li>
+<li><strong>接口创建</strong>: 创建 <code>OSInode</code> 实例并返回</li>
+</ol>
+<h3 id="标志位处理"><a class="doc-anchor" href="#标志位处理">§</a>标志位处理</h3>
+<ul>
+<li><code>CREATE</code>: 如果文件不存在则创建，如果存在则打开现有文件</li>
+<li><code>TRUNC</code>: 清空文件内容，将文件大小设置为 0</li>
+<li>权限标志：控制返回文件的读写权限</li>
+</ul>
+<h3 id="错误处理"><a class="doc-anchor" href="#错误处理">§</a>错误处理</h3>
+<ul>
+<li>文件不存在且未指定 <code>CREATE</code> 标志：返回 <code>None</code></li>
+<li>文件创建失败：返回 <code>None</code></li>
+<li>权限不足：返回 <code>None</code>（当前实现中未检查权限）</li>
+</ul>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::fs::{open_file, OpenFlags};
+
+<span class="comment">// 只读打开现有文件
+</span><span class="kw">let </span>file = open_file(<span class="string">"config.txt"</span>, OpenFlags::RDONLY);
+
+<span class="comment">// 读写打开，如果不存在则创建
+</span><span class="kw">let </span>file = open_file(<span class="string">"data.txt"</span>, OpenFlags::RDWR | OpenFlags::CREATE);
+
+<span class="comment">// 只写打开，清空现有内容
+</span><span class="kw">let </span>file = open_file(<span class="string">"log.txt"</span>, OpenFlags::WRONLY | OpenFlags::TRUNC);</code></pre></div>
+</div></details></section></div></main></body></html>
