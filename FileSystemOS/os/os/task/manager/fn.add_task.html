@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="向全局任务管理器添加任务"><title>add_task in os::task::manager - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">add_<wbr>task</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#参数" title="参数">参数</a></li><li><a href="#使用场景" title="使用场景">使用场景</a><ul><li><a href="#新任务创建" title="新任务创建">新任务创建</a></li><li><a href="#fork-操作" title="Fork 操作">Fork 操作</a></li><li><a href="#任务恢复" title="任务恢复">任务恢复</a></li></ul></li><li><a href="#执行流程" title="执行流程">执行流程</a></li><li><a href="#并发安全" title="并发安全">并发安全</a></li><li><a href="#性能特征" title="性能特征">性能特征</a></li><li><a href="#错误处理" title="错误处理">错误处理</a></li><li><a href="#优化建议" title="优化建议">优化建议</a><ul><li><a href="#批量操作优化" title="批量操作优化">批量操作优化</a></li></ul></li><li><a href="#调试信息" title="调试信息">调试信息</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>task::<wbr>manager</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">task</a>::<wbr><a href="index.html">manager</a></div><h1>Function <span class="fn">add_task</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/task/manager.rs.html#541-543">Source</a> </span></div><pre class="rust item-decl"><code>pub fn add_task(task: Arc&lt;<a class="struct" href="../task/struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a>&gt;)</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>向全局任务管理器添加任务</p>
+<p>高层接口函数，用于将新任务或重新变为就绪状态的任务添加到就绪队列。
+提供线程安全的任务调度管理，自动处理并发访问和锁管理。</p>
+<h3 id="参数"><a class="doc-anchor" href="#参数">§</a>参数</h3>
+<ul>
+<li><code>task</code> - 要添加的任务控制块，包装在 <code>Arc</code> 中以支持共享所有权</li>
+</ul>
+<h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3><h4 id="新任务创建"><a class="doc-anchor" href="#新任务创建">§</a>新任务创建</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::task::manager::add_task;
+<span class="kw">use </span><span class="kw">crate</span>::task::task::TaskControlBlock;
+<span class="kw">use </span>alloc::sync::Arc;
+
+<span class="comment">// 创建并启动新进程
+</span><span class="kw">let </span>elf_data = app_data(<span class="string">"user_app"</span>);
+<span class="kw">let </span>new_task = Arc::new(TaskControlBlock::new(elf_data));
+add_task(new_task);
+<span class="macro">println!</span>(<span class="string">"新任务已加入调度队列"</span>);</code></pre></div>
+<h4 id="fork-操作"><a class="doc-anchor" href="#fork-操作">§</a>Fork 操作</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 父进程 fork 操作
+</span><span class="kw">let </span>child_task = parent_task.fork();
+add_task(child_task);
+<span class="macro">println!</span>(<span class="string">"子进程已加入就绪队列"</span>);</code></pre></div>
+<h4 id="任务恢复"><a class="doc-anchor" href="#任务恢复">§</a>任务恢复</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 任务从阻塞状态恢复
+</span><span class="kw">if </span>task_is_ready(task) {
+    add_task(task);
+    <span class="macro">println!</span>(<span class="string">"任务已恢复到就绪状态"</span>);
+}</code></pre></div>
+<h3 id="执行流程"><a class="doc-anchor" href="#执行流程">§</a>执行流程</h3><div class="example-wrap"><pre class="language-text"><code>add_task 调用流程:
+
+ User Code
+     │
+     ▼
+┌───────────────┐
+│  add_task()   │ ─── 全局函数接口
+└────────┬──────┘
+         │
+         ▼
+┌──────────────---─┐
+│exclusive_access()│ ─── 获取互斥访问权
+└────────┬───────--┘
+         │
+         ▼
+┌───────────────┐
+│ manager.add() │ ─── 添加到队列尾部
+└────────┬──────┘
+         │
+         ▼
+┌───────────────-┐
+│automatic unlock│ ─── 函数返回时自动释放
+└───────────────-┘</code></pre></div><h3 id="并发安全"><a class="doc-anchor" href="#并发安全">§</a>并发安全</h3>
+<ul>
+<li><strong>自动锁管理</strong>: 函数自动获取和释放互斥锁</li>
+<li><strong>线程安全</strong>: 在单处理器环境中保证操作的原子性</li>
+<li><strong>异常安全</strong>: 即使发生 panic 也会正确释放锁</li>
+</ul>
+<h3 id="性能特征"><a class="doc-anchor" href="#性能特征">§</a>性能特征</h3>
+<ul>
+<li><strong>时间复杂度</strong>: O(1) 摊还，但可能触发 O(n) 的容量扩展</li>
+<li><strong>锁开销</strong>: 在单核系统中开销极小（主要是函数调用）</li>
+<li><strong>内存效率</strong>: 仅传递 Arc 指针，不拷贝任务数据</li>
+</ul>
+<h3 id="错误处理"><a class="doc-anchor" href="#错误处理">§</a>错误处理</h3>
+<p>此函数不会失败，但在以下情况下可能引发 panic：</p>
+<ul>
+<li>内存不足无法扩展队列容量</li>
+<li>任务控制块已损坏（Arc 引用计数异常）</li>
+</ul>
+<h3 id="优化建议"><a class="doc-anchor" href="#优化建议">§</a>优化建议</h3><h4 id="批量操作优化"><a class="doc-anchor" href="#批量操作优化">§</a>批量操作优化</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 不推荐：频繁加锁/解锁
+</span><span class="kw">for </span>task <span class="kw">in </span>tasks {
+    add_task(task); <span class="comment">// 每次都要加锁
+</span>}
+
+<span class="comment">// 推荐：批量操作（如果需要）
+</span>{
+    <span class="kw">let </span><span class="kw-2">mut </span>manager = TASK_MANAGER.exclusive_access();
+    <span class="kw">for </span>task <span class="kw">in </span>tasks {
+        manager.add(task); <span class="comment">// 只加锁一次
+    </span>}
+} <span class="comment">// 自动解锁</span></code></pre></div>
+<h3 id="调试信息"><a class="doc-anchor" href="#调试信息">§</a>调试信息</h3>
+<p>可以通过日志追踪任务添加操作：</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="macro">println!</span>(<span class="string">"添加任务 PID: {}"</span>, task.getpid());
+add_task(task);
+<span class="macro">println!</span>(<span class="string">"任务已成功加入就绪队列"</span>);</code></pre></div>
+</div></details></section></div></main></body></html>

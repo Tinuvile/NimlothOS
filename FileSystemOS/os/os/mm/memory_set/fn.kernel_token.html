@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="获取内核地址空间的页表标识符"><title>kernel_token in os::mm::memory_set - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">kernel_<wbr>token</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#使用场景" title="使用场景">使用场景</a></li><li><a href="#与-kernel_space-的关系" title="与 `KERNEL_SPACE` 的关系">与 <code>KERNEL_SPACE</code> 的关系</a></li><li><a href="#地址空间切换示例" title="地址空间切换示例">地址空间切换示例</a></li><li><a href="#性能考虑" title="性能考虑">性能考虑</a></li><li><a href="#安全性" title="安全性">安全性</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>mm::<wbr>memory_<wbr>set</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">mm</a>::<wbr><a href="index.html">memory_set</a></div><h1>Function <span class="fn">kernel_token</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/mm/memory_set.rs.html#1673-1675">Source</a> </span></div><pre class="rust item-decl"><code>pub fn kernel_token() -&gt; usize</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>获取内核地址空间的页表标识符</p>
+<p>返回全局内核地址空间的页表标识符（<code>satp</code> 寄存器值），用于内核态和用户态之间的
+地址空间切换。该函数提供了对内核地址空间的便捷访问接口。</p>
+<h3 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h3>
+<p><code>usize</code> - 内核地址空间的页表标识符，可直接写入 <code>satp</code> 寄存器</p>
+<h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3>
+<ul>
+<li><strong>陷阱处理</strong>: 从用户态返回内核态时恢复内核地址空间</li>
+<li><strong>系统调用</strong>: 在系统调用处理过程中确保内核地址空间活跃</li>
+<li><strong>进程切换</strong>: 进程调度器在切换回内核态时使用</li>
+<li><strong>调试和监控</strong>: 获取当前内核地址空间的标识符</li>
+</ul>
+<h3 id="与-kernel_space-的关系"><a class="doc-anchor" href="#与-kernel_space-的关系">§</a>与 <code>KERNEL_SPACE</code> 的关系</h3>
+<p>此函数是对全局内核地址空间的封装，提供了更简洁的访问方式：</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 等价于：
+// KERNEL_SPACE.exclusive_access().token()
+</span><span class="kw">let </span>kernel_token = kernel_token();</code></pre></div>
+<h3 id="地址空间切换示例"><a class="doc-anchor" href="#地址空间切换示例">§</a>地址空间切换示例</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 在陷阱处理中从用户态返回内核态
+</span><span class="kw">fn </span>trap_return() {
+    <span class="kw">let </span>kernel_token = kernel_token();
+    <span class="kw">unsafe </span>{
+        satp::write(kernel_token);
+        <span class="macro">asm!</span>(<span class="string">"sfence.vma"</span>);
+    }
+    <span class="comment">// 现在处于内核地址空间
+</span>}</code></pre></div>
+<h3 id="性能考虑"><a class="doc-anchor" href="#性能考虑">§</a>性能考虑</h3>
+<ul>
+<li>函数内部使用 <code>exclusive_access()</code> 获取独占访问权限</li>
+<li>调用频率较高，但开销相对较小</li>
+<li>返回的标识符在系统运行期间保持不变</li>
+</ul>
+<h3 id="安全性"><a class="doc-anchor" href="#安全性">§</a>安全性</h3>
+<ul>
+<li>返回的标识符是有效的内核页表标识符</li>
+<li>直接写入 <code>satp</code> 寄存器是安全的</li>
+<li>在单处理器环境下，访问是线程安全的</li>
+</ul>
+</div></details></section></div></main></body></html>

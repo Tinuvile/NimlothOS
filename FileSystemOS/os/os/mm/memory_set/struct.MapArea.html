@@ -1,0 +1,292 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="内存映射区域"><title>MapArea in os::mm::memory_set - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">MapArea</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#字段说明" title="字段说明">字段说明</a></li><li><a href="#设计原理" title="设计原理">设计原理</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.data_frames" title="data_frames">data_frames</a></li><li><a href="#structfield.map_perm" title="map_perm">map_perm</a></li><li><a href="#structfield.map_type" title="map_type">map_type</a></li><li><a href="#structfield.vpn_range" title="vpn_range">vpn_range</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.append_to" title="append_to">append_to</a></li><li><a href="#method.copy_data" title="copy_data">copy_data</a></li><li><a href="#method.from_another" title="from_another">from_another</a></li><li><a href="#method.map" title="map">map</a></li><li><a href="#method.map_one" title="map_one">map_one</a></li><li><a href="#method.new" title="new">new</a></li><li><a href="#method.shrink_to" title="shrink_to">shrink_to</a></li><li><a href="#method.unmap" title="unmap">unmap</a></li><li><a href="#method.unmap_one" title="unmap_one">unmap_one</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-MapArea" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-MapArea" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-MapArea" title="Send">Send</a></li><li><a href="#impl-Sync-for-MapArea" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-MapArea" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-MapArea" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>mm::<wbr>memory_<wbr>set</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">mm</a>::<wbr><a href="index.html">memory_set</a></div><h1>Struct <span class="struct">MapArea</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/mm/memory_set.rs.html#149-154">Source</a> </span></div><pre class="rust item-decl"><code>pub struct MapArea {
+    vpn_range: <a class="struct" href="../address/struct.SimpleRange.html" title="struct os::mm::address::SimpleRange">SimpleRange</a>&lt;<a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>&gt;,
+    data_frames: BTreeMap&lt;<a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>, <a class="struct" href="../frame_allocator/struct.FrameTracker.html" title="struct os::mm::frame_allocator::FrameTracker">FrameTracker</a>&gt;,
+    map_type: <a class="enum" href="enum.MapType.html" title="enum os::mm::memory_set::MapType">MapType</a>,
+    map_perm: <a class="struct" href="struct.MapPermission.html" title="struct os::mm::memory_set::MapPermission">MapPermission</a>,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>内存映射区域</p>
+<p>表示地址空间中一个连续的虚拟内存区域，具有统一的映射类型和访问权限。
+每个 <code>MapArea</code> 管理一段虚拟页号范围，并维护其到物理页帧的映射关系。</p>
+<h3 id="字段说明"><a class="doc-anchor" href="#字段说明">§</a>字段说明</h3>
+<ul>
+<li><code>vpn_range</code>: 虚拟页号范围，定义区域的边界</li>
+<li><code>data_frames</code>: 虚拟页号到物理页帧的映射表（仅用于 Framed 映射）</li>
+<li><code>map_type</code>: 映射类型（恒等映射或帧映射）</li>
+<li><code>map_perm</code>: 访问权限（读/写/执行/用户态）</li>
+</ul>
+<h3 id="设计原理"><a class="doc-anchor" href="#设计原理">§</a>设计原理</h3>
+<p><code>MapArea</code> 将连续的虚拟地址范围抽象为统一的管理单元，简化了
+大块内存区域的映射和权限管理。通过 <code>BTreeMap</code> 维护页面映射关系，
+既保证了查找效率，又支持有序遍历。</p>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.vpn_range" class="structfield section-header"><a href="#structfield.vpn_range" class="anchor field">§</a><code>vpn_range: <a class="struct" href="../address/struct.SimpleRange.html" title="struct os::mm::address::SimpleRange">SimpleRange</a>&lt;<a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>&gt;</code></span><span id="structfield.data_frames" class="structfield section-header"><a href="#structfield.data_frames" class="anchor field">§</a><code>data_frames: BTreeMap&lt;<a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>, <a class="struct" href="../frame_allocator/struct.FrameTracker.html" title="struct os::mm::frame_allocator::FrameTracker">FrameTracker</a>&gt;</code></span><span id="structfield.map_type" class="structfield section-header"><a href="#structfield.map_type" class="anchor field">§</a><code>map_type: <a class="enum" href="enum.MapType.html" title="enum os::mm::memory_set::MapType">MapType</a></code></span><span id="structfield.map_perm" class="structfield section-header"><a href="#structfield.map_perm" class="anchor field">§</a><code>map_perm: <a class="struct" href="struct.MapPermission.html" title="struct os::mm::memory_set::MapPermission">MapPermission</a></code></span><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-MapArea" class="impl"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#273-692">Source</a><a href="#impl-MapArea" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#315-329">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(
+    start_va: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>,
+    end_va: <a class="struct" href="../address/struct.VirtAddr.html" title="struct os::mm::address::VirtAddr">VirtAddr</a>,
+    map_type: <a class="enum" href="enum.MapType.html" title="enum os::mm::memory_set::MapType">MapType</a>,
+    map_perm: <a class="struct" href="struct.MapPermission.html" title="struct os::mm::memory_set::MapPermission">MapPermission</a>,
+) -&gt; Self</h4></section></summary><div class="docblock"><p>创建新的内存映射区域</p>
+<p>根据指定的虚拟地址范围、映射类型和访问权限创建一个新的内存映射区域。
+地址范围会自动对齐到页边界。</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>start_va</code> - 区域起始虚拟地址</li>
+<li><code>end_va</code> - 区域结束虚拟地址（不包含）</li>
+<li><code>map_type</code> - 映射类型（恒等映射或帧映射）</li>
+<li><code>map_perm</code> - 内存访问权限</li>
+</ul>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>新创建的内存映射区域，尚未进行实际的页面映射</p>
+<h6 id="地址对齐"><a class="doc-anchor" href="#地址对齐">§</a>地址对齐</h6>
+<ul>
+<li><code>start_va</code> 向下对齐到页边界（使用 <code>floor()</code>）</li>
+<li><code>end_va</code> 向上对齐到页边界（使用 <code>ceil()</code>）</li>
+<li>确保整个区域以页为单位进行管理</li>
+</ul>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 创建用户态可读写区域
+</span><span class="kw">let </span>area = MapArea::new(
+    VirtAddr::from(<span class="number">0x10000000</span>),
+    VirtAddr::from(<span class="number">0x10001000</span>),
+    MapType::Framed,
+    MapPermission::R | MapPermission::W | MapPermission::U
+);
+
+<span class="comment">// 创建内核代码段（恒等映射）
+</span><span class="kw">let </span>text_area = MapArea::new(
+    VirtAddr::from(stext <span class="kw">as </span>usize),
+    VirtAddr::from(etext <span class="kw">as </span>usize),
+    MapType::Identical,
+    MapPermission::R | MapPermission::X
+);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.map" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#361-365">Source</a><h4 class="code-header">pub fn <a href="#method.map" class="fn">map</a>(&amp;mut self, page_table: &amp;mut <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>)</h4></section></summary><div class="docblock"><p>将整个内存区域映射到页表</p>
+<p>遍历区域内的所有虚拟页号，为每个页面建立虚拟地址到物理地址的映射。
+根据映射类型的不同，采用不同的物理页面分配策略。</p>
+<h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
+<ul>
+<li><code>page_table</code> - 目标页表的可变引用</li>
+</ul>
+<h6 id="映射行为"><a class="doc-anchor" href="#映射行为">§</a>映射行为</h6>
+<ul>
+<li><strong>Identical映射</strong>: 虚拟页号直接作为物理页号使用</li>
+<li><strong>Framed映射</strong>: 为每个虚拟页面分配新的物理页帧</li>
+</ul>
+<h6 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h6>
+<p>如果物理页帧分配失败（内存不足），函数会触发 panic</p>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>area = MapArea::new(
+    VirtAddr::from(<span class="number">0x10000000</span>),
+    VirtAddr::from(<span class="number">0x10001000</span>),
+    MapType::Framed,
+    MapPermission::R | MapPermission::W
+);
+<span class="kw">let </span><span class="kw-2">mut </span>page_table = PageTable::new();
+area.map(<span class="kw-2">&amp;mut </span>page_table); <span class="comment">// 建立所有页面映射</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.unmap" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#386-390">Source</a><h4 class="code-header">pub fn <a href="#method.unmap" class="fn">unmap</a>(&amp;mut self, page_table: &amp;mut <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>)</h4></section></summary><div class="docblock"><p>从页表中取消整个内存区域的映射</p>
+<p>遍历区域内的所有虚拟页号，移除每个页面的虚拟地址到物理地址映射。
+对于 Framed 映射，还会释放对应的物理页帧。</p>
+<h6 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h6>
+<ul>
+<li><code>page_table</code> - 目标页表的可变引用</li>
+</ul>
+<h6 id="清理行为"><a class="doc-anchor" href="#清理行为">§</a>清理行为</h6>
+<ul>
+<li><strong>Identical映射</strong>: 仅移除页表项，不释放物理页面</li>
+<li><strong>Framed映射</strong>: 移除页表项并释放所有分配的物理页帧</li>
+</ul>
+<h6 id="内存安全"><a class="doc-anchor" href="#内存安全">§</a>内存安全</h6>
+<p>函数确保所有相关的物理内存资源得到正确释放，防止内存泄漏。
+通过 <code>FrameTracker</code> 的 RAII 机制自动管理页帧生命周期。</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.copy_data" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#431-450">Source</a><h4 class="code-header">pub fn <a href="#method.copy_data" class="fn">copy_data</a>(&amp;mut self, page_table: &amp;<a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>, data: &amp;[u8])</h4></section></summary><div class="docblock"><p>将数据复制到映射区域</p>
+<p>将给定的字节数据复制到已映射的虚拟内存区域中。数据会按页面大小分块复制，
+跨越多个物理页帧。仅支持 Framed 映射类型。</p>
+<h6 id="arguments-3"><a class="doc-anchor" href="#arguments-3">§</a>Arguments</h6>
+<ul>
+<li><code>page_table</code> - 用于地址转换的页表引用</li>
+<li><code>data</code> - 要复制的源数据</li>
+</ul>
+<h6 id="复制过程"><a class="doc-anchor" href="#复制过程">§</a>复制过程</h6>
+<ol>
+<li>从区域起始虚拟页号开始</li>
+<li>每次复制一个页面大小的数据（最多 4KB）</li>
+<li>通过页表转换获取物理页帧地址</li>
+<li>直接写入物理内存</li>
+</ol>
+<h6 id="panics-1"><a class="doc-anchor" href="#panics-1">§</a>Panics</h6>
+<ul>
+<li>如果映射类型不是 <code>MapType::Framed</code></li>
+<li>如果虚拟地址转换失败</li>
+<li>如果数据长度超出区域范围</li>
+</ul>
+<h6 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 创建并映射区域
+</span><span class="kw">let </span><span class="kw-2">mut </span>area = MapArea::new(
+    VirtAddr::from(<span class="number">0x10000000</span>),
+    VirtAddr::from(<span class="number">0x10002000</span>),
+    MapType::Framed,
+    MapPermission::R | MapPermission::W
+);
+area.map(<span class="kw-2">&amp;mut </span>page_table);
+
+<span class="comment">// 复制 ELF 文件数据
+</span><span class="kw">let </span>elf_data = <span class="kw-2">&amp;</span>[<span class="number">0x7f</span>, <span class="number">0x45</span>, <span class="number">0x4c</span>, <span class="number">0x46</span>, <span class="comment">/* ... */</span>];
+area.copy_data(<span class="kw-2">&amp;</span>page_table, elf_data);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.map_one" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#486-500">Source</a><h4 class="code-header">pub fn <a href="#method.map_one" class="fn">map_one</a>(&amp;mut self, page_table: &amp;mut <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>, vpn: <a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>)</h4></section></summary><div class="docblock"><p>映射单个虚拟页面</p>
+<p>为指定的虚拟页号建立到物理页帧的映射。根据映射类型的不同，
+采用不同的物理页面分配策略。</p>
+<h6 id="arguments-4"><a class="doc-anchor" href="#arguments-4">§</a>Arguments</h6>
+<ul>
+<li><code>page_table</code> - 目标页表的可变引用</li>
+<li><code>vpn</code> - 要映射的虚拟页号</li>
+</ul>
+<h6 id="映射策略"><a class="doc-anchor" href="#映射策略">§</a>映射策略</h6><h6 id="identical-映射"><a class="doc-anchor" href="#identical-映射">§</a>Identical 映射</h6>
+<ul>
+<li>直接将虚拟页号作为物理页号使用</li>
+<li>不需要分配新的物理页帧</li>
+<li>不更新 <code>data_frames</code> 映射表</li>
+</ul>
+<h6 id="framed-映射"><a class="doc-anchor" href="#framed-映射">§</a>Framed 映射</h6>
+<ul>
+<li>分配新的物理页帧</li>
+<li>将虚拟页号到页帧的映射记录在 <code>data_frames</code> 中</li>
+<li>通过 <code>FrameTracker</code> 管理页帧生命周期</li>
+</ul>
+<h6 id="panics-2"><a class="doc-anchor" href="#panics-2">§</a>Panics</h6>
+<ul>
+<li>Framed 映射时如果物理页帧分配失败</li>
+<li>权限位转换失败</li>
+</ul>
+<h6 id="examples-3"><a class="doc-anchor" href="#examples-3">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 映射单个页面
+</span><span class="kw">let </span>vpn = VirtPageNum(<span class="number">0x10000</span>);
+area.map_one(<span class="kw-2">&amp;mut </span>page_table, vpn);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.unmap_one" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#532-541">Source</a><h4 class="code-header">pub fn <a href="#method.unmap_one" class="fn">unmap_one</a>(&amp;mut self, page_table: &amp;mut <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>, vpn: <a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>)</h4></section></summary><div class="docblock"><p>取消单个虚拟页面的映射</p>
+<p>移除指定虚拟页号到物理页帧的映射。对于 Framed 映射，
+还会释放对应的物理页帧。</p>
+<h6 id="arguments-5"><a class="doc-anchor" href="#arguments-5">§</a>Arguments</h6>
+<ul>
+<li><code>page_table</code> - 目标页表的可变引用</li>
+<li><code>vpn</code> - 要取消映射的虚拟页号</li>
+</ul>
+<h6 id="清理策略"><a class="doc-anchor" href="#清理策略">§</a>清理策略</h6><h6 id="identical-映射-1"><a class="doc-anchor" href="#identical-映射-1">§</a>Identical 映射</h6>
+<ul>
+<li>仅从页表中移除页表项</li>
+<li>不释放任何物理页面（因为不是独占所有）</li>
+</ul>
+<h6 id="framed-映射-1"><a class="doc-anchor" href="#framed-映射-1">§</a>Framed 映射</h6>
+<ul>
+<li>从 <code>data_frames</code> 中移除映射记录</li>
+<li>调用 <code>frame_dealloc()</code> 释放物理页帧</li>
+<li>从页表中移除页表项</li>
+</ul>
+<h6 id="内存安全-1"><a class="doc-anchor" href="#内存安全-1">§</a>内存安全</h6>
+<p>通过 <code>FrameTracker</code> 的 RAII 机制自动管理物理页帧的生命周期，
+确保在取消映射时正确释放内存资源。</p>
+<h6 id="panics-3"><a class="doc-anchor" href="#panics-3">§</a>Panics</h6>
+<p>如果 Framed 映射中找不到对应的页帧记录</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.shrink_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#577-582">Source</a><h4 class="code-header">pub fn <a href="#method.shrink_to" class="fn">shrink_to</a>(&amp;mut self, page_table: &amp;mut <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>, new_end: <a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>)</h4></section></summary><div class="docblock"><p>缩小内存区域到指定结束位置</p>
+<p>将内存区域的结束边界缩小到指定的虚拟页号，取消被移除部分的所有映射。
+主要用于内存回收和动态内存管理。</p>
+<h6 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h6>
+<ul>
+<li><code>page_table</code> - 目标页表的可变引用</li>
+<li><code>new_end</code> - 新的结束虚拟页号（不包含）</li>
+</ul>
+<h6 id="操作过程"><a class="doc-anchor" href="#操作过程">§</a>操作过程</h6>
+<ol>
+<li>计算需要移除的页面范围：<code>[new_end, old_end)</code></li>
+<li>对范围内的每个页面调用 <code>unmap_one()</code></li>
+<li>更新区域的 <code>vpn_range</code> 边界</li>
+</ol>
+<h6 id="内存安全-2"><a class="doc-anchor" href="#内存安全-2">§</a>内存安全</h6>
+<p>所有被移除的 Framed 映射页面对应的物理页帧会被自动释放，
+防止内存泄漏。</p>
+<h6 id="panics-4"><a class="doc-anchor" href="#panics-4">§</a>Panics</h6>
+<p>如果 <code>new_end</code> 大于当前区域的结束位置</p>
+<h6 id="examples-4"><a class="doc-anchor" href="#examples-4">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 原区域：[0x1000, 0x3000)
+// 缩小到：[0x1000, 0x2000)
+</span>area.shrink_to(<span class="kw-2">&amp;mut </span>page_table, VirtPageNum(<span class="number">0x2000</span>));
+<span class="comment">// 页面 [0x2000, 0x3000) 被取消映射并释放</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.append_to" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#619-624">Source</a><h4 class="code-header">pub fn <a href="#method.append_to" class="fn">append_to</a>(&amp;mut self, page_table: &amp;mut <a class="struct" href="../page_table/struct.PageTable.html" title="struct os::mm::page_table::PageTable">PageTable</a>, new_end: <a class="struct" href="../address/struct.VirtPageNum.html" title="struct os::mm::address::VirtPageNum">VirtPageNum</a>)</h4></section></summary><div class="docblock"><p>扩展内存区域到指定结束位置</p>
+<p>将内存区域的结束边界扩展到指定的虚拟页号，为新增部分建立映射。
+主要用于动态内存分配和堆空间扩展。</p>
+<h6 id="arguments-7"><a class="doc-anchor" href="#arguments-7">§</a>Arguments</h6>
+<ul>
+<li><code>page_table</code> - 目标页表的可变引用</li>
+<li><code>new_end</code> - 新的结束虚拟页号（不包含）</li>
+</ul>
+<h6 id="操作过程-1"><a class="doc-anchor" href="#操作过程-1">§</a>操作过程</h6>
+<ol>
+<li>计算需要添加的页面范围：<code>[old_end, new_end)</code></li>
+<li>对范围内的每个页面调用 <code>map_one()</code></li>
+<li>更新区域的 <code>vpn_range</code> 边界</li>
+</ol>
+<h6 id="内存分配"><a class="doc-anchor" href="#内存分配">§</a>内存分配</h6>
+<p>对于 Framed 映射，会为每个新页面分配独立的物理页帧。
+对于 Identical 映射，直接使用对应的物理地址。</p>
+<h6 id="panics-5"><a class="doc-anchor" href="#panics-5">§</a>Panics</h6>
+<ul>
+<li>如果 <code>new_end</code> 小于当前区域的结束位置</li>
+<li>Framed 映射时如果物理页帧分配失败</li>
+</ul>
+<h6 id="examples-5"><a class="doc-anchor" href="#examples-5">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 原区域：[0x1000, 0x2000)
+// 扩展到：[0x1000, 0x3000)
+</span>area.append_to(<span class="kw-2">&amp;mut </span>page_table, VirtPageNum(<span class="number">0x3000</span>));
+<span class="comment">// 页面 [0x2000, 0x3000) 被映射并分配</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.from_another" class="method"><a class="src rightside" href="../../../src/os/mm/memory_set.rs.html#684-691">Source</a><h4 class="code-header">pub fn <a href="#method.from_another" class="fn">from_another</a>(another: &amp;Self) -&gt; Self</h4></section></summary><div class="docblock"><p>从另一个内存区域创建新的映射区域</p>
+<p>复制另一个内存映射区域的配置（地址范围、映射类型、访问权限），
+但不复制实际的物理页帧映射。新创建的区域需要重新进行页面映射。</p>
+<h6 id="arguments-8"><a class="doc-anchor" href="#arguments-8">§</a>Arguments</h6>
+<ul>
+<li><code>another</code> - 源内存映射区域的引用</li>
+</ul>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<p>新创建的内存映射区域，具有相同的配置但空的页帧映射表</p>
+<h6 id="复制内容"><a class="doc-anchor" href="#复制内容">§</a>复制内容</h6>
+<ul>
+<li><strong>虚拟页号范围</strong>: 完全复制源区域的地址范围</li>
+<li><strong>映射类型</strong>: 复制映射类型（Identical 或 Framed）</li>
+<li><strong>访问权限</strong>: 复制所有权限标志位</li>
+<li><strong>页帧映射</strong>: 创建空的映射表，需要后续填充</li>
+</ul>
+<h6 id="设计目的"><a class="doc-anchor" href="#设计目的">§</a>设计目的</h6>
+<p>此函数主要用于进程 fork 操作中创建子进程的地址空间结构。
+它保持了地址空间布局的一致性，但允许独立的物理页面分配。</p>
+<h6 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h6>
+<ul>
+<li><strong>进程 fork</strong>: 创建子进程地址空间的框架</li>
+<li><strong>地址空间复制</strong>: 保持布局一致的空间复制</li>
+<li><strong>模板创建</strong>: 基于现有配置创建新的区域模板</li>
+</ul>
+<h6 id="后续操作"><a class="doc-anchor" href="#后续操作">§</a>后续操作</h6>
+<p>创建后通常需要：</p>
+<ol>
+<li>调用 <code>map()</code> 建立页表映射</li>
+<li>复制源区域的数据到新的物理页面</li>
+<li>将新区域添加到目标地址空间</li>
+</ol>
+<h6 id="examples-6"><a class="doc-anchor" href="#examples-6">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 复制现有区域的配置
+</span><span class="kw">let </span>template_area = MapArea::new(
+    VirtAddr::from(<span class="number">0x10000000</span>),
+    VirtAddr::from(<span class="number">0x10001000</span>),
+    MapType::Framed,
+    MapPermission::R | MapPermission::W | MapPermission::U
+);
+
+<span class="comment">// 基于模板创建新区域
+</span><span class="kw">let </span>new_area = MapArea::from_another(<span class="kw-2">&amp;</span>template_area);
+<span class="comment">// new_area 具有相同的地址范围和权限，但需要重新映射</span></code></pre></div>
+<h6 id="内存安全-3"><a class="doc-anchor" href="#内存安全-3">§</a>内存安全</h6>
+<p>新创建的区域与源区域完全独立，不会共享任何物理页帧，
+确保地址空间隔离和内存安全。</p>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-MapArea" class="impl"><a href="#impl-Freeze-for-MapArea" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></h3></section><section id="impl-RefUnwindSafe-for-MapArea" class="impl"><a href="#impl-RefUnwindSafe-for-MapArea" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></h3></section><section id="impl-Send-for-MapArea" class="impl"><a href="#impl-Send-for-MapArea" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></h3></section><section id="impl-Sync-for-MapArea" class="impl"><a href="#impl-Sync-for-MapArea" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></h3></section><section id="impl-Unpin-for-MapArea" class="impl"><a href="#impl-Unpin-for-MapArea" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></h3></section><section id="impl-UnwindSafe-for-MapArea" class="impl"><a href="#impl-UnwindSafe-for-MapArea" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.MapArea.html" title="struct os::mm::memory_set::MapArea">MapArea</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

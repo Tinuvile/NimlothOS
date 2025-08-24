@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="转换跨页面字节缓冲区"><title>translated_byte_buffer in os::mm::page_table - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">translated_<wbr>byte_<wbr>buffer</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#arguments" title="Arguments">Arguments</a></li><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#转换过程" title="转换过程">转换过程</a></li><li><a href="#跨页面处理" title="跨页面处理">跨页面处理</a></li><li><a href="#使用场景" title="使用场景">使用场景</a></li><li><a href="#safety" title="Safety">Safety</a></li><li><a href="#panics" title="Panics">Panics</a></li><li><a href="#examples" title="Examples">Examples</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>mm::<wbr>page_<wbr>table</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">mm</a>::<wbr><a href="index.html">page_table</a></div><h1>Function <span class="fn">translated_byte_buffer</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/mm/page_table.rs.html#872-892">Source</a> </span></div><pre class="rust item-decl"><code>pub fn translated_byte_buffer(
+    token: usize,
+    ptr: *const u8,
+    len: usize,
+) -&gt; Vec&lt;&amp;'static mut [u8]&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>转换跨页面字节缓冲区</p>
+<p>将一个可能跨越多个页面的虚拟地址缓冲区转换为对应的物理页面切片列表。
+主要用于系统调用中访问用户态传递的缓冲区数据。</p>
+<h3 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h3>
+<ul>
+<li><code>token</code> - 页表令牌（satp 寄存器值），指定要使用的页表</li>
+<li><code>ptr</code> - 缓冲区起始虚拟地址指针</li>
+<li><code>len</code> - 缓冲区长度（字节数）</li>
+</ul>
+<h3 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h3>
+<p>返回物理页面切片的向量，每个切片对应缓冲区在一个物理页面中的部分</p>
+<h3 id="转换过程"><a class="doc-anchor" href="#转换过程">§</a>转换过程</h3>
+<ol>
+<li>根据页表令牌创建页表实例</li>
+<li>按页面边界分割缓冲区范围</li>
+<li>逐个转换每个页面的虚拟地址到物理地址</li>
+<li>返回每个页面中对应部分的可变切片</li>
+</ol>
+<h3 id="跨页面处理"><a class="doc-anchor" href="#跨页面处理">§</a>跨页面处理</h3><div class="example-wrap"><pre class="language-text"><code>Virtual Buffer:  [████████████████████████████]
+                   │            │           │
+Page Boundary:  ┌──┴──┐    ┌────┴────┐   ┌──┴──┐
+Physical Page:  Page A     Page B       Page C
+Return Slice:   slice[0]   slice[1]     slice[2]</code></pre></div><h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3>
+<ul>
+<li>系统调用中访问用户态缓冲区</li>
+<li>DMA 操作的地址转换</li>
+<li>跨页面数据的零拷贝访问</li>
+</ul>
+<h3 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h3>
+<p>返回的切片具有 <code>'static</code> 生命周期，调用者需要确保：</p>
+<ul>
+<li>页表在使用期间保持有效</li>
+<li>物理页面没有被其他代码同时修改</li>
+<li>虚拟地址确实已正确映射</li>
+</ul>
+<h3 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h3>
+<p>如果缓冲区中任何页面未被映射会触发 panic</p>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 转换用户态缓冲区以供内核访问
+</span><span class="kw">let </span>user_buffer_ptr = <span class="number">0x10001000 </span><span class="kw">as </span><span class="kw-2">*const </span>u8;
+<span class="kw">let </span>len = <span class="number">8192</span>; <span class="comment">// 跨越 3 个页面
+</span><span class="kw">let </span>token = current_user_token();
+
+<span class="kw">let </span>slices = translated_byte_buffer(token, user_buffer_ptr, len);
+<span class="kw">for </span>slice <span class="kw">in </span>slices {
+    <span class="comment">// 访问每个物理页面中的数据
+    </span>process_data(slice);
+}</code></pre></div>
+</div></details></section></div></main></body></html>
