@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["app_data","app_data_by_name","list_apps","num_app"],"struct":["APP_NAMES"]};

@@ -3,7 +3,7 @@
 <a href=#3 id=3 data-nosnippet>3</a>//! 实现与进程生命周期管理相关的系统调用，包括进程退出、
 <a href=#4 id=4 data-nosnippet>4</a>//! CPU 时间片让出和系统时间获取等功能。
 <a href=#5 id=5 data-nosnippet>5</a>
-<a href=#6 id=6 data-nosnippet>6</a></span><span class="kw">use </span><span class="kw">crate</span>::loader::app_data_by_name;
+<a href=#6 id=6 data-nosnippet>6</a></span><span class="kw">use </span><span class="kw">crate</span>::fs::{OpenFlags, open_file};
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::mm::{translated_refmut, translated_str};
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span><span class="kw">crate</span>::println;
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span><span class="kw">crate</span>::task::{
@@ -165,67 +165,69 @@
 <a href=#165 id=165 data-nosnippet>165</a>/// ## 行为说明
 <a href=#166 id=166 data-nosnippet>166</a>///
 <a href=#167 id=167 data-nosnippet>167</a>/// 1. 从用户态读取程序名字符串
-<a href=#168 id=168 data-nosnippet>168</a>/// 2. 在内置应用仓库中查找对应的镜像数据
-<a href=#169 id=169 data-nosnippet>169</a>/// 3. 调用任务的 `exec` 方法重建地址空间并跳转到新入口
-<a href=#170 id=170 data-nosnippet>170</a></span><span class="kw">pub fn </span>sys_exec(path: <span class="kw-2">*const </span>u8) -&gt; isize {
-<a href=#171 id=171 data-nosnippet>171</a>    <span class="kw">let </span>token = current_user_token();
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">let </span>path = translated_str(token, path);
-<a href=#173 id=173 data-nosnippet>173</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(data) = app_data_by_name(path.as_str()) {
-<a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">let </span>task = current_task().unwrap();
-<a href=#175 id=175 data-nosnippet>175</a>        task.exec(data);
-<a href=#176 id=176 data-nosnippet>176</a>        <span class="number">0
-<a href=#177 id=177 data-nosnippet>177</a>    </span>} <span class="kw">else </span>{
-<a href=#178 id=178 data-nosnippet>178</a>        -<span class="number">1
-<a href=#179 id=179 data-nosnippet>179</a>    </span>}
-<a href=#180 id=180 data-nosnippet>180</a>}
-<a href=#181 id=181 data-nosnippet>181</a>
-<a href=#182 id=182 data-nosnippet>182</a><span class="doccomment">/// 系统调用：等待子进程结束（waitpid）
-<a href=#183 id=183 data-nosnippet>183</a>///
-<a href=#184 id=184 data-nosnippet>184</a>/// 实现 `waitpid(2)` 的子集，等待特定 PID 的子进程或任意子进程结束，
-<a href=#185 id=185 data-nosnippet>185</a>/// 并将其退出码写入到用户提供的缓冲区。
-<a href=#186 id=186 data-nosnippet>186</a>///
-<a href=#187 id=187 data-nosnippet>187</a>/// ## Arguments
+<a href=#168 id=168 data-nosnippet>168</a>/// 2. 打开文件
+<a href=#169 id=169 data-nosnippet>169</a>/// 3. 读取文件内容
+<a href=#170 id=170 data-nosnippet>170</a>/// 4. 调用任务的 `exec` 方法重建地址空间并跳转到新入口
+<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">pub fn </span>sys_exec(path: <span class="kw-2">*const </span>u8) -&gt; isize {
+<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">let </span>token = current_user_token();
+<a href=#173 id=173 data-nosnippet>173</a>    <span class="kw">let </span>path = translated_str(token, path);
+<a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(data) = open_file(path.as_str(), OpenFlags::RDONLY) {
+<a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">let </span>all_data = data.read_all();
+<a href=#176 id=176 data-nosnippet>176</a>        <span class="kw">let </span>task = current_task().unwrap();
+<a href=#177 id=177 data-nosnippet>177</a>        task.exec(all_data.as_slice());
+<a href=#178 id=178 data-nosnippet>178</a>        <span class="number">0
+<a href=#179 id=179 data-nosnippet>179</a>    </span>} <span class="kw">else </span>{
+<a href=#180 id=180 data-nosnippet>180</a>        -<span class="number">1
+<a href=#181 id=181 data-nosnippet>181</a>    </span>}
+<a href=#182 id=182 data-nosnippet>182</a>}
+<a href=#183 id=183 data-nosnippet>183</a>
+<a href=#184 id=184 data-nosnippet>184</a><span class="doccomment">/// 系统调用：等待子进程结束（waitpid）
+<a href=#185 id=185 data-nosnippet>185</a>///
+<a href=#186 id=186 data-nosnippet>186</a>/// 实现 `waitpid(2)` 的子集，等待特定 PID 的子进程或任意子进程结束，
+<a href=#187 id=187 data-nosnippet>187</a>/// 并将其退出码写入到用户提供的缓冲区。
 <a href=#188 id=188 data-nosnippet>188</a>///
-<a href=#189 id=189 data-nosnippet>189</a>/// * `pid` - 要等待的子进程 PID；传入 `-1` 表示等待任意子进程
-<a href=#190 id=190 data-nosnippet>190</a>/// * `exit_code_ptr` - 指向用户空间的退出码写入地址
-<a href=#191 id=191 data-nosnippet>191</a>///
-<a href=#192 id=192 data-nosnippet>192</a>/// ## Returns
+<a href=#189 id=189 data-nosnippet>189</a>/// ## Arguments
+<a href=#190 id=190 data-nosnippet>190</a>///
+<a href=#191 id=191 data-nosnippet>191</a>/// * `pid` - 要等待的子进程 PID；传入 `-1` 表示等待任意子进程
+<a href=#192 id=192 data-nosnippet>192</a>/// * `exit_code_ptr` - 指向用户空间的退出码写入地址
 <a href=#193 id=193 data-nosnippet>193</a>///
-<a href=#194 id=194 data-nosnippet>194</a>/// - 成功时返回已回收子进程的 PID
-<a href=#195 id=195 data-nosnippet>195</a>/// - 若没有匹配的子进程返回 -1
-<a href=#196 id=196 data-nosnippet>196</a>/// - 若暂时没有已退出的符合条件的子进程返回 -2（可由上层重试/阻塞）
-<a href=#197 id=197 data-nosnippet>197</a>///
-<a href=#198 id=198 data-nosnippet>198</a>/// ## 行为说明
+<a href=#194 id=194 data-nosnippet>194</a>/// ## Returns
+<a href=#195 id=195 data-nosnippet>195</a>///
+<a href=#196 id=196 data-nosnippet>196</a>/// - 成功时返回已回收子进程的 PID
+<a href=#197 id=197 data-nosnippet>197</a>/// - 若没有匹配的子进程返回 -1
+<a href=#198 id=198 data-nosnippet>198</a>/// - 若暂时没有已退出的符合条件的子进程返回 -2（可由上层重试/阻塞）
 <a href=#199 id=199 data-nosnippet>199</a>///
-<a href=#200 id=200 data-nosnippet>200</a>/// 1. 校验待等待的子进程是否存在
-<a href=#201 id=201 data-nosnippet>201</a>/// 2. 查找符合条件且已处于 Zombie 状态的子进程
-<a href=#202 id=202 data-nosnippet>202</a>/// 3. 回收其 Task 对象，获取退出码并写回用户缓冲区
-<a href=#203 id=203 data-nosnippet>203</a>///
-<a href=#204 id=204 data-nosnippet>204</a>/// ## Safety
+<a href=#200 id=200 data-nosnippet>200</a>/// ## 行为说明
+<a href=#201 id=201 data-nosnippet>201</a>///
+<a href=#202 id=202 data-nosnippet>202</a>/// 1. 校验待等待的子进程是否存在
+<a href=#203 id=203 data-nosnippet>203</a>/// 2. 查找符合条件且已处于 Zombie 状态的子进程
+<a href=#204 id=204 data-nosnippet>204</a>/// 3. 回收其 Task 对象，获取退出码并写回用户缓冲区
 <a href=#205 id=205 data-nosnippet>205</a>///
-<a href=#206 id=206 data-nosnippet>206</a>/// 通过 `translated_refmut()` 将退出码写入用户空间，调用前已验证指针
-<a href=#207 id=207 data-nosnippet>207</a>/// 在当前地址空间内有效（失败会 panic；未来可改为错误返回）。
-<a href=#208 id=208 data-nosnippet>208</a></span><span class="kw">pub fn </span>sys_waitpid(pid: isize, exit_code_ptr: <span class="kw-2">*mut </span>i32) -&gt; isize {
-<a href=#209 id=209 data-nosnippet>209</a>    <span class="kw">let </span>task = current_task().unwrap();
-<a href=#210 id=210 data-nosnippet>210</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
-<a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">if </span>!inner
-<a href=#212 id=212 data-nosnippet>212</a>        .children
-<a href=#213 id=213 data-nosnippet>213</a>        .iter()
-<a href=#214 id=214 data-nosnippet>214</a>        .any(|p| pid == -<span class="number">1 </span>|| pid <span class="kw">as </span>usize == p.getpid())
-<a href=#215 id=215 data-nosnippet>215</a>    {
-<a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">return </span>-<span class="number">1</span>;
-<a href=#217 id=217 data-nosnippet>217</a>    }
-<a href=#218 id=218 data-nosnippet>218</a>    <span class="kw">let </span>pair = inner.children.iter().enumerate().find(|(<span class="kw">_</span>, p)| {
-<a href=#219 id=219 data-nosnippet>219</a>        p.inner_exclusive_access().is_zombie() &amp;&amp; (pid == -<span class="number">1 </span>|| pid <span class="kw">as </span>usize == p.getpid())
-<a href=#220 id=220 data-nosnippet>220</a>    });
-<a href=#221 id=221 data-nosnippet>221</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>((idx, <span class="kw">_</span>)) = pair {
-<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>child = inner.children.remove(idx);
-<a href=#223 id=223 data-nosnippet>223</a>        <span class="macro">assert_eq!</span>(Arc::strong_count(<span class="kw-2">&amp;</span>child), <span class="number">1</span>);
-<a href=#224 id=224 data-nosnippet>224</a>        <span class="kw">let </span>found_pid = child.getpid();
-<a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">let </span>exit_code = child.inner_exclusive_access().exit_code;
-<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw-2">*</span>translated_refmut(inner.memory_set.token(), exit_code_ptr) = exit_code;
-<a href=#227 id=227 data-nosnippet>227</a>        found_pid <span class="kw">as </span>isize
-<a href=#228 id=228 data-nosnippet>228</a>    } <span class="kw">else </span>{
-<a href=#229 id=229 data-nosnippet>229</a>        -<span class="number">2
-<a href=#230 id=230 data-nosnippet>230</a>    </span>}
-<a href=#231 id=231 data-nosnippet>231</a>}</code></pre></div></section></main></body></html>
+<a href=#206 id=206 data-nosnippet>206</a>/// ## Safety
+<a href=#207 id=207 data-nosnippet>207</a>///
+<a href=#208 id=208 data-nosnippet>208</a>/// 通过 `translated_refmut()` 将退出码写入用户空间，调用前已验证指针
+<a href=#209 id=209 data-nosnippet>209</a>/// 在当前地址空间内有效（失败会 panic；未来可改为错误返回）。
+<a href=#210 id=210 data-nosnippet>210</a></span><span class="kw">pub fn </span>sys_waitpid(pid: isize, exit_code_ptr: <span class="kw-2">*mut </span>i32) -&gt; isize {
+<a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">let </span>task = current_task().unwrap();
+<a href=#212 id=212 data-nosnippet>212</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<a href=#213 id=213 data-nosnippet>213</a>    <span class="kw">if </span>!inner
+<a href=#214 id=214 data-nosnippet>214</a>        .children
+<a href=#215 id=215 data-nosnippet>215</a>        .iter()
+<a href=#216 id=216 data-nosnippet>216</a>        .any(|p| pid == -<span class="number">1 </span>|| pid <span class="kw">as </span>usize == p.getpid())
+<a href=#217 id=217 data-nosnippet>217</a>    {
+<a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">return </span>-<span class="number">1</span>;
+<a href=#219 id=219 data-nosnippet>219</a>    }
+<a href=#220 id=220 data-nosnippet>220</a>    <span class="kw">let </span>pair = inner.children.iter().enumerate().find(|(<span class="kw">_</span>, p)| {
+<a href=#221 id=221 data-nosnippet>221</a>        p.inner_exclusive_access().is_zombie() &amp;&amp; (pid == -<span class="number">1 </span>|| pid <span class="kw">as </span>usize == p.getpid())
+<a href=#222 id=222 data-nosnippet>222</a>    });
+<a href=#223 id=223 data-nosnippet>223</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>((idx, <span class="kw">_</span>)) = pair {
+<a href=#224 id=224 data-nosnippet>224</a>        <span class="kw">let </span>child = inner.children.remove(idx);
+<a href=#225 id=225 data-nosnippet>225</a>        <span class="macro">assert_eq!</span>(Arc::strong_count(<span class="kw-2">&amp;</span>child), <span class="number">1</span>);
+<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>found_pid = child.getpid();
+<a href=#227 id=227 data-nosnippet>227</a>        <span class="kw">let </span>exit_code = child.inner_exclusive_access().exit_code;
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw-2">*</span>translated_refmut(inner.memory_set.token(), exit_code_ptr) = exit_code;
+<a href=#229 id=229 data-nosnippet>229</a>        found_pid <span class="kw">as </span>isize
+<a href=#230 id=230 data-nosnippet>230</a>    } <span class="kw">else </span>{
+<a href=#231 id=231 data-nosnippet>231</a>        -<span class="number">2
+<a href=#232 id=232 data-nosnippet>232</a>    </span>}
+<a href=#233 id=233 data-nosnippet>233</a>}</code></pre></div></section></main></body></html>

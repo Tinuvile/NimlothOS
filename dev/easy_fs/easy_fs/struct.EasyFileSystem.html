@@ -161,7 +161,7 @@ TODO: 实现文件删除功能</p>
 <li>释放操作会清空数据块内容</li>
 <li>释放后的数据块可以重新分配使用</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.root_inode" class="method"><a class="src rightside" href="../src/easy_fs/efs.rs.html#380-384">Source</a><h4 class="code-header">pub fn <a href="#method.root_inode" class="fn">root_inode</a>(efs: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;Mutex&lt;Self&gt;&gt;) -&gt; Inode</h4></section></summary><div class="docblock"><p>获取文件系统的根目录 inode</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.root_inode" class="method"><a class="src rightside" href="../src/easy_fs/efs.rs.html#380-384">Source</a><h4 class="code-header">pub fn <a href="#method.root_inode" class="fn">root_inode</a>(efs: &amp;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;Mutex&lt;Self&gt;&gt;) -&gt; <a class="struct" href="struct.Inode.html" title="struct easy_fs::Inode">Inode</a></h4></section></summary><div class="docblock"><p>获取文件系统的根目录 inode</p>
 <p>创建并返回根目录的 inode 对象，提供对根目录的访问接口。
 根目录是文件系统的入口点，所有其他文件和目录都从根目录开始访问。</p>
 <h6 id="arguments-6"><a class="doc-anchor" href="#arguments-6">§</a>Arguments</h6>
