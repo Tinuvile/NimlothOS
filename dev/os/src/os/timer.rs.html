@@ -24,15 +24,15 @@
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">use </span><span class="kw">crate</span>::config::CLOCK_FREQ;
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span><span class="kw">crate</span>::sbi::timer;
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>riscv::register::time;
-<a href=#28 id=28 data-nosnippet>28</a>
-<a href=#29 id=29 data-nosnippet>29</a><span class="doccomment">/// 每秒的时钟中断次数 (100Hz)
-<a href=#30 id=30 data-nosnippet>30</a>///
-<a href=#31 id=31 data-nosnippet>31</a>/// 定义抢占式调度的时间片频率。100Hz 意味着每 10 毫秒触发一次
-<a href=#32 id=32 data-nosnippet>32</a>/// 时钟中断，提供良好的响应性和合理的调度开销。
-<a href=#33 id=33 data-nosnippet>33</a></span><span class="kw">const </span>TICKS_PER_SEC: usize = <span class="number">100</span>;
-<a href=#34 id=34 data-nosnippet>34</a>
-<a href=#35 id=35 data-nosnippet>35</a><span class="doccomment">/// 每秒的毫秒数常量
+<a href=#27 id=27 data-nosnippet>27</a>
+<a href=#28 id=28 data-nosnippet>28</a><span class="doccomment">/// 每秒的时钟中断次数 (100Hz)
+<a href=#29 id=29 data-nosnippet>29</a>///
+<a href=#30 id=30 data-nosnippet>30</a>/// 定义抢占式调度的时间片频率。100Hz 意味着每 10 毫秒触发一次
+<a href=#31 id=31 data-nosnippet>31</a>/// 时钟中断，提供良好的响应性和合理的调度开销。
+<a href=#32 id=32 data-nosnippet>32</a></span><span class="kw">const </span>TICKS_PER_SEC: usize = <span class="number">100</span>;
+<a href=#33 id=33 data-nosnippet>33</a>
+<a href=#34 id=34 data-nosnippet>34</a><span class="doccomment">/// 每秒的毫秒数常量
+<a href=#35 id=35 data-nosnippet>35</a></span><span class="attr">#[allow(unused)]
 <a href=#36 id=36 data-nosnippet>36</a></span><span class="kw">const </span>MSEC_PER_SEC: usize = <span class="number">1000</span>;
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a><span class="doccomment">/// 获取当前系统时间（时钟周期数）

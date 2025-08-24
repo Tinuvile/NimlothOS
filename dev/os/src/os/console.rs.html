@@ -115,9 +115,9 @@
 <a href=#115 id=115 data-nosnippet>115</a>/// ## Examples
 <a href=#116 id=116 data-nosnippet>116</a>///
 <a href=#117 id=117 data-nosnippet>117</a>/// ```rust
-<a href=#118 id=118 data-nosnippet>118</a>/// println!("Hello, world!");           // 输出: Hello, world!\n
-<a href=#119 id=119 data-nosnippet>119</a>/// println!("Answer: {}", 42);          // 输出: Answer: 42\n
-<a href=#120 id=120 data-nosnippet>120</a>/// println!("Debug: {:?}", some_value); // 输出: Debug: SomeValue\n
+<a href=#118 id=118 data-nosnippet>118</a>/// println!("Hello, world!")           // 输出: Hello, world!
+<a href=#119 id=119 data-nosnippet>119</a>/// println!("Answer: {}", 42)          // 输出: Answer: 42
+<a href=#120 id=120 data-nosnippet>120</a>/// println!("Debug: {:?}", some_value) // 输出: Debug: SomeValue
 <a href=#121 id=121 data-nosnippet>121</a>/// ```
 <a href=#122 id=122 data-nosnippet>122</a>///
 <a href=#123 id=123 data-nosnippet>123</a>/// ## Implementation
@@ -127,6 +127,6 @@
 <a href=#127 id=127 data-nosnippet>127</a></span><span class="attr">#[macro_export]
 <a href=#128 id=128 data-nosnippet>128</a></span><span class="macro">macro_rules!</span> println {
 <a href=#129 id=129 data-nosnippet>129</a>    (<span class="macro-nonterminal">$fmt</span>: literal $(, $(<span class="macro-nonterminal">$arg</span>: tt)+)<span class="question-mark">?</span>) =&gt; {
-<a href=#130 id=130 data-nosnippet>130</a>        <span class="macro-nonterminal">$crate::console::print</span>(<span class="macro">format_args!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">"\n"</span>) $(, $(<span class="macro-nonterminal">$arg</span>)+)<span class="question-mark">?</span>));
+<a href=#130 id=130 data-nosnippet>130</a>        <span class="macro-nonterminal">$crate::console::print</span>(<span class="macro">format_args!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">"\n"</span>) $(, $(<span class="macro-nonterminal">$arg</span>)+)<span class="question-mark">?</span>))
 <a href=#131 id=131 data-nosnippet>131</a>    }
 <a href=#132 id=132 data-nosnippet>132</a>}</code></pre></div></section></main></body></html>

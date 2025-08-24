@@ -11,9 +11,9 @@
 <li><code>println!</code> - 自动添加换行符 (<code>\n</code>)</li>
 </ul>
 <h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="macro">println!</span>(<span class="string">"Hello, world!"</span>);           <span class="comment">// 输出: Hello, world!\n
-</span><span class="macro">println!</span>(<span class="string">"Answer: {}"</span>, <span class="number">42</span>);          <span class="comment">// 输出: Answer: 42\n
-</span><span class="macro">println!</span>(<span class="string">"Debug: {:?}"</span>, some_value); <span class="comment">// 输出: Debug: SomeValue\n</span></code></pre></div>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="macro">println!</span>(<span class="string">"Hello, world!"</span>)           <span class="comment">// 输出: Hello, world!
+</span><span class="macro">println!</span>(<span class="string">"Answer: {}"</span>, <span class="number">42</span>)          <span class="comment">// 输出: Answer: 42
+</span><span class="macro">println!</span>(<span class="string">"Debug: {:?}"</span>, some_value) <span class="comment">// 输出: Debug: SomeValue</span></code></pre></div>
 <h3 id="implementation"><a class="doc-anchor" href="#implementation">§</a>Implementation</h3>
 <p>内部通过字符串连接将 <code>\n</code> 添加到格式字符串末尾，
 然后调用 <a href="macro.print.html" title="macro os::print"><code>print!</code></a> 宏进行实际输出。</p>
