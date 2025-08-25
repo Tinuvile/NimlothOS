@@ -121,3 +121,24 @@ pub fn sleep(period_ms: usize) {
         yield_();
     }
 }
+
+pub fn write_stderr(buf: &[u8]) -> isize {
+    write(2, buf)
+}
+
+pub fn err_print(s: &str) -> isize {
+    write_stderr(s.as_bytes())
+}
+
+pub fn err_println(s: &str) -> isize {
+    let mut result = err_print(s);
+    if result != -1 {
+        let newline_result = write_stderr(b"\n");
+        if newline_result != -1 {
+            result += newline_result;
+        } else {
+            result = -1;
+        }
+    }
+    result
+}

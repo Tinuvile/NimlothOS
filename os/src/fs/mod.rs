@@ -59,7 +59,7 @@ mod inode;
 mod stdio;
 
 pub use inode::{OSInode, OpenFlags, list_apps, open_file};
-pub use stdio::{Stdin, Stdout};
+pub use stdio::{Stderr, Stdin, Stdout};
 
 /// 文件抽象接口
 ///

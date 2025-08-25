@@ -9,6 +9,16 @@
 //! - [`TaskControlBlockInner`] - TCB 内部可变部分，受互斥锁保护
 //! - [`TaskStatus`] - 任务状态枚举，表示进程的运行状态
 //!
+//! ## 标准文件描述符
+//!
+//! 每个进程创建时自动分配三个标准文件描述符：
+//! - **标准输入 (stdin, fd=0)**: 程序的标准输入源，实现为 [`Stdin`]
+//! - **标准输出 (stdout, fd=1)**: 程序的正常输出目标，实现为 [`Stdout`]
+//! - **标准错误 (stderr, fd=2)**: 程序的错误输出目标，实现为 [`Stderr`]
+//!
+//! 这些标准文件描述符遵循POSIX标准，提供基本的输入输出功能。
+//! 在fork操作中，子进程会继承父进程的所有文件描述符。
+//!
 //! ## 设计原理
 //!
 //! ### 分离设计
@@ -89,12 +99,29 @@
 //! ## 使用示例
 //!
 //! ```rust
+//! use alloc::sync::Arc;
+//!
 //! // 创建新进程
 //! let elf_data = app_data(0);
 //! let task = Arc::new(TaskControlBlock::new(elf_data));
 //!
+//! // 检查标准文件描述符
+//! {
+//!     let inner = task.inner_exclusive_access();
+//!     // 验证标准文件描述符已正确初始化
+//!     assert!(inner.fd_table[0].is_some()); // stdin
+//!     assert!(inner.fd_table[1].is_some()); // stdout  
+//!     assert!(inner.fd_table[2].is_some()); // stderr
+//! }
+//!
 //! // Fork 子进程
 //! let child_task = task.fork();
+//!
+//! // 检查子进程继承了父进程的文件描述符
+//! {
+//!     let child_inner = child_task.inner_exclusive_access();
+//!     assert_eq!(child_inner.fd_table.len(), task.inner_exclusive_access().fd_table.len());
+//! }
 //!
 //! // 执行新程序
 //! task.exec(new_elf_data);
@@ -105,7 +132,7 @@
 //! ```
 
 use super::context::TaskContext;
-use crate::fs::{File, Stdin, Stdout};
+use crate::fs::{File, Stderr, Stdin, Stdout};
 use crate::sync::UPSafeCell;
 use crate::task::pid::pid_alloc;
 use crate::{
@@ -142,6 +169,7 @@ use core::cell::RefMut;
 /// **并发安全**：
 /// - [`UPSafeCell`] 提供单处理器环境下的安全可变访问
 /// - 通过 [`Arc`] 支持多处理器环境下的引用计数管理
+/// - 通过 [`Weak`] 避免循环引用，防止内存泄漏
 ///
 /// **资源管理**：
 /// - PID 和内核栈通过 RAII 自动管理生命周期
@@ -331,9 +359,12 @@ pub struct TaskControlBlockInner {
     /// ## 标准文件描述符
     ///
     /// 进程创建时自动分配以下标准文件描述符：
-    /// - `fd_table[0]` - 标准输入 (stdin)
-    /// - `fd_table[1]` - 标准输出 (stdout)
-    /// - `fd_table[2]` - 标准错误 (stderr)
+    /// - `fd_table[0]` - 标准输入 (stdin) - [`Stdin`]
+    /// - `fd_table[1]` - 标准输出 (stdout) - [`Stdout`]
+    /// - `fd_table[2]` - 标准错误 (stderr) - [`Stderr`]
+    ///
+    /// 这些标准文件描述符在进程创建时自动初始化，用户程序无需手动打开。
+    /// 它们提供了基本的输入输出功能，遵循POSIX标准。
     ///
     /// ## 文件描述符分配
     ///
@@ -352,6 +383,54 @@ pub struct TaskControlBlockInner {
     /// - 进程 fork 时复制文件描述符表
     /// - 进程退出时关闭所有打开的文件
     /// - 文件描述符的分配和回收管理
+    ///
+    /// ## 标准文件描述符的语义
+    ///
+    /// ### 标准输入 (stdin, fd=0)
+    /// - **用途**: 程序的标准输入源
+    /// - **实现**: [`Stdin`] 结构体
+    /// - **特性**: 只读，阻塞式读取，支持单字符输入
+    /// - **行为**: 当没有输入时会让出CPU，等待用户输入
+    ///
+    /// ### 标准输出 (stdout, fd=1)
+    /// - **用途**: 程序的正常输出目标
+    /// - **实现**: [`Stdout`] 结构体
+    /// - **特性**: 只写，实时输出，支持UTF-8编码
+    /// - **行为**: 立即将输出显示到控制台
+    ///
+    /// ### 标准错误 (stderr, fd=2)
+    /// - **用途**: 程序的错误信息和诊断输出
+    /// - **实现**: [`Stderr`] 结构体
+    /// - **特性**: 只写，实时输出，支持UTF-8编码
+    /// - **行为**: 与标准输出类似，但语义上区分用途
+    ///
+    /// ## 文件描述符继承
+    ///
+    /// 在fork操作中，子进程会继承父进程的所有文件描述符：
+    /// - 标准文件描述符 (0, 1, 2) 被复制到子进程
+    /// - 用户打开的文件描述符也被复制
+    /// - 父子进程共享相同的文件对象引用
+    ///
+    /// ## 错误处理
+    ///
+    /// 文件描述符操作可能出现的错误：
+    /// - **EBADF**: 文件描述符无效或未打开
+    /// - **EINVAL**: 不支持的操作（如向stdin写入）
+    /// - **EFAULT**: 用户缓冲区地址无效
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// // 检查标准文件描述符是否可用
+    /// let inner = task.inner_exclusive_access();
+    /// assert!(inner.fd_table[0].is_some()); // stdin
+    /// assert!(inner.fd_table[1].is_some()); // stdout
+    /// assert!(inner.fd_table[2].is_some()); // stderr
+    ///
+    /// // 分配新的文件描述符
+    /// let new_fd = inner.alloc_fd();
+    /// inner.fd_table[new_fd] = Some(file_object);
+    /// ```
     pub fd_table: Vec<Option<Arc<dyn File + Send + Sync>>>,
 }
 
@@ -773,7 +852,7 @@ impl TaskControlBlock {
                     fd_table: vec![
                         Some(Arc::new(Stdin)),
                         Some(Arc::new(Stdout)),
-                        Some(Arc::new(Stdout)),
+                        Some(Arc::new(Stderr)),
                     ],
                 })
             },
