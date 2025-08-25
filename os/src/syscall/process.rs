@@ -12,6 +12,10 @@
 //! - [`sys_fork`] - 创建子进程
 //! - [`sys_exec`] - 执行新程序
 //! - [`sys_waitpid`] - 等待子进程结束
+//! - [`sys_kill`] - 发送信号
+//! - [`sys_sigaction`] - 设置信号处理
+//! - [`sys_sigprocmask`] - 设置信号掩码
+//! - [`sys_sigreturn`] - 从信号处理返回
 //!
 //! ## 进程状态管理
 //!
@@ -33,8 +37,8 @@ use crate::fs::{OpenFlags, open_file};
 use crate::mm::{translated_ref, translated_refmut, translated_str};
 use crate::println;
 use crate::task::{
-    add_task, current_task, current_user_token, exit_current_and_run_next,
-    suspend_current_and_run_next,
+    MAX_SIG, SignalAction, SignalFlags, add_task, current_task, current_user_token,
+    exit_current_and_run_next, pid2task, suspend_current_and_run_next,
 };
 use crate::timer::time_ms;
 use alloc::sync::Arc;
@@ -297,5 +301,86 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
         found_pid as isize
     } else {
         -2
+    }
+}
+
+pub fn sys_sigprocmask(mask: u32) -> isize {
+    if let Some(task) = current_task() {
+        let mut inner = task.inner_exclusive_access();
+        let old_mask = inner.signal_mask;
+        if let Some(flag) = SignalFlags::from_bits(mask) {
+            inner.signal_mask = flag;
+            old_mask.bits() as isize
+        } else {
+            -1
+        }
+    } else {
+        -1
+    }
+}
+
+pub fn sys_kill(pid: usize, signum: i32) -> isize {
+    if let Some(task) = pid2task(pid) {
+        if let Some(flag) = SignalFlags::from_bits(1 << signum) {
+            // insert the signal if legal
+            let mut task_ref = task.inner_exclusive_access();
+            if task_ref.signals.contains(flag) {
+                return -1;
+            }
+            task_ref.signals.insert(flag);
+            0
+        } else {
+            -1
+        }
+    } else {
+        -1
+    }
+}
+
+fn check_sigaction_error(signal: SignalFlags, action: usize, old_action: usize) -> bool {
+    if action == 0
+        || old_action == 0
+        || signal == SignalFlags::SIGKILL
+        || signal == SignalFlags::SIGSTOP
+    {
+        return true;
+    } else {
+        false
+    }
+}
+
+pub fn sys_sigaction(
+    signum: i32,
+    action: *const SignalAction,
+    old_action: *mut SignalAction,
+) -> isize {
+    let token = current_user_token();
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    if signum as usize > MAX_SIG {
+        return -1;
+    }
+    if let Some(flag) = SignalFlags::from_bits(1 << signum) {
+        if check_sigaction_error(flag, action as usize, old_action as usize) {
+            return -1;
+        }
+        let prev_action = inner.signal_actions.table[signum as usize];
+        *translated_refmut(token, old_action) = prev_action;
+        inner.signal_actions.table[signum as usize] = *translated_ref(token, action);
+        0
+    } else {
+        -1
+    }
+}
+
+pub fn sys_sigreturn() -> isize {
+    if let Some(task) = current_task() {
+        let mut inner = task.inner_exclusive_access();
+        inner.handling_sig = -1;
+        let trap_ctx = inner.trap_cx();
+        *trap_ctx = inner.trap_ctx_backup.unwrap();
+        trap_ctx.x[10] as isize
+    } else {
+        -1
     }
 }

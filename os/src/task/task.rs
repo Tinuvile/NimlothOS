@@ -131,7 +131,7 @@
 //! println!("Task status: {:?}", inner.task_status);
 //! ```
 
-use super::context::TaskContext;
+use super::{SignalActions, SignalFlags, TaskContext};
 use crate::fs::{File, Stderr, Stdin, Stdout};
 use crate::sync::UPSafeCell;
 use crate::task::pid::pid_alloc;
@@ -433,6 +433,14 @@ pub struct TaskControlBlockInner {
     /// inner.fd_table[new_fd] = Some(file_object);
     /// ```
     pub fd_table: Vec<Option<Arc<dyn File + Send + Sync>>>,
+
+    pub signals: SignalFlags,
+    pub signal_mask: SignalFlags,
+    pub handling_sig: isize,
+    pub signal_actions: SignalActions,
+    pub killed: bool,
+    pub frozen: bool,
+    pub trap_ctx_backup: Option<TrapContext>,
 }
 
 /// 任务状态枚举
@@ -855,6 +863,13 @@ impl TaskControlBlock {
                         Some(Arc::new(Stdout)),
                         Some(Arc::new(Stderr)),
                     ],
+                    signals: SignalFlags::empty(),
+                    signal_mask: SignalFlags::empty(),
+                    handling_sig: -1,
+                    signal_actions: SignalActions::default(),
+                    killed: false,
+                    frozen: false,
+                    trap_ctx_backup: None,
                 })
             },
         };
@@ -1202,6 +1217,13 @@ impl TaskControlBlock {
                     children: Vec::new(),
                     exit_code: 0,
                     fd_table: new_fd_table,
+                    signals: SignalFlags::empty(),
+                    signal_mask: parent_inner.signal_mask,
+                    handling_sig: -1,
+                    signal_actions: parent_inner.signal_actions.clone(),
+                    killed: false,
+                    frozen: false,
+                    trap_ctx_backup: None,
                 })
             },
         });

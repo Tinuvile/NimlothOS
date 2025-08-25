@@ -29,7 +29,10 @@
 
 use crate::config::{TRAMPOLINE, TRAP_CONTEXT};
 use crate::syscall::syscall;
-use crate::task::{current_trap_cx, current_user_token, exit_current_and_run_next};
+use crate::task::{
+    SignalFlags, check_signals_error_of_current, current_add_signal, current_trap_cx,
+    current_user_token, exit_current_and_run_next, handle_signals,
+};
 use crate::timer::next_trigger;
 use crate::{println, task::suspend_current_and_run_next};
 use core::arch::{asm, global_asm};
@@ -122,29 +125,10 @@ fn set_user_trap_entry() {
     }
 }
 
-/// 内核态陷阱处理函数
-///
-/// 当内核态发生陷阱时的处理函数。在当前的简化实现中，
-/// 内核态不应该发生陷阱，因此直接触发 panic。
-///
-/// ## 设计原理
-///
-/// - 内核代码应该是可信的，不应该产生异常
-/// - 如果内核态发生陷阱，说明存在严重的内核 bug
-/// - 立即停止系统运行，避免进一步的损坏
-///
-/// ## 可能的陷阱原因
-///
-/// - 内核代码访问无效内存地址
-/// - 内核代码执行无效指令
-/// - 硬件故障或配置错误
-///
-/// ## 属性说明
-///
-/// - `#[unsafe(no_mangle)]`: 防止函数名被混淆，确保链接器能找到
-/// - `-> !`: 函数永不返回，因为会触发 panic
 #[unsafe(no_mangle)]
 pub fn trap_from_kernel() -> ! {
+    use riscv::register::sepc;
+    println!("stval = {:#x}, sepc = {:#x}", stval::read(), sepc::read());
     panic!("a trap {:?} from kernel!", scause::read().cause());
 }
 
@@ -204,20 +188,20 @@ pub fn trap_handler() -> ! {
         | Trap::Exception(Exception::LoadPageFault)
         | Trap::Exception(Exception::InstructionFault)
         | Trap::Exception(Exception::InstructionPageFault) => {
-            println!(
-                "[kernel] {:?} in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.",
-                scause.cause(),
-                stval,
-                current_trap_cx().sepc
-            );
-            exit_current_and_run_next(-2);
+            // println!(
+            //     "[kernel] {:?} in application, bad addr = {:#x}, bad instruction = {:#x}, kernel killed it.",
+            //     scause.cause(),
+            //     stval,
+            //     current_trap_cx().sepc
+            // );
+            current_add_signal(SignalFlags::SIGSEGV);
         }
         Trap::Exception(Exception::IllegalInstruction) => {
-            println!(
-                "[kernel] IllegalInstruction in application, bad instruction = {:#x}, kernel killed it.",
-                current_trap_cx().sepc
-            );
-            exit_current_and_run_next(-3);
+            // println!(
+            //     "[kernel] IllegalInstruction in application, bad instruction = {:#x}, kernel killed it.",
+            //     current_trap_cx().sepc
+            // );
+            current_add_signal(SignalFlags::SIGILL);
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
             next_trigger();
@@ -231,6 +215,14 @@ pub fn trap_handler() -> ! {
             );
         }
     }
+
+    handle_signals();
+
+    if let Some((errno, msg)) = check_signals_error_of_current() {
+        println!("[kernel] {}", msg);
+        exit_current_and_run_next(errno);
+    }
+
     trap_return();
 }
 

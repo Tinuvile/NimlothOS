@@ -45,6 +45,7 @@ use riscv::register::sstatus::{self, SPP, Sstatus};
 /// - `x18-x27` (`s2-s11`): 被调用者保存寄存器
 /// - `x28-x31` (`t3-t6`): 临时寄存器
 #[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub struct TrapContext {
     /// 通用寄存器 x0-x31
     ///

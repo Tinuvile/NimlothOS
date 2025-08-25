@@ -84,11 +84,13 @@
 //! }
 //! ```
 
-use alloc::{collections::vec_deque::VecDeque, sync::Arc};
-use lazy_static::lazy_static;
-
 use crate::sync::UPSafeCell;
 use crate::task::task::TaskControlBlock;
+use alloc::{
+    collections::{BTreeMap, vec_deque::VecDeque},
+    sync::Arc,
+};
+use lazy_static::lazy_static;
 
 /// 任务管理器
 ///
@@ -422,124 +424,28 @@ lazy_static! {
     /// - **无死锁**: 简单的所有权模型避免了复杂的锁依赖
     pub static ref TASK_MANAGER: UPSafeCell<TaskManager> =
         unsafe { UPSafeCell::new(TaskManager::new()) };
+
+    pub static ref PID2TCB: UPSafeCell<BTreeMap<usize, Arc<TaskControlBlock>>> =
+        unsafe { UPSafeCell::new(BTreeMap::new()) };
 }
 
-/// 向全局任务管理器添加任务
-///
-/// 高层接口函数，用于将新任务或重新变为就绪状态的任务添加到就绪队列。
-/// 提供线程安全的任务调度管理，自动处理并发访问和锁管理。
-///
-/// ## 参数
-///
-/// * `task` - 要添加的任务控制块，包装在 `Arc` 中以支持共享所有权
-///
-/// ## 使用场景
-///
-/// ### 新任务创建
-/// ```rust
-/// use crate::task::manager::add_task;
-/// use crate::task::task::TaskControlBlock;
-/// use alloc::sync::Arc;
-///
-/// // 创建并启动新进程
-/// let elf_data = app_data("user_app");
-/// let new_task = Arc::new(TaskControlBlock::new(elf_data));
-/// add_task(new_task);
-/// println!("新任务已加入调度队列");
-/// ```
-///
-/// ### Fork 操作
-/// ```rust
-/// // 父进程 fork 操作
-/// let child_task = parent_task.fork();
-/// add_task(child_task);
-/// println!("子进程已加入就绪队列");
-/// ```
-///
-/// ### 任务恢复
-/// ```rust
-/// // 任务从阻塞状态恢复
-/// if task_is_ready(task) {
-///     add_task(task);
-///     println!("任务已恢复到就绪状态");
-/// }
-/// ```
-///
-/// ## 执行流程
-///
-/// ```text
-/// add_task 调用流程:
-///
-///  User Code
-///      │
-///      ▼
-/// ┌───────────────┐
-/// │  add_task()   │ ─── 全局函数接口
-/// └────────┬──────┘
-///          │
-///          ▼
-/// ┌──────────────---─┐
-/// │exclusive_access()│ ─── 获取互斥访问权
-/// └────────┬───────--┘
-///          │
-///          ▼
-/// ┌───────────────┐
-/// │ manager.add() │ ─── 添加到队列尾部
-/// └────────┬──────┘
-///          │
-///          ▼
-/// ┌───────────────-┐
-/// │automatic unlock│ ─── 函数返回时自动释放
-/// └───────────────-┘
-/// ```
-///
-/// ## 并发安全
-///
-/// - **自动锁管理**: 函数自动获取和释放互斥锁
-/// - **线程安全**: 在单处理器环境中保证操作的原子性
-/// - **异常安全**: 即使发生 panic 也会正确释放锁
-///
-/// ## 性能特征
-///
-/// - **时间复杂度**: O(1) 摊还，但可能触发 O(n) 的容量扩展
-/// - **锁开销**: 在单核系统中开销极小（主要是函数调用）
-/// - **内存效率**: 仅传递 Arc 指针，不拷贝任务数据
-///
-/// ## 错误处理
-///
-/// 此函数不会失败，但在以下情况下可能引发 panic：
-/// - 内存不足无法扩展队列容量
-/// - 任务控制块已损坏（Arc 引用计数异常）
-///
-/// ## 优化建议
-///
-/// ### 批量操作优化
-/// ```rust
-/// // 不推荐：频繁加锁/解锁
-/// for task in tasks {
-///     add_task(task); // 每次都要加锁
-/// }
-///
-/// // 推荐：批量操作（如果需要）
-/// {
-///     let mut manager = TASK_MANAGER.exclusive_access();
-///     for task in tasks {
-///         manager.add(task); // 只加锁一次
-///     }
-/// } // 自动解锁
-/// ```
-///
-/// ## 调试信息
-///
-/// 可以通过日志追踪任务添加操作：
-///
-/// ```rust
-/// println!("添加任务 PID: {}", task.getpid());
-/// add_task(task);
-/// println!("任务已成功加入就绪队列");
-/// ```
 pub fn add_task(task: Arc<TaskControlBlock>) {
+    PID2TCB
+        .exclusive_access()
+        .insert(task.getpid(), Arc::clone(&task));
     TASK_MANAGER.exclusive_access().add(task);
+}
+
+pub fn pid2task(pid: usize) -> Option<Arc<TaskControlBlock>> {
+    let map = PID2TCB.exclusive_access();
+    map.get(&pid).map(Arc::clone)
+}
+
+pub fn remove_from_pid2task(pid: usize) {
+    let mut map = PID2TCB.exclusive_access();
+    if map.remove(&pid).is_none() {
+        panic!("cannot find pid {} in pid2task!", pid);
+    }
 }
 
 /// 从全局任务管理器获取下一个待调度任务
