@@ -56,9 +56,11 @@
 use crate::mm::UserBuffer;
 
 mod inode;
+mod pipe;
 mod stdio;
 
 pub use inode::{OSInode, OpenFlags, list_apps, open_file};
+pub use pipe::make_pipe;
 pub use stdio::{Stderr, Stdin, Stdout};
 
 /// 文件抽象接口

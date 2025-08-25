@@ -5,10 +5,12 @@
 //!
 //! ## 支持的系统调用
 //!
-//! - [`sys_write`] - 向文件描述符写入数据
-//! - [`sys_read`] - 从文件描述符读取数据  
-//! - [`sys_open`] - 打开文件并返回文件描述符
-//! - [`sys_close`] - 关闭文件描述符
+//! - [`sys_write`]   - 向文件描述符写入数据
+//! - [`sys_read`]    - 从文件描述符读取数据  
+//! - [`sys_open`]    - 打开文件并返回文件描述符
+//! - [`sys_close`]   - 关闭文件描述符
+//! - [`sys_dup`]     - 复制文件描述符
+//! - [`sys_pipe`]    - 创建管道
 //!
 //! ## 文件描述符管理
 //!
@@ -23,9 +25,10 @@
 //! 所有系统调用都通过 [`translated_byte_buffer`] 和 [`translated_str`]
 //! 安全地访问用户空间数据，确保地址空间隔离。
 
-use crate::fs::{OpenFlags, open_file};
-use crate::mm::{UserBuffer, translated_byte_buffer, translated_str};
+use crate::fs::{OpenFlags, make_pipe, open_file};
+use crate::mm::{UserBuffer, translated_byte_buffer, translated_refmut, translated_str};
 use crate::task::{current_task, current_user_token};
+use alloc::sync::Arc;
 
 /// 系统调用：向文件描述符写入数据
 ///
@@ -199,5 +202,33 @@ pub fn sys_close(fd: usize) -> isize {
         return -1;
     }
     inner.fd_table[fd].take();
+    0
+}
+
+pub fn sys_dup(fd: usize) -> isize {
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    if fd >= inner.fd_table.len() {
+        return -1;
+    }
+    if inner.fd_table[fd].is_none() {
+        return -1;
+    }
+    let new_fd = inner.alloc_fd();
+    inner.fd_table[new_fd] = Some(Arc::clone(inner.fd_table[fd].as_ref().unwrap()));
+    new_fd as isize
+}
+
+pub fn sys_pipe(pipe: *mut usize) -> isize {
+    let task = current_task().unwrap();
+    let token = current_user_token();
+    let mut inner = task.inner_exclusive_access();
+    let (pipe_read, pipe_write) = make_pipe();
+    let read_fd = inner.alloc_fd();
+    inner.fd_table[read_fd] = Some(pipe_read);
+    let write_fd = inner.alloc_fd();
+    inner.fd_table[write_fd] = Some(pipe_write);
+    *translated_refmut(token, pipe) = read_fd;
+    *translated_refmut(token, unsafe { pipe.add(1) }) = write_fd;
     0
 }

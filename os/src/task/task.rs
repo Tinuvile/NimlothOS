@@ -137,10 +137,11 @@ use crate::sync::UPSafeCell;
 use crate::task::pid::pid_alloc;
 use crate::{
     config::TRAP_CONTEXT,
-    mm::{KERNEL_SPACE, MemorySet, PhysPageNum, VirtAddr},
+    mm::{KERNEL_SPACE, MemorySet, PhysPageNum, VirtAddr, translated_refmut},
     task::pid::{KernelStack, PidHandle},
     trap::{TrapContext, trap_handler},
 };
+use alloc::string::String;
 use alloc::sync::{Arc, Weak};
 use alloc::vec;
 use alloc::vec::Vec;
@@ -1375,22 +1376,48 @@ impl TaskControlBlock {
     /// - **fork() + exec()**: 经典的进程创建和程序加载模式
     /// - **wait()**: 父进程等待 exec 后的子进程完成
     /// - **exit()**: 进程执行完成后的正常退出
-    pub fn exec(&self, elf_data: &[u8]) {
-        let (memory_set, user_sp, entry_point) = MemorySet::from_elf(elf_data);
+    pub fn exec(&self, elf_data: &[u8], args: Vec<String>) {
+        let (memory_set, mut user_sp, entry_point) = MemorySet::from_elf(elf_data);
         let trap_cx_ppn = memory_set
             .translate(VirtAddr::from(TRAP_CONTEXT).into())
             .unwrap()
             .ppn();
+
+        user_sp -= (args.len() + 1) * core::mem::size_of::<usize>();
+        let argv_base = user_sp;
+        let mut argv: Vec<_> = (0..=args.len())
+            .map(|arg| {
+                translated_refmut(
+                    memory_set.token(),
+                    (argv_base + arg * core::mem::size_of::<usize>()) as *mut usize,
+                )
+            })
+            .collect();
+        *argv[args.len()] = 0;
+        for i in 0..args.len() {
+            user_sp -= args[i].len() + 1;
+            *argv[i] = user_sp;
+            let mut p = user_sp;
+            for c in args[i].as_bytes() {
+                *translated_refmut(memory_set.token(), p as *mut u8) = *c;
+                p += 1;
+            }
+            *translated_refmut(memory_set.token(), p as *mut u8) = 0;
+        }
+        user_sp -= user_sp % core::mem::size_of::<usize>();
+
         let mut inner = self.inner_exclusive_access();
         inner.memory_set = memory_set;
         inner.trap_cx_ppn = trap_cx_ppn;
-        let trap_cx = TrapContext::app_init_context(
+        let mut trap_cx = TrapContext::app_init_context(
             entry_point,
             user_sp,
             KERNEL_SPACE.exclusive_access().token(),
             self.kernel_stack.top(),
             trap_handler as usize,
         );
+        trap_cx.x[10] = args.len();
+        trap_cx.x[11] = argv_base;
         *inner.trap_cx() = trap_cx;
     }
 }

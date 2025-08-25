@@ -30,7 +30,7 @@
 //! - 进程退出和清理（exit）
 
 use crate::fs::{OpenFlags, open_file};
-use crate::mm::{translated_refmut, translated_str};
+use crate::mm::{translated_ref, translated_refmut, translated_str};
 use crate::println;
 use crate::task::{
     add_task, current_task, current_user_token, exit_current_and_run_next,
@@ -38,6 +38,7 @@ use crate::task::{
 };
 use crate::timer::time_ms;
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 
 /// 系统调用：进程退出
 ///
@@ -209,14 +210,26 @@ pub fn sys_fork() -> isize {
 /// ## 安全考虑
 ///
 /// 通过 [`translated_str`] 安全地读取用户空间的程序路径字符串。
-pub fn sys_exec(path: *const u8) -> isize {
+pub fn sys_exec(path: *const u8, mut args: *const usize) -> isize {
     let token = current_user_token();
     let path = translated_str(token, path);
+    let mut args_vec = Vec::new();
+    loop {
+        let arg_str_ptr = *translated_ref(token, args);
+        if arg_str_ptr == 0 {
+            break;
+        }
+        args_vec.push(translated_str(token, arg_str_ptr as *const u8));
+        unsafe {
+            args = args.add(1);
+        }
+    }
     if let Some(data) = open_file(path.as_str(), OpenFlags::RDONLY) {
         let all_data = data.read_all();
         let task = current_task().unwrap();
-        task.exec(all_data.as_slice());
-        0
+        let argc = args_vec.len();
+        task.exec(all_data.as_slice(), args_vec);
+        argc as isize
     } else {
         -1
     }

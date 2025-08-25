@@ -983,6 +983,14 @@ pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
         .mut_ref()
 }
 
+pub fn translated_ref<T>(token: usize, ptr: *const T) -> &'static T {
+    let page_table = PageTable::from_token(token);
+    page_table
+        .translate_va(VirtAddr::from(ptr as usize))
+        .unwrap()
+        ._ref()
+}
+
 /// 用户缓冲区抽象
 ///
 /// 表示一个可能跨越多个物理页面的用户态缓冲区，用于系统调用中

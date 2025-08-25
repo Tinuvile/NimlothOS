@@ -2,6 +2,7 @@
 #![feature(linkage)]
 #![feature(alloc_error_handler)]
 
+use alloc::vec::Vec;
 use buddy_system_allocator::LockedHeap;
 use core::ptr::addr_of_mut;
 use syscall::*;
@@ -29,17 +30,31 @@ pub fn handle_alloc_error(layout: core::alloc::Layout) -> ! {
 
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.entry")]
-pub extern "C" fn _start() -> ! {
+pub extern "C" fn _start(argc: usize, argv: usize) -> ! {
     unsafe {
         HEAP.lock()
             .init(addr_of_mut!(HEAP_SPACE) as usize, USER_HEAP_SIZE);
     }
-    exit(main());
+    let mut v: Vec<&'static str> = Vec::new();
+    for i in 0..argc {
+        let str_start =
+            unsafe { ((argv + i * core::mem::size_of::<usize>()) as *const usize).read_volatile() };
+        let len = (0usize..)
+            .find(|i| unsafe { ((str_start + *i) as *const u8).read_volatile() == 0 })
+            .unwrap();
+        v.push(
+            core::str::from_utf8(unsafe {
+                core::slice::from_raw_parts(str_start as *const u8, len)
+            })
+            .unwrap(),
+        );
+    }
+    exit(main(argc, v.as_slice()));
 }
 
 #[linkage = "weak"]
 #[unsafe(no_mangle)]
-fn main() -> i32 {
+fn main(_argc: usize, _argv: &[&str]) -> i32 {
     panic!("Cannot find main function!");
 }
 
@@ -53,12 +68,20 @@ bitflags! {
     }
 }
 
+pub fn dup(fd: usize) -> isize {
+    sys_dup(fd)
+}
+
 pub fn open(path: &str, flags: OpenFlags) -> isize {
     sys_open(path, flags.bits())
 }
 
 pub fn close(fd: usize) -> isize {
     sys_close(fd)
+}
+
+pub fn pipe(pipe_fd: &mut [usize]) -> isize {
+    sys_pipe(pipe_fd)
 }
 
 pub fn read(fd: usize, buf: &mut [u8]) -> isize {
@@ -89,8 +112,8 @@ pub fn fork() -> isize {
     sys_fork()
 }
 
-pub fn exec(path: &str) -> isize {
-    sys_exec(path)
+pub fn exec(path: &str, args: &[*const u8]) -> isize {
+    sys_exec(path, args)
 }
 
 pub fn wait(exit_code: &mut i32) -> isize {
