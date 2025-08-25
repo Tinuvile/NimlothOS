@@ -183,14 +183,6 @@ pub fn exit_current_and_run_next(exit_code: i32) {
     }
     inner.children.clear();
     inner.memory_set.recycle_data_pages();
-
-    if let Some(parent) = inner.parent.as_ref() {
-        if let Some(parent_task) = parent.upgrade() {
-            let mut parent_inner = parent_task.inner_exclusive_access();
-            parent_inner.signals |= SignalFlags::SIGCHLD;
-        }
-    }
-
     drop(inner);
     drop(task);
     let mut _unused = TaskContext::zero_init();
