@@ -90,7 +90,7 @@ Ready ──Schedule──► Running ──Timeslice/Yield──► Ready
 </div><span id="structfield.inner" class="structfield section-header"><a href="#structfield.inner" class="anchor field">§</a><code>inner: <a class="struct" href="../../sync/up/struct.UPSafeCell.html" title="struct os::sync::up::UPSafeCell">UPSafeCell</a>&lt;<a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a>&gt;</code></span><div class="docblock"><p>内部可变状态</p>
 <p>包含所有需要在运行时修改的进程状态信息，使用 <a href="../../sync/up/struct.UPSafeCell.html" title="struct os::sync::up::UPSafeCell"><code>UPSafeCell</code></a>
 提供线程安全的可变访问。包括任务状态、内存集合、上下文等。</p>
-</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-TaskControlBlock" class="impl"><a class="src rightside" href="../../../src/os/task/task.rs.html#732-1445">Source</a><a href="#impl-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#839-885">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(elf_data: &amp;[u8]) -&gt; Self</h4></section></summary><div class="docblock"><p>从 ELF 文件创建新的任务控制块</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-TaskControlBlock" class="impl"><a class="src rightside" href="../../../src/os/task/task.rs.html#732-1454">Source</a><a href="#impl-TaskControlBlock" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.TaskControlBlock.html" title="struct os::task::task::TaskControlBlock">TaskControlBlock</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#844-890">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(elf_data: &amp;[u8]) -&gt; Self</h4></section></summary><div class="docblock"><p>从 ELF 文件创建新的任务控制块</p>
 <p>解析给定的 ELF 可执行文件，创建完整的进程控制块。
 包括分配 PID、创建内核栈、建立地址空间和初始化陷阱上下文。</p>
 <h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
@@ -177,7 +177,13 @@ Ready ──Schedule──► Running ──Timeslice/Yield──► Ready
 <li>[<code>fork()</code>] - 从现有进程创建子进程</li>
 <li>[<code>exec()</code>] - 替换当前进程的可执行文件</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.inner_exclusive_access" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#960-962">Source</a><h4 class="code-header">pub fn <a href="#method.inner_exclusive_access" class="fn">inner_exclusive_access</a>(&amp;self) -&gt; RefMut&lt;'_, <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a>&gt;</h4></section></summary><div class="docblock"><p>获取内部状态的排他访问权</p>
+<h6 id="行为"><a class="doc-anchor" href="#行为">§</a>行为</h6>
+<ul>
+<li>解析 ELF → 构建 <code>MemorySet</code>（含 trampoline、trap context、user stack）</li>
+<li>分配 <code>PidHandle</code> 与 <code>KernelStack</code>，设置任务上下文返回到 <code>trap_return</code></li>
+<li>初始化标准文件描述符（0/1/2）与信号相关字段</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.inner_exclusive_access" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#965-967">Source</a><h4 class="code-header">pub fn <a href="#method.inner_exclusive_access" class="fn">inner_exclusive_access</a>(&amp;self) -&gt; RefMut&lt;'_, <a class="struct" href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner">TaskControlBlockInner</a>&gt;</h4></section></summary><div class="docblock"><p>获取内部状态的排他访问权</p>
 <p>返回 <a href="struct.TaskControlBlockInner.html" title="struct os::task::task::TaskControlBlockInner"><code>TaskControlBlockInner</code></a> 的排他可变引用，用于安全地读取和修改
 任务的可变状态。在同一时刻只能有一个访问者获得访问权。</p>
 <h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
@@ -239,7 +245,7 @@ inner.task_status = TaskStatus::Ready;</code></pre></div>
 <li><strong>死锁防范</strong>: 避免在持有锁时获取其他锁</li>
 <li><strong>内存开销</strong>: <code>RefMut</code> 本身有较小的运行时开销</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.getpid" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#1037-1039">Source</a><h4 class="code-header">pub fn <a href="#method.getpid" class="fn">getpid</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取进程 ID</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.getpid" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#1042-1044">Source</a><h4 class="code-header">pub fn <a href="#method.getpid" class="fn">getpid</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取进程 ID</p>
 <p>返回当前任务的进程标识符 (PID)。PID 在系统中全局唯一，
 用于识别和区分不同的进程。</p>
 <h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
@@ -305,7 +311,7 @@ inner.task_status = TaskStatus::Ready;</code></pre></div>
 <li><a href="../pid/fn.pid_alloc.html" title="fn os::task::pid::pid_alloc"><code>pid_alloc()</code></a> - 分配新的 PID</li>
 <li><a href="../pid/struct.PidHandle.html" title="struct os::task::pid::PidHandle"><code>PidHandle</code></a> - PID 的 RAII 封装</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.fork" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#1187-1234">Source</a><h4 class="code-header">pub fn <a href="#method.fork" class="fn">fork</a>(self: &amp;Arc&lt;Self&gt;) -&gt; Arc&lt;Self&gt;</h4></section></summary><div class="docblock"><p>Fork 系统调用实现：创建子进程</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.fork" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#1196-1243">Source</a><h4 class="code-header">pub fn <a href="#method.fork" class="fn">fork</a>(self: &amp;Arc&lt;Self&gt;) -&gt; Arc&lt;Self&gt;</h4></section></summary><div class="docblock"><p>Fork 系统调用实现：创建子进程</p>
 <p>复制当前进程创建一个新的子进程，子进程继承父进程的地址空间、文件描述符等资源。
 这是 UNIX/Linux 系统中创建新进程的主要方式，遵循经典的 fork 语义。</p>
 <h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
@@ -427,7 +433,12 @@ Fork 后:
 <li>[<code>wait()</code>] - 父进程等待子进程退出</li>
 <li>[<code>exit()</code>] - 进程正常退出</li>
 </ul>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.exec" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#1401-1444">Source</a><h4 class="code-header">pub fn <a href="#method.exec" class="fn">exec</a>(&amp;self, elf_data: &amp;[u8], args: Vec&lt;String&gt;)</h4></section></summary><div class="docblock"><p>Exec 系统调用实现：替换进程映像</p>
+<h6 id="返回"><a class="doc-anchor" href="#返回">§</a>返回</h6>
+<ul>
+<li>父进程：返回新建子进程的 <code>Arc&lt;TaskControlBlock&gt;</code>（随后入队由调度器运行）</li>
+<li>子进程：调度运行后，从系统调用返回 <code>0</code></li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.exec" class="method"><a class="src rightside" href="../../../src/os/task/task.rs.html#1410-1453">Source</a><h4 class="code-header">pub fn <a href="#method.exec" class="fn">exec</a>(&amp;self, elf_data: &amp;[u8], args: Vec&lt;String&gt;)</h4></section></summary><div class="docblock"><p>Exec 系统调用实现：替换进程映像</p>
 <p>使用新的可执行文件替换当前进程的内存映像，保持相同的 PID 和内核栈，
 但完全替换地址空间和执行上下文。这是 UNIX/Linux 系统加载新程序的标准方式。</p>
 <h6 id="arguments-2"><a class="doc-anchor" href="#arguments-2">§</a>Arguments</h6>

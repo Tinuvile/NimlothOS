@@ -205,30 +205,67 @@
 <a href=#205 id=205 data-nosnippet>205</a>    <span class="number">0
 <a href=#206 id=206 data-nosnippet>206</a></span>}
 <a href=#207 id=207 data-nosnippet>207</a>
-<a href=#208 id=208 data-nosnippet>208</a><span class="kw">pub fn </span>sys_dup(fd: usize) -&gt; isize {
-<a href=#209 id=209 data-nosnippet>209</a>    <span class="kw">let </span>task = current_task().unwrap();
-<a href=#210 id=210 data-nosnippet>210</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
-<a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">if </span>fd &gt;= inner.fd_table.len() {
-<a href=#212 id=212 data-nosnippet>212</a>        <span class="kw">return </span>-<span class="number">1</span>;
-<a href=#213 id=213 data-nosnippet>213</a>    }
-<a href=#214 id=214 data-nosnippet>214</a>    <span class="kw">if </span>inner.fd_table[fd].is_none() {
-<a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">return </span>-<span class="number">1</span>;
-<a href=#216 id=216 data-nosnippet>216</a>    }
-<a href=#217 id=217 data-nosnippet>217</a>    <span class="kw">let </span>new_fd = inner.alloc_fd();
-<a href=#218 id=218 data-nosnippet>218</a>    inner.fd_table[new_fd] = <span class="prelude-val">Some</span>(Arc::clone(inner.fd_table[fd].as_ref().unwrap()));
-<a href=#219 id=219 data-nosnippet>219</a>    new_fd <span class="kw">as </span>isize
-<a href=#220 id=220 data-nosnippet>220</a>}
-<a href=#221 id=221 data-nosnippet>221</a>
-<a href=#222 id=222 data-nosnippet>222</a><span class="kw">pub fn </span>sys_pipe(pipe: <span class="kw-2">*mut </span>usize) -&gt; isize {
-<a href=#223 id=223 data-nosnippet>223</a>    <span class="kw">let </span>task = current_task().unwrap();
-<a href=#224 id=224 data-nosnippet>224</a>    <span class="kw">let </span>token = current_user_token();
-<a href=#225 id=225 data-nosnippet>225</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
-<a href=#226 id=226 data-nosnippet>226</a>    <span class="kw">let </span>(pipe_read, pipe_write) = make_pipe();
-<a href=#227 id=227 data-nosnippet>227</a>    <span class="kw">let </span>read_fd = inner.alloc_fd();
-<a href=#228 id=228 data-nosnippet>228</a>    inner.fd_table[read_fd] = <span class="prelude-val">Some</span>(pipe_read);
-<a href=#229 id=229 data-nosnippet>229</a>    <span class="kw">let </span>write_fd = inner.alloc_fd();
-<a href=#230 id=230 data-nosnippet>230</a>    inner.fd_table[write_fd] = <span class="prelude-val">Some</span>(pipe_write);
-<a href=#231 id=231 data-nosnippet>231</a>    <span class="kw-2">*</span>translated_refmut(token, pipe) = read_fd;
-<a href=#232 id=232 data-nosnippet>232</a>    <span class="kw-2">*</span>translated_refmut(token, <span class="kw">unsafe </span>{ pipe.add(<span class="number">1</span>) }) = write_fd;
-<a href=#233 id=233 data-nosnippet>233</a>    <span class="number">0
-<a href=#234 id=234 data-nosnippet>234</a></span>}</code></pre></div></section></main></body></html>
+<a href=#208 id=208 data-nosnippet>208</a><span class="doccomment">/// 系统调用：复制文件描述符（dup）
+<a href=#209 id=209 data-nosnippet>209</a>///
+<a href=#210 id=210 data-nosnippet>210</a>/// 实现 `dup(2)` 的核心语义：为已打开的文件描述符分配一个新的最小可用
+<a href=#211 id=211 data-nosnippet>211</a>/// 文件描述符编号，并让两者引用同一个底层文件对象（共享偏移与状态）。
+<a href=#212 id=212 data-nosnippet>212</a>///
+<a href=#213 id=213 data-nosnippet>213</a>/// ## Arguments
+<a href=#214 id=214 data-nosnippet>214</a>///
+<a href=#215 id=215 data-nosnippet>215</a>/// * `fd` - 需要复制的已有文件描述符
+<a href=#216 id=216 data-nosnippet>216</a>///
+<a href=#217 id=217 data-nosnippet>217</a>/// ## Returns
+<a href=#218 id=218 data-nosnippet>218</a>///
+<a href=#219 id=219 data-nosnippet>219</a>/// - 成功：返回新的文件描述符编号
+<a href=#220 id=220 data-nosnippet>220</a>/// - 失败：返回 -1（如 `fd` 无效或未打开）
+<a href=#221 id=221 data-nosnippet>221</a>///
+<a href=#222 id=222 data-nosnippet>222</a>/// ## 共享语义
+<a href=#223 id=223 data-nosnippet>223</a>///
+<a href=#224 id=224 data-nosnippet>224</a>/// - 新旧两个 fd 指向同一 `File` 对象，读写偏移共享
+<a href=#225 id=225 data-nosnippet>225</a>/// - 关闭任意一个 fd 不影响另一个 fd 的有效性（引用计数减少）
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">pub fn </span>sys_dup(fd: usize) -&gt; isize {
+<a href=#227 id=227 data-nosnippet>227</a>    <span class="kw">let </span>task = current_task().unwrap();
+<a href=#228 id=228 data-nosnippet>228</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<a href=#229 id=229 data-nosnippet>229</a>    <span class="kw">if </span>fd &gt;= inner.fd_table.len() {
+<a href=#230 id=230 data-nosnippet>230</a>        <span class="kw">return </span>-<span class="number">1</span>;
+<a href=#231 id=231 data-nosnippet>231</a>    }
+<a href=#232 id=232 data-nosnippet>232</a>    <span class="kw">if </span>inner.fd_table[fd].is_none() {
+<a href=#233 id=233 data-nosnippet>233</a>        <span class="kw">return </span>-<span class="number">1</span>;
+<a href=#234 id=234 data-nosnippet>234</a>    }
+<a href=#235 id=235 data-nosnippet>235</a>    <span class="kw">let </span>new_fd = inner.alloc_fd();
+<a href=#236 id=236 data-nosnippet>236</a>    inner.fd_table[new_fd] = <span class="prelude-val">Some</span>(Arc::clone(inner.fd_table[fd].as_ref().unwrap()));
+<a href=#237 id=237 data-nosnippet>237</a>    new_fd <span class="kw">as </span>isize
+<a href=#238 id=238 data-nosnippet>238</a>}
+<a href=#239 id=239 data-nosnippet>239</a>
+<a href=#240 id=240 data-nosnippet>240</a><span class="doccomment">/// 系统调用：创建管道
+<a href=#241 id=241 data-nosnippet>241</a>///
+<a href=#242 id=242 data-nosnippet>242</a>/// 创建一对相互连接的文件描述符：`pipe[0]` 为读端、`pipe[1]` 为写端。
+<a href=#243 id=243 data-nosnippet>243</a>/// 进程或父子进程间可通过该字节流进行单向通信。实现遵循 POSIX 语义：
+<a href=#244 id=244 data-nosnippet>244</a>/// - 读端在缓冲区空且写端全部关闭时返回 0（EOF）
+<a href=#245 id=245 data-nosnippet>245</a>/// - 写端在缓冲区满时阻塞（当前实现通过让出 CPU 实现）
+<a href=#246 id=246 data-nosnippet>246</a>///
+<a href=#247 id=247 data-nosnippet>247</a>/// ## Arguments
+<a href=#248 id=248 data-nosnippet>248</a>///
+<a href=#249 id=249 data-nosnippet>249</a>/// * `pipe` - 指向用户空间 usize[2] 的指针，用于写回读/写端 fd
+<a href=#250 id=250 data-nosnippet>250</a>///
+<a href=#251 id=251 data-nosnippet>251</a>/// ## Returns
+<a href=#252 id=252 data-nosnippet>252</a>///
+<a href=#253 id=253 data-nosnippet>253</a>/// - 成功返回 0，失败返回 -1
+<a href=#254 id=254 data-nosnippet>254</a>///
+<a href=#255 id=255 data-nosnippet>255</a>/// ## 安全考虑
+<a href=#256 id=256 data-nosnippet>256</a>///
+<a href=#257 id=257 data-nosnippet>257</a>/// - 使用 `translated_refmut` 将两个 fd 写回到用户空间
+<a href=#258 id=258 data-nosnippet>258</a>/// - fd 的实际分配来源于当前进程的 fd 表
+<a href=#259 id=259 data-nosnippet>259</a></span><span class="kw">pub fn </span>sys_pipe(pipe: <span class="kw-2">*mut </span>usize) -&gt; isize {
+<a href=#260 id=260 data-nosnippet>260</a>    <span class="kw">let </span>task = current_task().unwrap();
+<a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">let </span>token = current_user_token();
+<a href=#262 id=262 data-nosnippet>262</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<a href=#263 id=263 data-nosnippet>263</a>    <span class="kw">let </span>(pipe_read, pipe_write) = make_pipe();
+<a href=#264 id=264 data-nosnippet>264</a>    <span class="kw">let </span>read_fd = inner.alloc_fd();
+<a href=#265 id=265 data-nosnippet>265</a>    inner.fd_table[read_fd] = <span class="prelude-val">Some</span>(pipe_read);
+<a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">let </span>write_fd = inner.alloc_fd();
+<a href=#267 id=267 data-nosnippet>267</a>    inner.fd_table[write_fd] = <span class="prelude-val">Some</span>(pipe_write);
+<a href=#268 id=268 data-nosnippet>268</a>    <span class="kw-2">*</span>translated_refmut(token, pipe) = read_fd;
+<a href=#269 id=269 data-nosnippet>269</a>    <span class="kw-2">*</span>translated_refmut(token, <span class="kw">unsafe </span>{ pipe.add(<span class="number">1</span>) }) = write_fd;
+<a href=#270 id=270 data-nosnippet>270</a>    <span class="number">0
+<a href=#271 id=271 data-nosnippet>271</a></span>}</code></pre></div></section></main></body></html>
