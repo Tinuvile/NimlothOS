@@ -11,12 +11,49 @@ const LF: u8 = 0x0au8;
 const CR: u8 = 0x0du8;
 const DL: u8 = 0x7fu8;
 const BS: u8 = 0x08u8;
-const LINE_START: &str = ">> ";
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 use user_lib::console::getchar;
-use user_lib::{OpenFlags, close, dup, exec, fork, open, pipe, waitpid};
+use user_lib::{OpenFlags, close, dup, exec, fork, open, pipe, waitpid, write};
+
+// ANSI 颜色常量
+const C_RESET: &str = "\x1b[0m";
+const C_BOLD: &str = "\x1b[1m";
+const C_RED: &str = "\x1b[31m";
+const C_CYAN: &str = "\x1b[36m";
+const C_MAGENTA: &str = "\x1b[35m";
+
+/// 为文本添加颜色
+#[inline]
+fn colored(text: &str, color: &str) -> String {
+    let mut output = String::new();
+    output.push_str(color);
+    output.push_str(text);
+    output.push_str(C_RESET);
+    output
+}
+
+/// 打印彩色提示符
+#[inline]
+fn print_prompt() {
+    print!("{}", colored(">> ", &format!("{}{}", C_BOLD, C_CYAN)));
+}
+
+/// 打印错误信息到标准错误（红色）
+#[inline]
+fn eprintln_error(msg: &str) {
+    let error_msg = colored(&format!("Error: {}", msg), C_RED);
+    let _ = write(2, error_msg.as_bytes());
+    let _ = write(2, b"\n");
+}
+
+/// 打印信息（青色）
+#[inline]
+fn println_info(msg: &str) {
+    println!("{}", colored(msg, C_CYAN));
+}
 
 #[derive(Debug)]
 struct ProcessArguments {
@@ -76,9 +113,24 @@ impl ProcessArguments {
 
 #[unsafe(no_mangle)]
 pub fn main() -> i32 {
-    println!("Rust user shell");
+    // 打印NimlothOS Logo
+    let logo = r#"
+ /$$   /$$ /$$               /$$             /$$     /$$        /$$$$$$   /$$$$$$ 
+| $$$ | $$|__/              | $$            | $$    | $$       /$$__  $$ /$$__  $$
+| $$$$| $$ /$$ /$$$$$$/$$$$ | $$  /$$$$$$  /$$$$$$  | $$$$$$$ | $$  \ $$| $$  \__/
+| $$ $$ $$| $$| $$_  $$_  $$| $$ /$$__  $$|_  $$_/  | $$__  $$| $$  | $$|  $$$$$$ 
+| $$  $$$$| $$| $$ \ $$ \ $$| $$| $$  \ $$  | $$    | $$  \ $$| $$  | $$ \____  $$
+| $$\  $$$| $$| $$ | $$ | $$| $$| $$  | $$  | $$ /$$| $$  | $$| $$  | $$ /$$  \ $$
+| $$ \  $$| $$| $$ | $$ | $$| $$|  $$$$$$/  |  $$$$/| $$  | $$|  $$$$$$/|  $$$$$$/
+|__/  \__/|__/|__/ |__/ |__/|__/ \______/    \___/  |__/  |__/ \______/  \______/ 
+"#;
+    println!("{}", colored(logo, &format!("{}{}", C_BOLD, C_MAGENTA)));
+    println_info(
+        "Rust User Shell - Type commands and press Enter. Use Ctrl+A then X to exit QEMU.",
+    );
+    println!("");
     let mut line: String = String::new();
-    print!("{}", LINE_START);
+    print_prompt();
     loop {
         let c = getchar();
         match c {
@@ -109,7 +161,9 @@ pub fn main() -> i32 {
                         valid = true;
                     }
                     if !valid {
-                        println!("Invalid command: Inputs/Outputs cannot be correctly binded!");
+                        eprintln_error(
+                            "Invalid command: Inputs/Outputs cannot be correctly binded!",
+                        );
                     } else {
                         // create pipes
                         let mut pipes_fd: Vec<[usize; 2]> = Vec::new();
@@ -132,7 +186,10 @@ pub fn main() -> i32 {
                                 if !input.is_empty() {
                                     let input_fd = open(input.as_str(), OpenFlags::RDONLY);
                                     if input_fd == -1 {
-                                        println!("Error when opening file {}", input);
+                                        eprintln_error(&format!(
+                                            "when opening input file: {}",
+                                            input.trim_end_matches('\0')
+                                        ));
                                         return -4;
                                     }
                                     let input_fd = input_fd as usize;
@@ -147,7 +204,10 @@ pub fn main() -> i32 {
                                         OpenFlags::CREATE | OpenFlags::WRONLY,
                                     );
                                     if output_fd == -1 {
-                                        println!("Error when opening file {}", output);
+                                        eprintln_error(&format!(
+                                            "when opening output file: {}",
+                                            output.trim_end_matches('\0')
+                                        ));
                                         return -4;
                                     }
                                     let output_fd = output_fd as usize;
@@ -174,7 +234,10 @@ pub fn main() -> i32 {
                                 }
                                 // execute new application
                                 if exec(args_copy[0].as_str(), args_addr.as_slice()) == -1 {
-                                    println!("Error when executing!");
+                                    eprintln_error(&format!(
+                                        "when executing: {}",
+                                        args_copy[0].trim_end_matches('\0')
+                                    ));
                                     return -4;
                                 }
                                 unreachable!();
@@ -195,7 +258,7 @@ pub fn main() -> i32 {
                     }
                     line.clear();
                 }
-                print!("{}", LINE_START);
+                print_prompt();
             }
             BS | DL => {
                 if !line.is_empty() {
