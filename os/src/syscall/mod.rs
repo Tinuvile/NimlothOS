@@ -46,7 +46,7 @@
 //! - `SYSCALL_SIGPROCMASK` (135) - 设置信号掩码
 //! - `SYSCALL_SIGRETURN` (139)   - 从信号处理返回
 
-use crate::task::SignalAction;
+use crate::task::{SignalAction, SignalFlags, current_add_signal};
 use fs::*;
 use process::*;
 
@@ -120,6 +120,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
         ),
         SYSCALL_SIGPROCMASK => sys_sigprocmask(args[0] as u32),
         SYSCALL_SIGRETURN => sys_sigreturn(),
-        _ => panic!("Unsupported syscall_id: {}", syscall_id),
+        _ => {
+            current_add_signal(SignalFlags::SIGSYS);
+            panic!("Unsupported syscall_id: {}", syscall_id);
+        }
     }
 }
