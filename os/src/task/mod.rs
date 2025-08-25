@@ -26,6 +26,26 @@
 //! - 切换路径：`run_tasks()` 选择下一个任务 → `__switch` 切到任务 →
 //!   任务因时间片到期/主动让出/阻塞 → `schedule()` 切回调度器
 //!
+//! ## 信号（Signals）
+//!
+//! - 进程包含 `signals`/`signal_mask`/`signal_actions` 三部分状态：
+//!   - `signals`：待处理信号集合
+//!   - `signal_mask`：屏蔽集合（被屏蔽的信号不触发处理）
+//!   - `signal_actions`：用户自定义处理动作表
+//! - 处理流程要点：
+//!   1. 进入内核后在合适时机检查 `signals` 与 `signal_mask`
+//!   2. 对于致命信号，转换为退出码（如 SIGSEGV=-11 等）
+//!   3. 对于可捕捉信号，按 `signal_actions` 进入用户处理程序，返回后 `sigreturn`
+//! - 相关对外接口：[`check_signals_error_of_current`], [`current_add_signal`]
+//!
+//! ## 与系统调用的协作
+//!
+//! - 进程创建：[`sys_fork`] 深拷贝地址空间并返回父/子不同返回值
+//! - 进程替换：[`sys_exec`] 用新 ELF 重建地址空间（成功不返回）
+//! - 进程回收：[`sys_waitpid`] 回收子进程并写回退出码
+//! - 让出 CPU：[`sys_yield`] 通过 [`suspend_current_and_run_next`]
+//! - 退出：[`sys_exit`] 通过 [`exit_current_and_run_next`]
+//!
 //! ## 初始化与启动
 //!
 //! - 初始进程：[`INITPROC`]（从内置应用镜像加载 `initproc`）
@@ -169,6 +189,11 @@ pub fn exit_current_and_run_next(exit_code: i32) {
     schedule(&mut _unused as *mut _);
 }
 
+/// 检查当前任务的致命信号并返回标准退出码与原因
+///
+/// - 当 `signals` 集合包含致命/错误类信号（如 SIGSEGV、SIGILL 等）时，
+///   返回对应的 `(exit_code, reason)`；否则返回 `None`。
+/// - 该函数仅做快速判定，不会修改任务状态或触发调度。
 pub fn check_signals_error_of_current() -> Option<(i32, &'static str)> {
     let task = current_task().unwrap();
     let task_inner = task.inner_exclusive_access();
@@ -179,12 +204,20 @@ pub fn check_signals_error_of_current() -> Option<(i32, &'static str)> {
     }
 }
 
+/// 向当前任务投递一个信号
+///
+/// - 将 `signal` 置入当前任务的 `signals` 集合，后续由调度路径调用
+///   [`handle_signals`] 进行处理。
 pub fn current_add_signal(signal: SignalFlags) {
     let task = current_task().unwrap();
     let mut task_inner = task.inner_exclusive_access();
     task_inner.signals |= signal;
 }
 
+/// 处理内核级信号的默认动作
+///
+/// - 支持内建处理：SIGSTOP（冻结）、SIGCONT（解冻）、其他视为 `killed=true`
+/// - 仅修改内核维护的任务状态，不切换地址空间
 fn call_kernel_signal_handler(signal: SignalFlags) {
     let task = current_task().unwrap();
     let mut task_inner = task.inner_exclusive_access();
@@ -205,6 +238,10 @@ fn call_kernel_signal_handler(signal: SignalFlags) {
     }
 }
 
+/// 进入用户态信号处理程序
+///
+/// - 备份 Trap 上下文，设置 `sepc=handler`，`a0=sig`
+/// - 标记 `handling_sig=sig`，并从 `signals` 中清除此信号位
 fn call_user_signal_handler(sig: usize, signal: SignalFlags) {
     let task = current_task().unwrap();
     let mut task_inner = task.inner_exclusive_access();
@@ -225,6 +262,11 @@ fn call_user_signal_handler(sig: usize, signal: SignalFlags) {
     }
 }
 
+/// 扫描并处理一个可处理的待决信号
+///
+/// - 遍历 `0..=MAX_SIG`，考虑 `signal_mask` 与当前处理中的掩码规则
+/// - 命中后调用 `call_kernel_signal_handler` 或 `call_user_signal_handler`
+/// - 只处理至多一个信号，返回后由上层循环决定是否继续
 fn check_pending_signals() {
     for sig in 0..(MAX_SIG + 1) {
         let task = current_task().unwrap();
@@ -262,6 +304,10 @@ fn check_pending_signals() {
     }
 }
 
+/// 处理当前任务的待决信号直至状态可继续执行
+///
+/// - 循环处理待决信号；若被冻结（SIGSTOP）则持续让出 CPU，直至 SIGCONT 或被 kill
+/// - 若 `killed=true` 则结束循环，交由上层采取后续动作（如退出）
 pub fn handle_signals() {
     loop {
         check_pending_signals();

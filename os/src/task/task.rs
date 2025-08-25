@@ -836,6 +836,11 @@ impl TaskControlBlock {
     ///
     /// - [`fork()`] - 从现有进程创建子进程
     /// - [`exec()`] - 替换当前进程的可执行文件
+    ///
+    /// ## 行为
+    /// - 解析 ELF → 构建 `MemorySet`（含 trampoline、trap context、user stack）
+    /// - 分配 `PidHandle` 与 `KernelStack`，设置任务上下文返回到 `trap_return`
+    /// - 初始化标准文件描述符（0/1/2）与信号相关字段
     pub fn new(elf_data: &[u8]) -> Self {
         let (memory_set, user_sp, entry_point) = MemorySet::from_elf(elf_data);
         let trap_cx_ppn = memory_set
@@ -1184,6 +1189,10 @@ impl TaskControlBlock {
     /// - [`exec()`] - 替换进程映像，通常与 fork 配合使用
     /// - [`wait()`] - 父进程等待子进程退出
     /// - [`exit()`] - 进程正常退出
+    ///
+    /// ## 返回
+    /// - 父进程：返回新建子进程的 `Arc<TaskControlBlock>`（随后入队由调度器运行）
+    /// - 子进程：调度运行后，从系统调用返回 `0`
     pub fn fork(self: &Arc<Self>) -> Arc<Self> {
         let mut parent_inner = self.inner_exclusive_access();
         let memory_set = MemorySet::from_existed_user(&parent_inner.memory_set);

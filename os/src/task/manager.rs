@@ -429,6 +429,16 @@ lazy_static! {
         unsafe { UPSafeCell::new(BTreeMap::new()) };
 }
 
+/// 向全局就绪队列添加任务
+///
+/// - 将 `task` 写入 `PID2TCB` 映射，便于通过 PID 查找 TCB
+/// - 将任务入队到全局 `TASK_MANAGER` 的就绪队列，等待调度
+///
+/// ## 参数
+/// * `task` - 待加入调度的任务控制块
+///
+/// ## 复杂度
+/// - O(1) 摊还时间；队列扩容时可能触发 O(n) 拷贝
 pub fn add_task(task: Arc<TaskControlBlock>) {
     PID2TCB
         .exclusive_access()
@@ -436,11 +446,29 @@ pub fn add_task(task: Arc<TaskControlBlock>) {
     TASK_MANAGER.exclusive_access().add(task);
 }
 
+/// 通过 PID 查询任务控制块
+///
+/// ## 参数
+/// * `pid` - 目标进程标识符
+///
+/// ## 返回
+/// - `Some(Arc<TaskControlBlock>)`：找到对应任务
+/// - `None`：不存在该 PID 的任务（可能已退出并被回收）
 pub fn pid2task(pid: usize) -> Option<Arc<TaskControlBlock>> {
     let map = PID2TCB.exclusive_access();
     map.get(&pid).map(Arc::clone)
 }
 
+/// 从全局 PID → TCB 映射中移除任务
+///
+/// 典型调用点：
+/// - 进程退出路径（如 `exit_current_and_run_next` / `waitpid` 回收）
+///
+/// ## 参数
+/// * `pid` - 将要移除的进程标识符
+///
+/// ## 行为
+/// - 若不存在该 PID，触发 panic，用于暴露流程一致性问题
 pub fn remove_from_pid2task(pid: usize) {
     let mut map = PID2TCB.exclusive_access();
     if map.remove(&pid).is_none() {

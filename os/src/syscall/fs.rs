@@ -205,6 +205,24 @@ pub fn sys_close(fd: usize) -> isize {
     0
 }
 
+/// 系统调用：复制文件描述符（dup）
+///
+/// 实现 `dup(2)` 的核心语义：为已打开的文件描述符分配一个新的最小可用
+/// 文件描述符编号，并让两者引用同一个底层文件对象（共享偏移与状态）。
+///
+/// ## Arguments
+///
+/// * `fd` - 需要复制的已有文件描述符
+///
+/// ## Returns
+///
+/// - 成功：返回新的文件描述符编号
+/// - 失败：返回 -1（如 `fd` 无效或未打开）
+///
+/// ## 共享语义
+///
+/// - 新旧两个 fd 指向同一 `File` 对象，读写偏移共享
+/// - 关闭任意一个 fd 不影响另一个 fd 的有效性（引用计数减少）
 pub fn sys_dup(fd: usize) -> isize {
     let task = current_task().unwrap();
     let mut inner = task.inner_exclusive_access();
@@ -219,6 +237,25 @@ pub fn sys_dup(fd: usize) -> isize {
     new_fd as isize
 }
 
+/// 系统调用：创建管道
+///
+/// 创建一对相互连接的文件描述符：`pipe[0]` 为读端、`pipe[1]` 为写端。
+/// 进程或父子进程间可通过该字节流进行单向通信。实现遵循 POSIX 语义：
+/// - 读端在缓冲区空且写端全部关闭时返回 0（EOF）
+/// - 写端在缓冲区满时阻塞（当前实现通过让出 CPU 实现）
+///
+/// ## Arguments
+///
+/// * `pipe` - 指向用户空间 usize[2] 的指针，用于写回读/写端 fd
+///
+/// ## Returns
+///
+/// - 成功返回 0，失败返回 -1
+///
+/// ## 安全考虑
+///
+/// - 使用 `translated_refmut` 将两个 fd 写回到用户空间
+/// - fd 的实际分配来源于当前进程的 fd 表
 pub fn sys_pipe(pipe: *mut usize) -> isize {
     let task = current_task().unwrap();
     let token = current_user_token();

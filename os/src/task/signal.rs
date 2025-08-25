@@ -1,9 +1,31 @@
-use crate::println;
+//! # 进程信号（Signals）模块
+//!
+//! 提供类 Unix 信号的基础表示与默认动作表，用于进程间/内核向进程投递异步事件。
+//! 在本实现中，信号集合以位集合（bitflags）表示，支持屏蔽、待决、默认处理与
+//! 用户自定义处理（参见 `task/mod.rs` 中的处理流程）。
+//!
+//! ## 组成
+//! - [`SignalFlags`]：信号位集合类型
+//! - [`SignalAction`]：单个信号的处理动作（用户态处理入口与掩码）
+//! - [`SignalActions`]：全表（索引 0..=MAX_SIG）
+//!
+//! ## 常见语义
+//! - 致命/错误类信号转为负退出码（见 [`SignalFlags::check_error`]）
+//! - 控制类信号（`SIGSTOP`/`SIGCONT`）由内核内建处理
+//! - 其余可捕捉信号可由用户程序通过 `sigaction` 自定义处理
+//!
 use bitflags::*;
 
+/// 支持的最大信号编号（含）
+///
+/// 本实现支持 0..=MAX_SIG 共 32 个编号槽位，对应的位掩码使用 `1 << signum`。
 pub const MAX_SIG: usize = 31;
 
 bitflags! {
+    /// 信号位集合
+    ///
+    /// 每一位对应一个信号，结合 `insert/contains/remove` 操作可维护待决集合、
+    /// 屏蔽集合等。数值与传统 Unix 信号编号保持一致（部分信号为兼容保留）。
     #[derive(Debug, Clone, Copy, PartialEq)]
     pub struct SignalFlags: u32 {
         const SIGDEF = 1;
@@ -42,6 +64,12 @@ bitflags! {
 }
 
 impl SignalFlags {
+    /// 将集合中的致命/错误类信号映射为标准退出码与原因
+    ///
+    /// 若集合包含以下任意一个信号，则返回对应的 `(负退出码, 静态说明)`：
+    /// - `SIGINT`/`SIGILL`/`SIGABRT`/`SIGFPE`/`SIGKILL`/`SIGSEGV` 等
+    ///
+    /// 否则返回 `None`，表示不属于错误类（可能是可捕捉或控制类信号）。
     pub fn check_error(&self) -> Option<(i32, &'static str)> {
         if self.contains(Self::SIGHUP) {
             Some((-1, "Hangup, SIGHUP=1"))
@@ -106,12 +134,15 @@ impl SignalFlags {
         } else if self.contains(Self::SIGSYS) {
             Some((-31, "Bad system call, SIGSYS=31"))
         } else {
-            // println!("[K] signalflags check_error  {:?}", self);
             None
         }
     }
 }
 
+/// 用户态信号处理动作
+///
+/// - `handler`：用户态处理函数入口（0 表示采用默认动作）
+/// - `mask`：进入处理程序期间额外屏蔽的信号集合
 #[repr(C, align(16))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SignalAction {
@@ -120,6 +151,7 @@ pub struct SignalAction {
 }
 
 impl Default for SignalAction {
+    /// 默认处理：不设置用户处理入口，屏蔽集合按内核预设（可调整）
     fn default() -> Self {
         Self {
             handler: 0,
@@ -128,12 +160,14 @@ impl Default for SignalAction {
     }
 }
 
+/// 全部信号的处理动作表（索引 0..=MAX_SIG）
 #[derive(Clone)]
 pub struct SignalActions {
     pub table: [SignalAction; MAX_SIG + 1],
 }
 
 impl Default for SignalActions {
+    /// 初始化为全默认动作
     fn default() -> Self {
         Self {
             table: [SignalAction::default(); MAX_SIG + 1],

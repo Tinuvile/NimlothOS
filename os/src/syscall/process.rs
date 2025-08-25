@@ -214,6 +214,7 @@ pub fn sys_fork() -> isize {
 /// ## 安全考虑
 ///
 /// 通过 [`translated_str`] 安全地读取用户空间的程序路径字符串。
+/// 参数向量以空指针结尾逐项读取；成功加载后不会返回到调用点（地址空间被替换）。
 pub fn sys_exec(path: *const u8, mut args: *const usize) -> isize {
     let token = current_user_token();
     let path = translated_str(token, path);
@@ -304,6 +305,19 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
     }
 }
 
+/// 系统调用：设置信号屏蔽字（sigprocmask）
+///
+/// 将当前进程的信号屏蔽集合设为 `mask`，返回旧的屏蔽集合。
+/// 仅接受由 `SignalFlags` 可表示的位集合。
+///
+/// ## Arguments
+///
+/// * `mask` - 新的信号屏蔽位集合（按位编码）
+///
+/// ## Returns
+///
+/// - 成功：返回旧的屏蔽集合（按位编码）
+/// - 失败：返回 -1（如位集合非法或当前任务不存在）
 pub fn sys_sigprocmask(mask: u32) -> isize {
     if let Some(task) = current_task() {
         let mut inner = task.inner_exclusive_access();
@@ -319,6 +333,19 @@ pub fn sys_sigprocmask(mask: u32) -> isize {
     }
 }
 
+/// 系统调用：向目标进程发送信号（kill）
+///
+/// 按 `signum` 将对应位写入目标进程的 `signals` 集合，若信号已存在则返回错误。
+///
+/// ## Arguments
+///
+/// * `pid` - 目标进程 PID
+/// * `signum` - 信号编号（0..=MAX_SIG），实际按 `1 << signum` 转为掩码
+///
+/// ## Returns
+///
+/// - 0：发送成功
+/// - -1：目标不存在 / `signum` 非法 / 信号已存在
 pub fn sys_kill(pid: usize, signum: i32) -> isize {
     if let Some(task) = pid2task(pid) {
         if let Some(flag) = SignalFlags::from_bits(1 << signum) {
@@ -349,6 +376,20 @@ fn check_sigaction_error(signal: SignalFlags, action: usize, old_action: usize) 
     }
 }
 
+/// 系统调用：设置信号处理动作（sigaction）
+///
+/// 为信号安装/查询处理动作。禁止对 `SIGKILL` 与 `SIGSTOP` 自定义处理。
+///
+/// ## Arguments
+///
+/// * `signum` - 信号编号（0..=MAX_SIG）
+/// * `action` - 新动作的用户指针（只读）
+/// * `old_action` - 旧动作写回的用户指针（可写）
+///
+/// ## Returns
+///
+/// - 0：设置成功，并将旧动作写回
+/// - -1：参数非法或越界
 pub fn sys_sigaction(
     signum: i32,
     action: *const SignalAction,
@@ -373,6 +414,15 @@ pub fn sys_sigaction(
     }
 }
 
+/// 系统调用：从用户信号处理程序返回（sigreturn）
+///
+/// 恢复进入信号处理程序前保存的 Trap 上下文，清除 `handling_sig`，
+/// 并将 `a0` 作为返回值返回给用户态。
+///
+/// ## Returns
+///
+/// - `a0`：原用户态上下文中的 a0 值
+/// - -1：当前任务不存在
 pub fn sys_sigreturn() -> isize {
     if let Some(task) = current_task() {
         let mut inner = task.inner_exclusive_access();

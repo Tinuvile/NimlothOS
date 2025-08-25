@@ -79,8 +79,7 @@
 use crate::mm::{
     PhysAddr, PhysPageNum, VirtAddr, VirtPageNum,
     address::StepByOne,
-    frame_allocator::{FrameTracker, StackFrameAllocator, frame_alloc},
-    page_table,
+    frame_allocator::{FrameTracker, frame_alloc},
 };
 use alloc::string::String;
 use alloc::vec;
