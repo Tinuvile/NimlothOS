@@ -67,110 +67,60 @@
 <a href=#67 id=67 data-nosnippet>67</a>    <span class="doccomment">/// 将集合中的致命/错误类信号映射为标准退出码与原因
 <a href=#68 id=68 data-nosnippet>68</a>    ///
 <a href=#69 id=69 data-nosnippet>69</a>    /// 若集合包含以下任意一个信号，则返回对应的 `(负退出码, 静态说明)`：
-<a href=#70 id=70 data-nosnippet>70</a>    /// - `SIGINT`/`SIGILL`/`SIGABRT`/`SIGFPE`/`SIGKILL`/`SIGSEGV` 等
+<a href=#70 id=70 data-nosnippet>70</a>    /// - `SIGINT`/`SIGILL`/`SIGABRT`/`SIGFPE`/`SIGKILL`/`SIGSEGV`
 <a href=#71 id=71 data-nosnippet>71</a>    ///
 <a href=#72 id=72 data-nosnippet>72</a>    /// 否则返回 `None`，表示不属于错误类（可能是可捕捉或控制类信号）。
 <a href=#73 id=73 data-nosnippet>73</a>    </span><span class="kw">pub fn </span>check_error(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;(i32, <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str)&gt; {
-<a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGHUP) {
-<a href=#75 id=75 data-nosnippet>75</a>            <span class="prelude-val">Some</span>((-<span class="number">1</span>, <span class="string">"Hangup, SIGHUP=1"</span>))
-<a href=#76 id=76 data-nosnippet>76</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGINT) {
-<a href=#77 id=77 data-nosnippet>77</a>            <span class="prelude-val">Some</span>((-<span class="number">2</span>, <span class="string">"Killed, SIGINT=2"</span>))
-<a href=#78 id=78 data-nosnippet>78</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGQUIT) {
-<a href=#79 id=79 data-nosnippet>79</a>            <span class="prelude-val">Some</span>((-<span class="number">3</span>, <span class="string">"Killed, SIGQUIT=3"</span>))
-<a href=#80 id=80 data-nosnippet>80</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGILL) {
-<a href=#81 id=81 data-nosnippet>81</a>            <span class="prelude-val">Some</span>((-<span class="number">4</span>, <span class="string">"Illegal Instruction, SIGILL=4"</span>))
-<a href=#82 id=82 data-nosnippet>82</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGTRAP) {
-<a href=#83 id=83 data-nosnippet>83</a>            <span class="prelude-val">Some</span>((-<span class="number">5</span>, <span class="string">"Trace/breakpoint trap, SIGTRAP=5"</span>))
-<a href=#84 id=84 data-nosnippet>84</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGABRT) {
-<a href=#85 id=85 data-nosnippet>85</a>            <span class="prelude-val">Some</span>((-<span class="number">6</span>, <span class="string">"Aborted, SIGABRT=6"</span>))
-<a href=#86 id=86 data-nosnippet>86</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGBUS) {
-<a href=#87 id=87 data-nosnippet>87</a>            <span class="prelude-val">Some</span>((-<span class="number">7</span>, <span class="string">"Bus error, SIGBUS=7"</span>))
-<a href=#88 id=88 data-nosnippet>88</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGFPE) {
-<a href=#89 id=89 data-nosnippet>89</a>            <span class="prelude-val">Some</span>((-<span class="number">8</span>, <span class="string">"Erroneous Arithmetic Operation, SIGFPE=8"</span>))
-<a href=#90 id=90 data-nosnippet>90</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGKILL) {
-<a href=#91 id=91 data-nosnippet>91</a>            <span class="prelude-val">Some</span>((-<span class="number">9</span>, <span class="string">"Killed, SIGKILL=9"</span>))
-<a href=#92 id=92 data-nosnippet>92</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGUSR1) {
-<a href=#93 id=93 data-nosnippet>93</a>            <span class="prelude-val">Some</span>((-<span class="number">10</span>, <span class="string">"Killed, SIGUSR1=10"</span>))
-<a href=#94 id=94 data-nosnippet>94</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGSEGV) {
-<a href=#95 id=95 data-nosnippet>95</a>            <span class="prelude-val">Some</span>((-<span class="number">11</span>, <span class="string">"Segmentation Fault, SIGSEGV=11"</span>))
-<a href=#96 id=96 data-nosnippet>96</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGUSR2) {
-<a href=#97 id=97 data-nosnippet>97</a>            <span class="prelude-val">Some</span>((-<span class="number">12</span>, <span class="string">"Killed, SIGUSR2=12"</span>))
-<a href=#98 id=98 data-nosnippet>98</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGPIPE) {
-<a href=#99 id=99 data-nosnippet>99</a>            <span class="prelude-val">Some</span>((-<span class="number">13</span>, <span class="string">"Broken pipe, SIGPIPE=13"</span>))
-<a href=#100 id=100 data-nosnippet>100</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGALRM) {
-<a href=#101 id=101 data-nosnippet>101</a>            <span class="prelude-val">Some</span>((-<span class="number">14</span>, <span class="string">"Killed, SIGALRM=14"</span>))
-<a href=#102 id=102 data-nosnippet>102</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGTERM) {
-<a href=#103 id=103 data-nosnippet>103</a>            <span class="prelude-val">Some</span>((-<span class="number">15</span>, <span class="string">"Killed, SIGTERM=15"</span>))
-<a href=#104 id=104 data-nosnippet>104</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGSTKFLT) {
-<a href=#105 id=105 data-nosnippet>105</a>            <span class="prelude-val">Some</span>((-<span class="number">16</span>, <span class="string">"Stack fault, SIGSTKFLT=16"</span>))
-<a href=#106 id=106 data-nosnippet>106</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGCHLD) {
-<a href=#107 id=107 data-nosnippet>107</a>            <span class="prelude-val">Some</span>((-<span class="number">17</span>, <span class="string">"Child terminated, SIGCHLD=17"</span>))
-<a href=#108 id=108 data-nosnippet>108</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGCONT) {
-<a href=#109 id=109 data-nosnippet>109</a>            <span class="prelude-val">Some</span>((-<span class="number">18</span>, <span class="string">"Continued, SIGCONT=18"</span>))
-<a href=#110 id=110 data-nosnippet>110</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGSTOP) {
-<a href=#111 id=111 data-nosnippet>111</a>            <span class="prelude-val">Some</span>((-<span class="number">19</span>, <span class="string">"Stopped, SIGSTOP=19"</span>))
-<a href=#112 id=112 data-nosnippet>112</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGTSTP) {
-<a href=#113 id=113 data-nosnippet>113</a>            <span class="prelude-val">Some</span>((-<span class="number">20</span>, <span class="string">"Stopped, SIGTSTP=20"</span>))
-<a href=#114 id=114 data-nosnippet>114</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGTTIN) {
-<a href=#115 id=115 data-nosnippet>115</a>            <span class="prelude-val">Some</span>((-<span class="number">21</span>, <span class="string">"Stopped, SIGTTIN=21"</span>))
-<a href=#116 id=116 data-nosnippet>116</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGTTOU) {
-<a href=#117 id=117 data-nosnippet>117</a>            <span class="prelude-val">Some</span>((-<span class="number">22</span>, <span class="string">"Stopped, SIGTTOU=22"</span>))
-<a href=#118 id=118 data-nosnippet>118</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGURG) {
-<a href=#119 id=119 data-nosnippet>119</a>            <span class="prelude-val">Some</span>((-<span class="number">23</span>, <span class="string">"Urgent condition, SIGURG=23"</span>))
-<a href=#120 id=120 data-nosnippet>120</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGXCPU) {
-<a href=#121 id=121 data-nosnippet>121</a>            <span class="prelude-val">Some</span>((-<span class="number">24</span>, <span class="string">"CPU time limit exceeded, SIGXCPU=24"</span>))
-<a href=#122 id=122 data-nosnippet>122</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGXFSZ) {
-<a href=#123 id=123 data-nosnippet>123</a>            <span class="prelude-val">Some</span>((-<span class="number">25</span>, <span class="string">"File size limit exceeded, SIGXFSZ=25"</span>))
-<a href=#124 id=124 data-nosnippet>124</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGVTALRM) {
-<a href=#125 id=125 data-nosnippet>125</a>            <span class="prelude-val">Some</span>((-<span class="number">26</span>, <span class="string">"Virtual time alarm, SIGVTALRM=26"</span>))
-<a href=#126 id=126 data-nosnippet>126</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGPROF) {
-<a href=#127 id=127 data-nosnippet>127</a>            <span class="prelude-val">Some</span>((-<span class="number">27</span>, <span class="string">"Profiling time alarm, SIGPROF=27"</span>))
-<a href=#128 id=128 data-nosnippet>128</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGWINCH) {
-<a href=#129 id=129 data-nosnippet>129</a>            <span class="prelude-val">Some</span>((-<span class="number">28</span>, <span class="string">"Window size changed, SIGWINCH=28"</span>))
-<a href=#130 id=130 data-nosnippet>130</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGIO) {
-<a href=#131 id=131 data-nosnippet>131</a>            <span class="prelude-val">Some</span>((-<span class="number">29</span>, <span class="string">"I/O possible, SIGIO=29"</span>))
-<a href=#132 id=132 data-nosnippet>132</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGPWR) {
-<a href=#133 id=133 data-nosnippet>133</a>            <span class="prelude-val">Some</span>((-<span class="number">30</span>, <span class="string">"Power failure, SIGPWR=30"</span>))
-<a href=#134 id=134 data-nosnippet>134</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGSYS) {
-<a href=#135 id=135 data-nosnippet>135</a>            <span class="prelude-val">Some</span>((-<span class="number">31</span>, <span class="string">"Bad system call, SIGSYS=31"</span>))
-<a href=#136 id=136 data-nosnippet>136</a>        } <span class="kw">else </span>{
-<a href=#137 id=137 data-nosnippet>137</a>            <span class="prelude-val">None
-<a href=#138 id=138 data-nosnippet>138</a>        </span>}
-<a href=#139 id=139 data-nosnippet>139</a>    }
-<a href=#140 id=140 data-nosnippet>140</a>}
-<a href=#141 id=141 data-nosnippet>141</a>
-<a href=#142 id=142 data-nosnippet>142</a><span class="doccomment">/// 用户态信号处理动作
-<a href=#143 id=143 data-nosnippet>143</a>///
-<a href=#144 id=144 data-nosnippet>144</a>/// - `handler`：用户态处理函数入口（0 表示采用默认动作）
-<a href=#145 id=145 data-nosnippet>145</a>/// - `mask`：进入处理程序期间额外屏蔽的信号集合
-<a href=#146 id=146 data-nosnippet>146</a></span><span class="attr">#[repr(C, align(<span class="number">16</span>))]
-<a href=#147 id=147 data-nosnippet>147</a>#[derive(Debug, Clone, Copy, PartialEq)]
-<a href=#148 id=148 data-nosnippet>148</a></span><span class="kw">pub struct </span>SignalAction {
-<a href=#149 id=149 data-nosnippet>149</a>    <span class="kw">pub </span>handler: usize,
-<a href=#150 id=150 data-nosnippet>150</a>    <span class="kw">pub </span>mask: SignalFlags,
-<a href=#151 id=151 data-nosnippet>151</a>}
-<a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a><span class="kw">impl </span>Default <span class="kw">for </span>SignalAction {
-<a href=#154 id=154 data-nosnippet>154</a>    <span class="doccomment">/// 默认处理：不设置用户处理入口，屏蔽集合按内核预设（可调整）
-<a href=#155 id=155 data-nosnippet>155</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#156 id=156 data-nosnippet>156</a>        <span class="self">Self </span>{
-<a href=#157 id=157 data-nosnippet>157</a>            handler: <span class="number">0</span>,
-<a href=#158 id=158 data-nosnippet>158</a>            mask: SignalFlags::from_bits(<span class="number">40</span>).unwrap(),
-<a href=#159 id=159 data-nosnippet>159</a>        }
-<a href=#160 id=160 data-nosnippet>160</a>    }
-<a href=#161 id=161 data-nosnippet>161</a>}
-<a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a><span class="doccomment">/// 全部信号的处理动作表（索引 0..=MAX_SIG）
-<a href=#164 id=164 data-nosnippet>164</a></span><span class="attr">#[derive(Clone)]
-<a href=#165 id=165 data-nosnippet>165</a></span><span class="kw">pub struct </span>SignalActions {
-<a href=#166 id=166 data-nosnippet>166</a>    <span class="kw">pub </span>table: [SignalAction; MAX_SIG + <span class="number">1</span>],
-<a href=#167 id=167 data-nosnippet>167</a>}
-<a href=#168 id=168 data-nosnippet>168</a>
-<a href=#169 id=169 data-nosnippet>169</a><span class="kw">impl </span>Default <span class="kw">for </span>SignalActions {
-<a href=#170 id=170 data-nosnippet>170</a>    <span class="doccomment">/// 初始化为全默认动作
-<a href=#171 id=171 data-nosnippet>171</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-<a href=#172 id=172 data-nosnippet>172</a>        <span class="self">Self </span>{
-<a href=#173 id=173 data-nosnippet>173</a>            table: [SignalAction::default(); MAX_SIG + <span class="number">1</span>],
-<a href=#174 id=174 data-nosnippet>174</a>        }
-<a href=#175 id=175 data-nosnippet>175</a>    }
-<a href=#176 id=176 data-nosnippet>176</a>}</code></pre></div></section></main></body></html>
+<a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGINT) {
+<a href=#75 id=75 data-nosnippet>75</a>            <span class="prelude-val">Some</span>((-<span class="number">2</span>, <span class="string">"Killed, SIGINT=2"</span>))
+<a href=#76 id=76 data-nosnippet>76</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGILL) {
+<a href=#77 id=77 data-nosnippet>77</a>            <span class="prelude-val">Some</span>((-<span class="number">4</span>, <span class="string">"Illegal Instruction, SIGILL=4"</span>))
+<a href=#78 id=78 data-nosnippet>78</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGABRT) {
+<a href=#79 id=79 data-nosnippet>79</a>            <span class="prelude-val">Some</span>((-<span class="number">6</span>, <span class="string">"Aborted, SIGABRT=6"</span>))
+<a href=#80 id=80 data-nosnippet>80</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGFPE) {
+<a href=#81 id=81 data-nosnippet>81</a>            <span class="prelude-val">Some</span>((-<span class="number">8</span>, <span class="string">"Erroneous Arithmetic Operation, SIGFPE=8"</span>))
+<a href=#82 id=82 data-nosnippet>82</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGKILL) {
+<a href=#83 id=83 data-nosnippet>83</a>            <span class="prelude-val">Some</span>((-<span class="number">9</span>, <span class="string">"Killed, SIGKILL=9"</span>))
+<a href=#84 id=84 data-nosnippet>84</a>        } <span class="kw">else if </span><span class="self">self</span>.contains(<span class="self">Self</span>::SIGSEGV) {
+<a href=#85 id=85 data-nosnippet>85</a>            <span class="prelude-val">Some</span>((-<span class="number">11</span>, <span class="string">"Segmentation Fault, SIGSEGV=11"</span>))
+<a href=#86 id=86 data-nosnippet>86</a>        } <span class="kw">else </span>{
+<a href=#87 id=87 data-nosnippet>87</a>            <span class="prelude-val">None
+<a href=#88 id=88 data-nosnippet>88</a>        </span>}
+<a href=#89 id=89 data-nosnippet>89</a>    }
+<a href=#90 id=90 data-nosnippet>90</a>}
+<a href=#91 id=91 data-nosnippet>91</a>
+<a href=#92 id=92 data-nosnippet>92</a><span class="doccomment">/// 用户态信号处理动作
+<a href=#93 id=93 data-nosnippet>93</a>///
+<a href=#94 id=94 data-nosnippet>94</a>/// - `handler`：用户态处理函数入口（0 表示采用默认动作）
+<a href=#95 id=95 data-nosnippet>95</a>/// - `mask`：进入处理程序期间额外屏蔽的信号集合
+<a href=#96 id=96 data-nosnippet>96</a></span><span class="attr">#[repr(C, align(<span class="number">16</span>))]
+<a href=#97 id=97 data-nosnippet>97</a>#[derive(Debug, Clone, Copy, PartialEq)]
+<a href=#98 id=98 data-nosnippet>98</a></span><span class="kw">pub struct </span>SignalAction {
+<a href=#99 id=99 data-nosnippet>99</a>    <span class="kw">pub </span>handler: usize,
+<a href=#100 id=100 data-nosnippet>100</a>    <span class="kw">pub </span>mask: SignalFlags,
+<a href=#101 id=101 data-nosnippet>101</a>}
+<a href=#102 id=102 data-nosnippet>102</a>
+<a href=#103 id=103 data-nosnippet>103</a><span class="kw">impl </span>Default <span class="kw">for </span>SignalAction {
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="doccomment">/// 默认处理：不设置用户处理入口，屏蔽集合按内核预设（可调整）
+<a href=#105 id=105 data-nosnippet>105</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="self">Self </span>{
+<a href=#107 id=107 data-nosnippet>107</a>            handler: <span class="number">0</span>,
+<a href=#108 id=108 data-nosnippet>108</a>            mask: SignalFlags::from_bits(<span class="number">40</span>).unwrap(),
+<a href=#109 id=109 data-nosnippet>109</a>        }
+<a href=#110 id=110 data-nosnippet>110</a>    }
+<a href=#111 id=111 data-nosnippet>111</a>}
+<a href=#112 id=112 data-nosnippet>112</a>
+<a href=#113 id=113 data-nosnippet>113</a><span class="doccomment">/// 全部信号的处理动作表（索引 0..=MAX_SIG）
+<a href=#114 id=114 data-nosnippet>114</a></span><span class="attr">#[derive(Clone)]
+<a href=#115 id=115 data-nosnippet>115</a></span><span class="kw">pub struct </span>SignalActions {
+<a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">pub </span>table: [SignalAction; MAX_SIG + <span class="number">1</span>],
+<a href=#117 id=117 data-nosnippet>117</a>}
+<a href=#118 id=118 data-nosnippet>118</a>
+<a href=#119 id=119 data-nosnippet>119</a><span class="kw">impl </span>Default <span class="kw">for </span>SignalActions {
+<a href=#120 id=120 data-nosnippet>120</a>    <span class="doccomment">/// 初始化为全默认动作
+<a href=#121 id=121 data-nosnippet>121</a>    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+<a href=#122 id=122 data-nosnippet>122</a>        <span class="self">Self </span>{
+<a href=#123 id=123 data-nosnippet>123</a>            table: [SignalAction::default(); MAX_SIG + <span class="number">1</span>],
+<a href=#124 id=124 data-nosnippet>124</a>        }
+<a href=#125 id=125 data-nosnippet>125</a>    }
+<a href=#126 id=126 data-nosnippet>126</a>}</code></pre></div></section></main></body></html>
