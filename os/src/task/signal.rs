@@ -67,72 +67,22 @@ impl SignalFlags {
     /// 将集合中的致命/错误类信号映射为标准退出码与原因
     ///
     /// 若集合包含以下任意一个信号，则返回对应的 `(负退出码, 静态说明)`：
-    /// - `SIGINT`/`SIGILL`/`SIGABRT`/`SIGFPE`/`SIGKILL`/`SIGSEGV` 等
+    /// - `SIGINT`/`SIGILL`/`SIGABRT`/`SIGFPE`/`SIGKILL`/`SIGSEGV`
     ///
     /// 否则返回 `None`，表示不属于错误类（可能是可捕捉或控制类信号）。
     pub fn check_error(&self) -> Option<(i32, &'static str)> {
-        if self.contains(Self::SIGHUP) {
-            Some((-1, "Hangup, SIGHUP=1"))
-        } else if self.contains(Self::SIGINT) {
+        if self.contains(Self::SIGINT) {
             Some((-2, "Killed, SIGINT=2"))
-        } else if self.contains(Self::SIGQUIT) {
-            Some((-3, "Killed, SIGQUIT=3"))
         } else if self.contains(Self::SIGILL) {
             Some((-4, "Illegal Instruction, SIGILL=4"))
-        } else if self.contains(Self::SIGTRAP) {
-            Some((-5, "Trace/breakpoint trap, SIGTRAP=5"))
         } else if self.contains(Self::SIGABRT) {
             Some((-6, "Aborted, SIGABRT=6"))
-        } else if self.contains(Self::SIGBUS) {
-            Some((-7, "Bus error, SIGBUS=7"))
         } else if self.contains(Self::SIGFPE) {
             Some((-8, "Erroneous Arithmetic Operation, SIGFPE=8"))
         } else if self.contains(Self::SIGKILL) {
             Some((-9, "Killed, SIGKILL=9"))
-        } else if self.contains(Self::SIGUSR1) {
-            Some((-10, "Killed, SIGUSR1=10"))
         } else if self.contains(Self::SIGSEGV) {
             Some((-11, "Segmentation Fault, SIGSEGV=11"))
-        } else if self.contains(Self::SIGUSR2) {
-            Some((-12, "Killed, SIGUSR2=12"))
-        } else if self.contains(Self::SIGPIPE) {
-            Some((-13, "Broken pipe, SIGPIPE=13"))
-        } else if self.contains(Self::SIGALRM) {
-            Some((-14, "Killed, SIGALRM=14"))
-        } else if self.contains(Self::SIGTERM) {
-            Some((-15, "Killed, SIGTERM=15"))
-        } else if self.contains(Self::SIGSTKFLT) {
-            Some((-16, "Stack fault, SIGSTKFLT=16"))
-        } else if self.contains(Self::SIGCHLD) {
-            Some((-17, "Child terminated, SIGCHLD=17"))
-        } else if self.contains(Self::SIGCONT) {
-            Some((-18, "Continued, SIGCONT=18"))
-        } else if self.contains(Self::SIGSTOP) {
-            Some((-19, "Stopped, SIGSTOP=19"))
-        } else if self.contains(Self::SIGTSTP) {
-            Some((-20, "Stopped, SIGTSTP=20"))
-        } else if self.contains(Self::SIGTTIN) {
-            Some((-21, "Stopped, SIGTTIN=21"))
-        } else if self.contains(Self::SIGTTOU) {
-            Some((-22, "Stopped, SIGTTOU=22"))
-        } else if self.contains(Self::SIGURG) {
-            Some((-23, "Urgent condition, SIGURG=23"))
-        } else if self.contains(Self::SIGXCPU) {
-            Some((-24, "CPU time limit exceeded, SIGXCPU=24"))
-        } else if self.contains(Self::SIGXFSZ) {
-            Some((-25, "File size limit exceeded, SIGXFSZ=25"))
-        } else if self.contains(Self::SIGVTALRM) {
-            Some((-26, "Virtual time alarm, SIGVTALRM=26"))
-        } else if self.contains(Self::SIGPROF) {
-            Some((-27, "Profiling time alarm, SIGPROF=27"))
-        } else if self.contains(Self::SIGWINCH) {
-            Some((-28, "Window size changed, SIGWINCH=28"))
-        } else if self.contains(Self::SIGIO) {
-            Some((-29, "I/O possible, SIGIO=29"))
-        } else if self.contains(Self::SIGPWR) {
-            Some((-30, "Power failure, SIGPWR=30"))
-        } else if self.contains(Self::SIGSYS) {
-            Some((-31, "Bad system call, SIGSYS=31"))
         } else {
             None
         }
