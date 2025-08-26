@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DEFAULT_LOG_FD","MAX_MESSAGE_LEN","MAX_MODULE_LEN"],"enum":["LogError","LogLevel"],"fn":["get_log_client","init_log_client","log_message"],"macro":["debug","error","info","trace","warn"],"struct":["LogClient","LogMessage","PipeTransport"],"trait":["LogTransport"],"type":["LogResult","SyscallReadFn","SyscallWriteFn"]};
