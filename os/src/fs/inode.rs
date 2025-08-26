@@ -40,7 +40,7 @@ use crate::sync::UPSafeCell;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use bitflags::*;
-use easy_fs::{EasyFileSystem, Inode};
+use components::easy_fs::{EasyFileSystem, Inode};
 use lazy_static::*;
 
 /// OSInode 的内部状态结构

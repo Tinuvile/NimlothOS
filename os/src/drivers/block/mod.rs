@@ -51,7 +51,7 @@
 
 use crate::board::BlockDeviceImpl;
 use alloc::sync::Arc;
-use easy_fs::BlockDevice;
+use components::easy_fs::BlockDevice;
 use lazy_static::*;
 
 mod virtio_blk;

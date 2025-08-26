@@ -54,7 +54,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "easy-fs"
+name = "components"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
@@ -98,7 +98,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags 2.9.3",
  "buddy_system_allocator",
- "easy-fs",
+ "components",
  "lazy_static",
  "log",
  "riscv",

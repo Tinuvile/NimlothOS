@@ -53,6 +53,9 @@ use process::*;
 mod fs;
 mod process;
 
+pub use fs::*;
+pub use process::*;
+
 const SYSCALL_DUP: usize = 24;
 const SYSCALL_OPEN: usize = 56;
 const SYSCALL_CLOSE: usize = 57;
