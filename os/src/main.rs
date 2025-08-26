@@ -82,9 +82,8 @@ global_asm!(include_str!("entry.asm"));
 /// 4. [`mm::remap_test`] - 测试内存重映射功能
 /// 5. [`task::add_initproc`] - 注册初始用户进程
 /// 6. [`trap::init`] - 初始化陷阱处理系统
-/// 7. [`trap::enable_timer_interrupt`] - 启用时钟中断
-/// 8. [`timer::next_trigger`] - 设置第一次时钟中断
-/// 10. [`task::run_tasks`] - 进入主调度循环
+/// 7. [`timer::next_trigger`] - 设置第一次时钟中断
+/// 8. [`task::run_tasks`] - 进入主调度循环
 ///
 /// ## Panics
 ///
@@ -93,11 +92,9 @@ global_asm!(include_str!("entry.asm"));
 pub fn rust_main() -> ! {
     clear_bss();
     log::init();
-    info!("[kernel] Hello, world!");
+    ::log::info!("[kernel] Hello, world!");
     mm::init();
-    mm::remap_test();
     trap::init();
-    trap::enable_timer_interrupt();
     timer::next_trigger();
     fs::list_apps();
     task::add_initproc();

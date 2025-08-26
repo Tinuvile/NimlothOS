@@ -74,6 +74,7 @@ global_asm!(include_str!("trap.S"));
 /// 通过 `set_user_trap_entry()` 动态设置。
 pub fn init() {
     set_kernel_trap_entry();
+    enable_timer_interrupt();
 }
 
 /// 启用时钟中断
