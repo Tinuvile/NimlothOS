@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use components::easy_fs::{BlockDevice, EasyFileSystem};
+use components::micro_fs::{BlockDevice, MicroFileSystem};
 use std::fs::{read_dir, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
@@ -26,11 +26,11 @@ impl BlockDevice for BlockFile {
 }
 
 fn main() {
-    easy_fs_pack().expect("Error when packing easy-fs!");
+    micro_fs_pack().expect("Error when packing micro-fs!");
 }
 
-fn easy_fs_pack() -> std::io::Result<()> {
-    let matches = App::new("EasyFileSystem packer")
+fn micro_fs_pack() -> std::io::Result<()> {
+    let matches = App::new("MicroFileSystem packer")
         .arg(
             Arg::with_name("source")
                 .short("s")
@@ -59,8 +59,8 @@ fn easy_fs_pack() -> std::io::Result<()> {
         f
     })));
     // 16MiB, at most 4095 files
-    let efs = EasyFileSystem::create(block_file, 16 * 2048, 1);
-    let root_inode = Arc::new(EasyFileSystem::root_inode(&efs));
+    let efs = MicroFileSystem::create(block_file, 16 * 2048, 1);
+    let root_inode = Arc::new(MicroFileSystem::root_inode(&efs));
     let apps: Vec<_> = read_dir(src_path)
         .unwrap()
         .into_iter()
@@ -75,9 +75,9 @@ fn easy_fs_pack() -> std::io::Result<()> {
         let mut host_file = File::open(format!("{}{}", target_path, app)).unwrap();
         let mut all_data: Vec<u8> = Vec::new();
         host_file.read_to_end(&mut all_data).unwrap();
-        // create a file in easy-fs
+        // create a file in micro-fs
         let inode = root_inode.create(app.as_str()).unwrap();
-        // write data to easy-fs
+        // write data to micro-fs
         inode.write_at(0, all_data.as_slice());
     }
     // list apps
@@ -98,9 +98,9 @@ fn efs_test() -> std::io::Result<()> {
         f.set_len(8192 * 512).unwrap();
         f
     })));
-    EasyFileSystem::create(block_file.clone(), 4096, 1);
-    let efs = EasyFileSystem::open(block_file.clone());
-    let root_inode = EasyFileSystem::root_inode(&efs);
+    MicroFileSystem::create(block_file.clone(), 4096, 1);
+    let efs = MicroFileSystem::open(block_file.clone());
+    let root_inode = MicroFileSystem::root_inode(&efs);
     root_inode.create("filea");
     root_inode.create("fileb");
     for name in root_inode.ls() {

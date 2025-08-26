@@ -1,7 +1,7 @@
 //! # 文件 Inode 管理模块
 //!
 //! 提供操作系统级别的文件 inode 管理功能，包括文件读写、元数据操作、
-//! 文件系统访问等功能。封装底层 Easy-FS 文件系统，为上层提供统一的文件接口。
+//! 文件系统访问等功能。封装底层 Micro-FS 文件系统，为上层提供统一的文件接口。
 //!
 //! ## 核心组件
 //!
@@ -40,7 +40,7 @@ use crate::sync::UPSafeCell;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use bitflags::*;
-use components::easy_fs::{EasyFileSystem, Inode};
+use components::micro_fs::{Inode, MicroFileSystem};
 use lazy_static::*;
 
 /// OSInode 的内部状态结构
@@ -51,7 +51,7 @@ use lazy_static::*;
 /// ## 字段说明
 ///
 /// - `offset` - 当前文件偏移量，表示下次读写操作的位置
-/// - `inode` - 底层 Easy-FS inode 的引用计数智能指针
+/// - `inode` - 底层 Micro-FS inode 的引用计数智能指针
 ///
 /// ## 状态管理
 ///
@@ -65,7 +65,7 @@ pub struct OSInodeInner {
 
 /// 操作系统级别的文件 Inode
 ///
-/// 封装底层 Easy-FS 文件系统的 inode，提供操作系统级别的文件操作接口。
+/// 封装底层 Micro-FS 文件系统的 inode，提供操作系统级别的文件操作接口。
 /// 支持读写权限控制、文件偏移量管理和批量文件操作。
 ///
 /// ## 内部结构
@@ -97,7 +97,7 @@ impl OSInode {
     ///
     /// * `readable` - 文件是否可读
     /// * `writable` - 文件是否可写
-    /// * `inode` - 底层 Easy-FS inode 的引用
+    /// * `inode` - 底层 Micro-FS inode 的引用
     ///
     /// ## Returns
     ///
@@ -275,8 +275,8 @@ lazy_static! {
     ///
     /// ## 初始化过程
     ///
-    /// 1. **文件系统打开**: 通过 `EasyFileSystem::open()` 打开底层文件系统
-    /// 2. **根目录获取**: 调用 `EasyFileSystem::root_inode()` 获取根目录 inode
+    /// 1. **文件系统打开**: 通过 `MicroFileSystem::open()` 打开底层文件系统
+    /// 2. **根目录获取**: 调用 `MicroFileSystem::root_inode()` 获取根目录 inode
     /// 3. **引用包装**: 将根目录 inode 包装在 `Arc` 中以支持多线程共享访问
     ///
     /// ## 使用场景
@@ -289,7 +289,7 @@ lazy_static! {
     /// ## 线程安全
     ///
     /// 该实例是线程安全的，多个线程可以同时访问根目录进行文件操作。
-    /// 具体的并发控制由底层 Easy-FS 文件系统实现。
+    /// 具体的并发控制由底层 Micro-FS 文件系统实现。
     ///
     /// ## 生命周期
     ///
@@ -313,8 +313,8 @@ lazy_static! {
     /// }
     /// ```
     pub static ref ROOT_INODE: Arc<Inode> = {
-        let efs = EasyFileSystem::open(BLOCK_DEVICE.clone());
-        Arc::new(EasyFileSystem::root_inode(&efs))
+        let efs = MicroFileSystem::open(BLOCK_DEVICE.clone());
+        Arc::new(MicroFileSystem::root_inode(&efs))
     };
 }
 

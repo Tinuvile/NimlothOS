@@ -6,8 +6,8 @@
 
 extern crate alloc;
 
-pub mod easy_fs;
 pub mod log;
+pub mod micro_fs;
 
 // 重新导出常用类型
 pub use log::{LogClient, LogError, LogLevel, LogResult};

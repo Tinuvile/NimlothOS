@@ -25,7 +25,7 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::block_cache::{block_cache, block_cache_sync_all};
+//! use micro_fs::block_cache::{block_cache, block_cache_sync_all};
 //!
 //! // 获取块缓存
 //! let block_cache = block_cache(block_id, block_device);

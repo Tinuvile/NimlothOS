@@ -1,6 +1,6 @@
-//! # Easy File System 核心模块
+//! # Micro File System 核心模块
 //!
-//! 实现了简单文件系统（Easy File System）的核心功能，包括文件系统的创建、
+//! 实现了简单文件系统（Micro File System）的核心功能，包括文件系统的创建、
 //! 打开、inode 和数据块的管理等。该模块是文件系统的核心，负责协调各个
 //! 组件的工作。
 //!
@@ -22,7 +22,7 @@
 //!
 //! ## 核心组件
 //!
-//! - [`EasyFileSystem`] - 文件系统主体，管理所有文件系统操作
+//! - [`MicroFileSystem`] - 文件系统主体，管理所有文件系统操作
 //! - 位图管理：inode 位图和数据位图，用于资源分配
 //! - 区域管理：inode 区域和数据区域的位置计算
 //!
@@ -36,16 +36,16 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::{EasyFileSystem, BlockDevice};
+//! use micro_fs::{MicroFileSystem, BlockDevice};
 //!
 //! // 创建新的文件系统
-//! let efs = EasyFileSystem::create(block_device, 1024, 1);
+//! let efs = MicroFileSystem::create(block_device, 1024, 1);
 //!
 //! // 打开现有文件系统
-//! let efs = EasyFileSystem::open(block_device);
+//! let efs = MicroFileSystem::open(block_device);
 //!
 //! // 获取根目录
-//! let root_inode = EasyFileSystem::root_inode(&efs);
+//! let root_inode = MicroFileSystem::root_inode(&efs);
 //! ```
 //!
 
@@ -56,7 +56,7 @@ use super::{
 use alloc::sync::Arc;
 use spin::Mutex;
 
-/// Easy File System 主体结构
+/// Micro File System 主体结构
 ///
 /// 管理整个文件系统的状态和操作，包括位图管理、区域定位、资源分配等。
 /// 该结构是文件系统的核心，所有文件系统操作都通过它进行。
@@ -75,7 +75,7 @@ use spin::Mutex;
 /// 1. **创建阶段**：格式化块设备，初始化所有数据结构
 /// 2. **运行阶段**：处理文件操作，管理资源分配
 /// 3. **关闭阶段**：同步缓存，确保数据持久化
-pub struct EasyFileSystem {
+pub struct MicroFileSystem {
     pub block_device: Arc<dyn BlockDevice>,
     pub inode_bitmap: Bitmap,
     pub data_bitmap: Bitmap,
@@ -83,10 +83,10 @@ pub struct EasyFileSystem {
     data_area_start_block: u32,
 }
 
-impl EasyFileSystem {
+impl MicroFileSystem {
     /// 创建新的文件系统
     ///
-    /// 在指定的块设备上创建并格式化一个新的 Easy File System。
+    /// 在指定的块设备上创建并格式化一个新的 Micro File System。
     /// 该操作会清空块设备上的所有数据，并初始化文件系统结构。
     ///
     /// ## Arguments
@@ -167,7 +167,7 @@ impl EasyFileSystem {
 
     /// 打开现有文件系统
     ///
-    /// 从指定的块设备上加载已存在的 Easy File System。
+    /// 从指定的块设备上加载已存在的 Micro File System。
     /// 该操作会读取超级块信息，并恢复文件系统的状态。
     ///
     /// ## Arguments
@@ -183,7 +183,7 @@ impl EasyFileSystem {
     /// 加载的文件系统实例，包装在 `Arc<Mutex<>>` 中以支持并发访问
     ///
     /// ## Panics
-    /// 如果块设备不包含有效的 Easy File System 则 panic
+    /// 如果块设备不包含有效的 Micro File System 则 panic
     ///
     /// ## 注意事项
     /// - 块设备必须包含有效的文件系统
@@ -373,7 +373,7 @@ impl EasyFileSystem {
     ///
     /// ## 使用示例
     /// ```rust
-    /// let root = EasyFileSystem::root_inode(&efs);
+    /// let root = MicroFileSystem::root_inode(&efs);
     /// let file = root.create("test.txt").unwrap();
     /// ```
     pub fn root_inode(efs: &Arc<Mutex<Self>>) -> Inode {

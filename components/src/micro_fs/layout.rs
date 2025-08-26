@@ -1,6 +1,6 @@
 //! # 文件系统布局模块
 //!
-//! 定义了简单文件系统（Easy File System）的磁盘布局和数据结构。
+//! 定义了简单文件系统（Micro File System）的磁盘布局和数据结构。
 //! 包含超级块、磁盘 inode、目录项等核心数据结构的定义和操作。
 //!
 //! ## 文件系统布局
@@ -35,7 +35,7 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::layout::{SuperBlock, DiskInode, DirEntry};
+//! use micro_fs::layout::{SuperBlock, DiskInode, DirEntry};
 //!
 //! // 初始化超级块
 //! let mut sb = SuperBlock::default();
@@ -53,7 +53,7 @@
 use super::{BLOCK_SZ, BlockDevice, block_cache};
 use alloc::{sync::Arc, vec::Vec};
 
-/// 文件系统魔数，用于标识 Easy File System
+/// 文件系统魔数，用于标识 Micro File System
 const EFS_MAGIC: u32 = 0x3b800001;
 
 /// 文件名长度限制（不包括结尾的 null 字符）

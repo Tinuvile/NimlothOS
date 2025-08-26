@@ -24,7 +24,7 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::BlockDevice;
+//! use micro_fs::BlockDevice;
 //!
 //! // 实现内存块设备
 //! struct MemoryBlockDevice {

@@ -21,7 +21,7 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::bitmap::Bitmap;
+//! use micro_fs::bitmap::Bitmap;
 //!
 //! // 创建位图，从块 1 开始，占用 2 个块
 //! let bitmap = Bitmap::new(1, 2);

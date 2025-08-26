@@ -1,6 +1,6 @@
 //! # 虚拟文件系统接口模块
 //!
-//! 提供 Easy File System 的虚拟文件系统（VFS）接口，为用户程序提供统一的文件操作 API。
+//! 提供 Micro File System 的虚拟文件系统（VFS）接口，为用户程序提供统一的文件操作 API。
 //! 封装了底层文件系统的复杂性，提供简洁易用的文件管理接口。
 //!
 //! ## 架构设计
@@ -14,7 +14,7 @@
 //! │  │    find     │    create   │   read_at   │  write_at   │  │
 //! │  └─────────────┴─────────────┴─────────────┴─────────────┘  │
 //! ├─────────────────────────────────────────────────────────────┤
-//! │                     Easy File System                        │
+//! │                     Micro File System                        │
 //! └─────────────────────────────────────────────────────────────┘
 //! ```
 //!
@@ -29,7 +29,7 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::vfs::Inode;
+//! use micro_fs::vfs::Inode;
 //!
 //! // 查找文件
 //! if let Some(file) = root_inode.find("test.txt") {
@@ -52,7 +52,7 @@
 //! ```
 
 use super::{
-    BlockDevice, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, EasyFileSystem, block_cache,
+    BlockDevice, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, MicroFileSystem, block_cache,
     block_cache_sync_all,
 };
 use alloc::{string::String, sync::Arc, vec::Vec};
@@ -91,7 +91,7 @@ use spin::{Mutex, MutexGuard};
 pub struct Inode {
     block_id: usize,
     block_offset: usize,
-    fs: Arc<Mutex<EasyFileSystem>>,
+    fs: Arc<Mutex<MicroFileSystem>>,
     block_device: Arc<dyn BlockDevice>,
 }
 
@@ -118,7 +118,7 @@ impl Inode {
     pub fn new(
         block_id: u32,
         block_offset: usize,
-        fs: Arc<Mutex<EasyFileSystem>>,
+        fs: Arc<Mutex<MicroFileSystem>>,
         block_device: Arc<dyn BlockDevice>,
     ) -> Self {
         Self {
@@ -436,7 +436,7 @@ impl Inode {
         &self,
         new_size: u32,
         disk_inode: &mut DiskInode,
-        fs: &mut MutexGuard<EasyFileSystem>,
+        fs: &mut MutexGuard<MicroFileSystem>,
     ) {
         if new_size < disk_inode.size {
             return;

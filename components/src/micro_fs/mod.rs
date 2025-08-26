@@ -1,4 +1,4 @@
-//! # Easy File System (Easy-FS)
+//! # Micro File System (Micro-FS)
 //!
 //! 一个简单而高效的文件系统实现，专为教学和嵌入式系统设计。
 //! 提供了完整的文件系统功能，包括文件管理、目录结构、块缓存等。
@@ -7,7 +7,7 @@
 //!
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────┐
-//! │                        Easy-FS                              │
+//! │                        Micro-FS                              │
 //! ├─────────────────────────────────────────────────────────────┤
 //! │    VFS Layer    │   EFS Layer   │        Block Layer        │
 //! │    (vfs.rs)     │   (efs.rs)    │     (block_cache.rs)      │
@@ -20,7 +20,7 @@
 //! ## 核心模块
 //!
 //! - **VFS Layer**: 虚拟文件系统接口，提供统一的文件操作 API
-//! - **EFS Layer**: Easy File System 核心实现，管理文件系统元数据
+//! - **EFS Layer**: Micro File System 核心实现，管理文件系统元数据
 //! - **Layout**: 文件系统布局定义，包含超级块、inode、目录项等结构
 //! - **Bitmap**: 位图管理，用于跟踪数据块和 inode 的分配状态
 //! - **Block Cache**: 块缓存管理，提高 I/O 性能
@@ -53,10 +53,10 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use easy_fs::{EasyFileSystem, BlockDevice};
+//! use micro_fs::{MicroFileSystem, BlockDevice};
 //!
 //! // 创建文件系统
-//! let efs = EasyFileSystem::create(block_device, 4096, 1, 4096, 4096);
+//! let efs = MicroFileSystem::create(block_device, 4096, 1, 4096, 4096);
 //!
 //! // 打开根目录
 //! let root_inode = efs.root_inode();
@@ -65,7 +65,7 @@
 //! let file = root_inode.create("test.txt").unwrap();
 //!
 //! // 写入数据
-//! file.write_at(0, b"Hello, Easy-FS!");
+//! file.write_at(0, b"Hello, Micro-FS!");
 //!
 //! // 读取数据
 //! let mut buf = [0u8; 16];
@@ -99,7 +99,7 @@ mod vfs;
 use bitmap::Bitmap;
 pub use block_cache::{block_cache, block_cache_sync_all};
 pub use block_dev::BlockDevice;
-pub use efs::EasyFileSystem;
+pub use efs::MicroFileSystem;
 pub use layout::*;
 pub use vfs::Inode;
 
