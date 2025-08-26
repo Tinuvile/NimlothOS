@@ -1,0 +1,116 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="栈式页帧分配器"><title>StackFrameAllocator in os::mm::frame_allocator - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Stack<wbr>Frame<wbr>Allocator</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#分配机制" title="分配机制">分配机制</a></li><li><a href="#内存复杂度" title="内存复杂度">内存复杂度</a></li><li><a href="#初始化状态" title="初始化状态">初始化状态</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.current" title="current">current</a></li><li><a href="#structfield.end" title="end">end</a></li><li><a href="#structfield.recycled" title="recycled">recycled</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.init" title="init">init</a></li></ul><h3><a href="#trait-implementations">Trait Implementations</a></h3><ul class="block trait-implementation"><li><a href="#impl-FrameAllocator-for-StackFrameAllocator" title="FrameAllocator">FrameAllocator</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-StackFrameAllocator" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-StackFrameAllocator" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-StackFrameAllocator" title="Send">Send</a></li><li><a href="#impl-Sync-for-StackFrameAllocator" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-StackFrameAllocator" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-StackFrameAllocator" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>mm::<wbr>frame_<wbr>allocator</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">mm</a>::<wbr><a href="index.html">frame_allocator</a></div><h1>Struct <span class="struct">StackFrameAllocator</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/mm/frame_allocator.rs.html#156-174">Source</a> </span></div><pre class="rust item-decl"><code>pub struct StackFrameAllocator {
+    current: usize,
+    end: usize,
+    recycled: Vec&lt;usize&gt;,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>栈式页帧分配器</p>
+<p>采用栈式策略的物理页帧分配器实现，维护连续的可分配页帧区间
+和一个回收页帧的动态列表。</p>
+<h3 id="分配机制"><a class="doc-anchor" href="#分配机制">§</a>分配机制</h3>
+<p><strong>连续分配区间</strong>：</p>
+<ul>
+<li><code>current</code>：下一个待分配的页号</li>
+<li><code>end</code>：分配区间的结束页号（不包含）</li>
+<li>新页帧按 <code>current</code> 递增顺序分配</li>
+</ul>
+<p><strong>回收列表</strong>：</p>
+<ul>
+<li><code>recycled</code>：存储已释放页帧的动态数组</li>
+<li>分配时优先从回收列表弹出页帧（LIFO）</li>
+<li>释放时将页帧推入回收列表</li>
+</ul>
+<h3 id="内存复杂度"><a class="doc-anchor" href="#内存复杂度">§</a>内存复杂度</h3>
+<ul>
+<li><strong>空间复杂度</strong>：O(R)，R 为回收列表中的页帧数</li>
+<li><strong>时间复杂度</strong>：分配和释放均为 O(1)</li>
+</ul>
+<h3 id="初始化状态"><a class="doc-anchor" href="#初始化状态">§</a>初始化状态</h3>
+<p>新创建的分配器所有字段都为 0/空，需要调用 [<code>init()</code>] 方法
+设置实际的页帧分配范围。</p>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.current" class="structfield section-header"><a href="#structfield.current" class="anchor field">§</a><code>current: usize</code></span><div class="docblock"><p>下一个待分配的页号</p>
+<p>指向连续分配区间中下一个可用的物理页号。
+每次分配后递增，直到达到 <code>end</code>。</p>
+</div><span id="structfield.end" class="structfield section-header"><a href="#structfield.end" class="anchor field">§</a><code>end: usize</code></span><div class="docblock"><p>分配区间结束页号（不包含）</p>
+<p>标记连续分配区间的上界，当 <code>current == end</code> 时
+表示连续区间已用完，只能从回收列表分配。</p>
+</div><span id="structfield.recycled" class="structfield section-header"><a href="#structfield.recycled" class="anchor field">§</a><code>recycled: Vec&lt;usize&gt;</code></span><div class="docblock"><p>回收页帧列表</p>
+<p>存储已释放页帧的页号，采用 LIFO（后进先出）策略。
+分配时优先从此列表弹出页帧，提高内存局部性。</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-StackFrameAllocator" class="impl"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#176-213">Source</a><a href="#impl-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.init" class="method"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#209-212">Source</a><h4 class="code-header">pub fn <a href="#method.init" class="fn">init</a>(&amp;mut self, l: <a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>, r: <a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>)</h4></section></summary><div class="docblock"><p>初始化页帧分配器</p>
+<p>设置分配器的可分配页帧范围，该范围通常是从内核镜像结束
+到物理内存结束的连续物理页面。</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>l</code> - 起始物理页号（包含）</li>
+<li><code>r</code> - 结束物理页号（不包含）</li>
+</ul>
+<h6 id="分配范围"><a class="doc-anchor" href="#分配范围">§</a>分配范围</h6>
+<p>分配器将管理区间 <code>[l, r)</code> 内的所有物理页帧：</p>
+<ul>
+<li>总共 <code>r - l</code> 个可分配页帧</li>
+<li>每个页帧大小为 4KB (PAGE_SIZE)</li>
+<li>页帧按页号递增顺序分配</li>
+</ul>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>start_ppn = PhysAddr::from(<span class="number">0x80400000</span>).ceil(); <span class="comment">// 内核后第一页
+</span><span class="kw">let </span>end_ppn = PhysAddr::from(<span class="number">0x88000000</span>).floor();  <span class="comment">// 物理内存最后一页
+</span>allocator.init(start_ppn, end_ppn);
+<span class="comment">// 现在可以分配 [start_ppn, end_ppn) 范围内的页帧</span></code></pre></div>
+<h6 id="postconditions"><a class="doc-anchor" href="#postconditions">§</a>Postconditions</h6>
+<p>初始化后分配器状态：</p>
+<ul>
+<li><code>current = l.0</code>：从起始页号开始分配</li>
+<li><code>end = r.0</code>：设置分配上界</li>
+<li><code>recycled</code> 保持空列表</li>
+</ul>
+</div></details></div></details></div><h2 id="trait-implementations" class="section-header">Trait Implementations<a href="#trait-implementations" class="anchor">§</a></h2><div id="trait-implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-FrameAllocator-for-StackFrameAllocator" class="impl"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#215-294">Source</a><a href="#impl-FrameAllocator-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="trait.FrameAllocator.html" title="trait os::mm::frame_allocator::FrameAllocator">FrameAllocator</a> for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method trait-impl"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#224-230">Source</a><a href="#method.new" class="anchor">§</a><h4 class="code-header">fn <a href="trait.FrameAllocator.html#tymethod.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建新的栈式分配器实例</p>
+<p>创建一个空的分配器实例，所有字段都初始化为 0 或空状态。
+需要调用 [<code>init()</code>] 方法才能开始分配页帧。</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>返回未初始化的分配器实例</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.alloc" class="method trait-impl"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#251-262">Source</a><a href="#method.alloc" class="anchor">§</a><h4 class="code-header">fn <a href="trait.FrameAllocator.html#tymethod.alloc" class="fn">alloc</a>(&amp;mut self) -&gt; Option&lt;<a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>&gt;</h4></section></summary><div class="docblock"><p>分配一个物理页帧</p>
+<p>实现栈式分配策略：优先从回收列表弹出页帧，如果回收列表为空
+则从连续区间分配新页帧。</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<ul>
+<li><code>Some(ppn)</code> - 成功分配的物理页号</li>
+<li><code>None</code> - 内存耗尽，无可用页帧</li>
+</ul>
+<h6 id="分配逻辑"><a class="doc-anchor" href="#分配逻辑">§</a>分配逻辑</h6>
+<ol>
+<li><strong>回收列表优先</strong>：如果 <code>recycled</code> 非空，弹出最后一个页号</li>
+<li><strong>连续分配</strong>：如果回收列表为空且 <code>current &lt; end</code>，分配 <code>current</code> 页号并递增</li>
+<li><strong>分配失败</strong>：如果连续区间耗尽且回收列表为空，返回 <code>None</code></li>
+</ol>
+<h6 id="时间复杂度"><a class="doc-anchor" href="#时间复杂度">§</a>时间复杂度</h6>
+<p>O(1) - 所有操作都是常数时间</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.dealloc" class="method trait-impl"><a class="src rightside" href="../../../src/os/mm/frame_allocator.rs.html#287-293">Source</a><a href="#method.dealloc" class="anchor">§</a><h4 class="code-header">fn <a href="trait.FrameAllocator.html#tymethod.dealloc" class="fn">dealloc</a>(&amp;mut self, ppn: <a class="struct" href="../address/struct.PhysPageNum.html" title="struct os::mm::address::PhysPageNum">PhysPageNum</a>)</h4></section></summary><div class="docblock"><p>释放一个物理页帧</p>
+<p>将页帧回收到回收列表中，使其可以被再次分配。进行安全性检查
+防止释放无效或重复释放的页帧。</p>
+<h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
+<ul>
+<li><code>ppn</code> - 要释放的物理页号</li>
+</ul>
+<h6 id="安全性检查"><a class="doc-anchor" href="#安全性检查">§</a>安全性检查</h6>
+<ul>
+<li><strong>有效性检查</strong>：页号必须小于 <code>current</code>（已分配过）</li>
+<li><strong>重复释放检查</strong>：页号不能已存在于回收列表中</li>
+</ul>
+<h6 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h6>
+<p>在以下情况下会触发 panic：</p>
+<ul>
+<li><code>ppn &gt;= current</code>：释放未分配的页帧</li>
+<li><code>ppn</code> 已存在于回收列表：重复释放同一页帧</li>
+</ul>
+<h6 id="时间复杂度-1"><a class="doc-anchor" href="#时间复杂度-1">§</a>时间复杂度</h6>
+<p>O(R) - R 为回收列表长度，用于重复释放检查</p>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-StackFrameAllocator" class="impl"><a href="#impl-Freeze-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section><section id="impl-RefUnwindSafe-for-StackFrameAllocator" class="impl"><a href="#impl-RefUnwindSafe-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section><section id="impl-Send-for-StackFrameAllocator" class="impl"><a href="#impl-Send-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section><section id="impl-Sync-for-StackFrameAllocator" class="impl"><a href="#impl-Sync-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section><section id="impl-Unpin-for-StackFrameAllocator" class="impl"><a href="#impl-Unpin-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section><section id="impl-UnwindSafe-for-StackFrameAllocator" class="impl"><a href="#impl-UnwindSafe-for-StackFrameAllocator" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.StackFrameAllocator.html" title="struct os::mm::frame_allocator::StackFrameAllocator">StackFrameAllocator</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="陷阱返回函数"><title>trap_return in os::trap - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">trap_<wbr>return</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#执行流程" title="执行流程">执行流程</a></li><li><a href="#地址空间切换" title="地址空间切换">地址空间切换</a></li><li><a href="#trampoline-机制" title="Trampoline 机制">Trampoline 机制</a></li><li><a href="#内联汇编" title="内联汇编">内联汇编</a></li><li><a href="#安全性" title="安全性">安全性</a></li><li><a href="#属性说明" title="属性说明">属性说明</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>trap</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">os</a>::<wbr><a href="index.html">trap</a></div><h1>Function <span class="fn">trap_return</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/os/trap/mod.rs.html#285-304">Source</a> </span></div><pre class="rust item-decl"><code>#[unsafe(no_mangle)]
+pub fn trap_return() -&gt; !</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>陷阱返回函数</p>
+<p>陷阱处理完成后返回用户态的函数，负责恢复用户态执行环境并
+跳转回用户程序继续执行。这是陷阱处理的最后阶段。</p>
+<h3 id="执行流程"><a class="doc-anchor" href="#执行流程">§</a>执行流程</h3>
+<ol>
+<li><strong>设置用户陷阱入口</strong>: 配置 <code>stvec</code> 指向 Trampoline</li>
+<li><strong>准备返回参数</strong>: 获取陷阱上下文地址和用户页表标识符</li>
+<li><strong>跳转到 Trampoline</strong>: 通过内联汇编跳转到 <code>__restore</code></li>
+<li><strong>恢复用户状态</strong>: <code>__restore</code> 恢复所有寄存器并执行 <code>sret</code></li>
+</ol>
+<h3 id="地址空间切换"><a class="doc-anchor" href="#地址空间切换">§</a>地址空间切换</h3>
+<p>函数执行过程中会发生地址空间切换：</p>
+<ul>
+<li>开始：内核地址空间</li>
+<li>跳转到 Trampoline：仍在内核地址空间（Trampoline 在两个地址空间都有映射）</li>
+<li><code>__restore</code> 执行 <code>sret</code>：切换到用户地址空间</li>
+</ul>
+<h3 id="trampoline-机制"><a class="doc-anchor" href="#trampoline-机制">§</a>Trampoline 机制</h3><div class="example-wrap"><pre class="language-text"><code>地址空间切换过程:
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Kernel Space   │    │   Trampoline    │    │   User Space    │
+│                 │───&gt;│    (Shared)     │───&gt;│                 │
+│  trap_return()  │    │   __restore     │    │  User Program   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘</code></pre></div><h3 id="内联汇编"><a class="doc-anchor" href="#内联汇编">§</a>内联汇编</h3>
+<p>使用内联汇编执行关键的跳转操作：</p>
+<ul>
+<li><code>fence.i</code>: 指令缓存同步</li>
+<li><code>jr {restore_va}</code>: 跳转到 <code>__restore</code> 函数</li>
+<li>传递参数：<code>a0</code> = 陷阱上下文地址，<code>a1</code> = 用户页表标识符</li>
+</ul>
+<h3 id="安全性"><a class="doc-anchor" href="#安全性">§</a>安全性</h3>
+<ul>
+<li>使用 <code>unsafe</code> 执行特权操作和内联汇编</li>
+<li>地址计算确保跳转到正确的 Trampoline 位置</li>
+<li>参数传递确保 <code>__restore</code> 获得正确的上下文信息</li>
+</ul>
+<h3 id="属性说明"><a class="doc-anchor" href="#属性说明">§</a>属性说明</h3>
+<ul>
+<li><code>#[unsafe(no_mangle)]</code>: 防止函数名被混淆，可能被其他代码调用</li>
+<li><code>-&gt; !</code>: 函数永不返回，总是跳转到用户程序执行</li>
+</ul>
+</div></details></section></div></main></body></html>

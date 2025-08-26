@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["check_sigaction_error","sys_exec","sys_exit","sys_fork","sys_kill","sys_pid","sys_sigaction","sys_sigprocmask","sys_sigreturn","sys_time","sys_waitpid","sys_yield"]};
