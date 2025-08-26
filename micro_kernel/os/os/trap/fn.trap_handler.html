@@ -2,7 +2,7 @@
 pub fn trap_handler() -&gt; !</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>陷阱处理主函数</p>
 <p>用户态陷阱统一入口：</p>
 <ul>
-<li>系统调用：两次获取/写回 Trap 上下文（因期间可能发生任务切换）</li>
+<li>系统调用：两次获取/写回 Trap 上下文（因期间可能发生进程切换）</li>
 <li>访问/执行异常：不直接终止，改为投递 <code>SIGSEGV</code>/<code>SIGILL</code> 等信号</li>
 <li>时钟中断：设置下一次触发并让出 CPU
 处理完毕后进入信号阶段，必要时退出当前进程，然后返回用户态继续执行。</li>

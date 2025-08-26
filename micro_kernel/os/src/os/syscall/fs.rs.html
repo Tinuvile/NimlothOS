@@ -27,7 +27,7 @@
 <a href=#27 id=27 data-nosnippet>27</a>
 <a href=#28 id=28 data-nosnippet>28</a></span><span class="kw">use </span><span class="kw">crate</span>::fs::{OpenFlags, make_pipe, open_file};
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span><span class="kw">crate</span>::mm::{UserBuffer, translated_byte_buffer, translated_refmut, translated_str};
-<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span><span class="kw">crate</span>::task::{current_task, current_user_token};
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span><span class="kw">crate</span>::process::{current_process, current_user_token};
 <a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>alloc::sync::Arc;
 <a href=#32 id=32 data-nosnippet>32</a>
 <a href=#33 id=33 data-nosnippet>33</a><span class="doccomment">/// 系统调用：向文件描述符写入数据
@@ -58,8 +58,8 @@
 <a href=#58 id=58 data-nosnippet>58</a>/// 确保地址空间隔离和内存安全。
 <a href=#59 id=59 data-nosnippet>59</a></span><span class="kw">pub fn </span>sys_write(fd: usize, buf: <span class="kw-2">*const </span>u8, len: usize) -&gt; isize {
 <a href=#60 id=60 data-nosnippet>60</a>    <span class="kw">let </span>token = current_user_token();
-<a href=#61 id=61 data-nosnippet>61</a>    <span class="kw">let </span>task = current_task().unwrap();
-<a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span>inner = task.inner_exclusive_access();
+<a href=#61 id=61 data-nosnippet>61</a>    <span class="kw">let </span>process = current_process().unwrap();
+<a href=#62 id=62 data-nosnippet>62</a>    <span class="kw">let </span>inner = process.inner_exclusive_access();
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">if </span>fd &gt;= inner.fd_table.len() {
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">return </span>-<span class="number">1</span>;
 <a href=#65 id=65 data-nosnippet>65</a>    }
@@ -104,8 +104,8 @@
 <a href=#104 id=104 data-nosnippet>104</a>/// 确保地址空间隔离和内存安全。
 <a href=#105 id=105 data-nosnippet>105</a></span><span class="kw">pub fn </span>sys_read(fd: usize, buf: <span class="kw-2">*const </span>u8, len: usize) -&gt; isize {
 <a href=#106 id=106 data-nosnippet>106</a>    <span class="kw">let </span>token = current_user_token();
-<a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">let </span>task = current_task().unwrap();
-<a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">let </span>inner = task.inner_exclusive_access();
+<a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">let </span>process = current_process().unwrap();
+<a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">let </span>inner = process.inner_exclusive_access();
 <a href=#109 id=109 data-nosnippet>109</a>    <span class="kw">if </span>fd &gt;= inner.fd_table.len() {
 <a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">return </span>-<span class="number">1</span>;
 <a href=#111 id=111 data-nosnippet>111</a>    }
@@ -154,11 +154,11 @@
 <a href=#154 id=154 data-nosnippet>154</a>///
 <a href=#155 id=155 data-nosnippet>155</a>/// 通过 [`translated_str`] 安全地读取用户空间的文件路径字符串。
 <a href=#156 id=156 data-nosnippet>156</a></span><span class="kw">pub fn </span>sys_open(path: <span class="kw-2">*const </span>u8, flags: u32) -&gt; isize {
-<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">let </span>task = current_task().unwrap();
+<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">let </span>process = current_process().unwrap();
 <a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">let </span>token = current_user_token();
 <a href=#159 id=159 data-nosnippet>159</a>    <span class="kw">let </span>path = translated_str(token, path);
 <a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(inode) = open_file(path.as_str(), OpenFlags::from_bits(flags).unwrap()) {
-<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">let </span><span class="kw-2">mut </span>inner = process.inner_exclusive_access();
 <a href=#162 id=162 data-nosnippet>162</a>        <span class="kw">let </span>fd = inner.alloc_fd();
 <a href=#163 id=163 data-nosnippet>163</a>        inner.fd_table[fd] = <span class="prelude-val">Some</span>(inode);
 <a href=#164 id=164 data-nosnippet>164</a>        fd <span class="kw">as </span>isize
@@ -193,8 +193,8 @@
 <a href=#193 id=193 data-nosnippet>193</a>/// - 释放相关的文件对象引用
 <a href=#194 id=194 data-nosnippet>194</a>/// - 使该文件描述符号可以被后续的 `open` 调用重用
 <a href=#195 id=195 data-nosnippet>195</a></span><span class="kw">pub fn </span>sys_close(fd: usize) -&gt; isize {
-<a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">let </span>task = current_task().unwrap();
-<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">let </span>process = current_process().unwrap();
+<a href=#197 id=197 data-nosnippet>197</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = process.inner_exclusive_access();
 <a href=#198 id=198 data-nosnippet>198</a>    <span class="kw">if </span>fd &gt;= inner.fd_table.len() {
 <a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">return </span>-<span class="number">1</span>;
 <a href=#200 id=200 data-nosnippet>200</a>    }
@@ -224,8 +224,8 @@
 <a href=#224 id=224 data-nosnippet>224</a>/// - 新旧两个 fd 指向同一 `File` 对象，读写偏移共享
 <a href=#225 id=225 data-nosnippet>225</a>/// - 关闭任意一个 fd 不影响另一个 fd 的有效性（引用计数减少）
 <a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">pub fn </span>sys_dup(fd: usize) -&gt; isize {
-<a href=#227 id=227 data-nosnippet>227</a>    <span class="kw">let </span>task = current_task().unwrap();
-<a href=#228 id=228 data-nosnippet>228</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<a href=#227 id=227 data-nosnippet>227</a>    <span class="kw">let </span>process = current_process().unwrap();
+<a href=#228 id=228 data-nosnippet>228</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = process.inner_exclusive_access();
 <a href=#229 id=229 data-nosnippet>229</a>    <span class="kw">if </span>fd &gt;= inner.fd_table.len() {
 <a href=#230 id=230 data-nosnippet>230</a>        <span class="kw">return </span>-<span class="number">1</span>;
 <a href=#231 id=231 data-nosnippet>231</a>    }
@@ -257,9 +257,9 @@
 <a href=#257 id=257 data-nosnippet>257</a>/// - 使用 `translated_refmut` 将两个 fd 写回到用户空间
 <a href=#258 id=258 data-nosnippet>258</a>/// - fd 的实际分配来源于当前进程的 fd 表
 <a href=#259 id=259 data-nosnippet>259</a></span><span class="kw">pub fn </span>sys_pipe(pipe: <span class="kw-2">*mut </span>usize) -&gt; isize {
-<a href=#260 id=260 data-nosnippet>260</a>    <span class="kw">let </span>task = current_task().unwrap();
+<a href=#260 id=260 data-nosnippet>260</a>    <span class="kw">let </span>process = current_process().unwrap();
 <a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">let </span>token = current_user_token();
-<a href=#262 id=262 data-nosnippet>262</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = task.inner_exclusive_access();
+<a href=#262 id=262 data-nosnippet>262</a>    <span class="kw">let </span><span class="kw-2">mut </span>inner = process.inner_exclusive_access();
 <a href=#263 id=263 data-nosnippet>263</a>    <span class="kw">let </span>(pipe_read, pipe_write) = make_pipe();
 <a href=#264 id=264 data-nosnippet>264</a>    <span class="kw">let </span>read_fd = inner.alloc_fd();
 <a href=#265 id=265 data-nosnippet>265</a>    inner.fd_table[read_fd] = <span class="prelude-val">Some</span>(pipe_read);

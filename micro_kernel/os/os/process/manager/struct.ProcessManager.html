@@ -1,0 +1,200 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="进程管理器"><title>ProcessManager in os::process::manager - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Process<wbr>Manager</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#设计特点" title="设计特点">设计特点</a><ul><li><a href="#数据结构" title="数据结构">数据结构</a></li><li><a href="#调度算法" title="调度算法">调度算法</a></li><li><a href="#线程安全" title="线程安全">线程安全</a></li></ul></li><li><a href="#使用模式" title="使用模式">使用模式</a></li><li><a href="#性能保证" title="性能保证">性能保证</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.ready_queue" title="ready_queue">ready_queue</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.add" title="add">add</a></li><li><a href="#method.fetch" title="fetch">fetch</a></li><li><a href="#method.new" title="new">new</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-RefUnwindSafe-for-ProcessManager" title="!RefUnwindSafe">!RefUnwindSafe</a></li><li><a href="#impl-UnwindSafe-for-ProcessManager" title="!UnwindSafe">!UnwindSafe</a></li><li><a href="#impl-Freeze-for-ProcessManager" title="Freeze">Freeze</a></li><li><a href="#impl-Send-for-ProcessManager" title="Send">Send</a></li><li><a href="#impl-Sync-for-ProcessManager" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-ProcessManager" title="Unpin">Unpin</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>process::<wbr>manager</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">process</a>::<wbr><a href="index.html">manager</a></div><h1>Struct <span class="struct">ProcessManager</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/process/manager.rs.html#139-151">Source</a> </span></div><pre class="rust item-decl"><code>pub struct ProcessManager {
+    ready_queue: VecDeque&lt;Arc&lt;<a class="struct" href="../process/struct.ProcessControlBlock.html" title="struct os::process::process::ProcessControlBlock">ProcessControlBlock</a>&gt;&gt;,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>进程管理器</p>
+<p>负责维护系统中所有就绪态进程的队列，提供高效的进程调度服务。
+采用 FIFO 调度策略，确保进程调度的公平性和可预测性。</p>
+<h3 id="设计特点"><a class="doc-anchor" href="#设计特点">§</a>设计特点</h3><h4 id="数据结构"><a class="doc-anchor" href="#数据结构">§</a>数据结构</h4>
+<ul>
+<li><strong>就绪队列</strong>: 使用 <code>VecDeque</code> 实现双端队列，支持 O(1) 的队首删除和队尾插入</li>
+<li><strong>进程引用</strong>: 存储 <code>Arc&lt;ProcessControlBlock&gt;</code> 而非进程本身，支持共享所有权</li>
+<li><strong>内存布局</strong>: 连续内存分配提供良好的缓存局部性</li>
+</ul>
+<h4 id="调度算法"><a class="doc-anchor" href="#调度算法">§</a>调度算法</h4><div class="example-wrap"><pre class="language-text"><code>Schedule Order: Process1 → Process2 → Process3 → Process4
+         ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐
+Enqueue ►│Process4│◄─│Process3│◄─│Process2│◄─│Process1│◄─── Dequeue
+         └─────┘  └─────┘  └─────┘  └─────┘
+        (最新)                      (最老)</code></pre></div><h4 id="线程安全"><a class="doc-anchor" href="#线程安全">§</a>线程安全</h4>
+<p>虽然 <code>ProcessManager</code> 本身不提供线程安全保证，但通过全局的 <code>UPSafeCell</code>
+包装器确保在单处理器环境下的并发安全访问。</p>
+<h3 id="使用模式"><a class="doc-anchor" href="#使用模式">§</a>使用模式</h3>
+<p>通常不直接实例化 <code>ProcessManager</code>，而是通过全局函数接口使用：</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 推荐方式：通过全局接口使用
+</span>add_process(new_process);
+<span class="kw">let </span>next_process = fetch_process();
+
+<span class="comment">// 不推荐：直接操作实例
+</span><span class="kw">let </span><span class="kw-2">mut </span>manager = ProcessManager::new();
+manager.add(process);</code></pre></div>
+<h3 id="性能保证"><a class="doc-anchor" href="#性能保证">§</a>性能保证</h3>
+<ul>
+<li><strong>入队延迟</strong>: O(1) 常数时间</li>
+<li><strong>出队延迟</strong>: O(1) 常数时间</li>
+<li><strong>内存开销</strong>: 8 bytes per process (仅存储 Arc 指针)</li>
+<li><strong>扩容策略</strong>: 按需自动扩容，避免频繁内存分配</li>
+</ul>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.ready_queue" class="structfield section-header"><a href="#structfield.ready_queue" class="anchor field">§</a><code>ready_queue: VecDeque&lt;Arc&lt;<a class="struct" href="../process/struct.ProcessControlBlock.html" title="struct os::process::process::ProcessControlBlock">ProcessControlBlock</a>&gt;&gt;</code></span><div class="docblock"><p>就绪进程队列</p>
+<p>使用双端队列存储所有处于就绪状态的进程控制块。
+队列头部是最早加入的进程（下次将被调度），
+队列尾部是最新加入的进程。</p>
+<h4 id="队列特性"><a class="doc-anchor" href="#队列特性">§</a>队列特性</h4>
+<ul>
+<li><strong>FIFO 顺序</strong>: 先进先出，保证调度公平性</li>
+<li><strong>动态大小</strong>: 根据系统负载自动调整容量</li>
+<li><strong>高效操作</strong>: 队首删除和队尾插入均为 O(1)</li>
+</ul>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-ProcessManager" class="impl"><a class="src rightside" href="../../../src/os/process/manager.rs.html#153-348">Source</a><a href="#impl-ProcessManager" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.ProcessManager.html" title="struct os::process::manager::ProcessManager">ProcessManager</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/os/process/manager.rs.html#187-191">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建新的进程管理器实例</p>
+<p>初始化一个空的就绪队列，准备接收和调度进程。
+新创建的管理器不包含任何进程，队列容量为 0。</p>
+<h6 id="返回值"><a class="doc-anchor" href="#返回值">§</a>返回值</h6>
+<p>返回一个新的 <code>ProcessManager</code> 实例，包含：</p>
+<ul>
+<li>空的就绪队列（容量为 0）</li>
+<li>所有计数器重置为 0</li>
+</ul>
+<h6 id="性能特征"><a class="doc-anchor" href="#性能特征">§</a>性能特征</h6>
+<ul>
+<li><strong>时间复杂度</strong>: O(1) - 常数时间初始化</li>
+<li><strong>内存分配</strong>: 不进行堆内存分配</li>
+<li><strong>初始容量</strong>: 0，按需扩容以优化内存使用</li>
+</ul>
+<h6 id="使用说明"><a class="doc-anchor" href="#使用说明">§</a>使用说明</h6>
+<p>通常不需要直接调用此函数，而是通过全局 <code>PROCESS_MANAGER</code> 实例使用：</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 推荐：使用全局实例
+</span><span class="kw">use </span><span class="kw">crate</span>::process::manager::{add_process, fetch_process};
+
+<span class="comment">// 不推荐：直接创建实例
+</span><span class="kw">let </span>manager = ProcessManager::new();</code></pre></div>
+<h6 id="线程安全-1"><a class="doc-anchor" href="#线程安全-1">§</a>线程安全</h6>
+<p><code>new()</code> 函数本身是线程安全的，但返回的实例需要通过 <code>UPSafeCell</code>
+等同步原语保护才能在多线程环境中安全使用。</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add" class="method"><a class="src rightside" href="../../../src/os/process/manager.rs.html#258-260">Source</a><h4 class="code-header">pub fn <a href="#method.add" class="fn">add</a>(&amp;mut self, process: Arc&lt;<a class="struct" href="../process/struct.ProcessControlBlock.html" title="struct os::process::process::ProcessControlBlock">ProcessControlBlock</a>&gt;)</h4></section></summary><div class="docblock"><p>向就绪队列添加进程</p>
+<p>将指定的进程控制块添加到就绪队列的尾部，使其可以被调度器选中执行。
+新添加的进程将按照 FIFO 顺序等待调度。</p>
+<h6 id="参数"><a class="doc-anchor" href="#参数">§</a>参数</h6>
+<ul>
+<li><code>process</code> - 要添加到队列的进程控制块，包装在 <code>Arc</code> 中支持共享所有权</li>
+</ul>
+<h6 id="调度策略"><a class="doc-anchor" href="#调度策略">§</a>调度策略</h6>
+<p>进程按照加入队列的顺序被调度：</p>
+<div class="example-wrap"><pre class="language-text"><code>调度顺序 (先进先出):
+
+add(Process1) ──► add(Process2) ──► add(Process3)
+     │             │             │
+     ▼             ▼             ▼
+┌─────────┐   ┌─────────┐   ┌─────────┐
+│ Process1   │◄──│ Process2   │◄──│ Process3   │
+│ (First) │   │(Second) │   │ (Last)  │
+└─────────┘   └─────────┘   └─────────┘
+     ▲                           ▲
+     │                           │
+  fetch()                     最新添加</code></pre></div><h6 id="性能特征-1"><a class="doc-anchor" href="#性能特征-1">§</a>性能特征</h6>
+<ul>
+<li><strong>时间复杂度</strong>: O(1) 摊还常数时间</li>
+<li><strong>内存分配</strong>: 队列满时可能触发 O(n) 的扩容操作</li>
+<li><strong>扩容策略</strong>: 通常按 2 倍容量扩展</li>
+</ul>
+<h6 id="进程状态要求"><a class="doc-anchor" href="#进程状态要求">§</a>进程状态要求</h6>
+<p>添加到就绪队列的进程通常应该满足：</p>
+<ul>
+<li>进程状态为 <code>ProcessStatus::Ready</code></li>
+<li>拥有有效的内存地址空间</li>
+<li>陷阱上下文已正确初始化</li>
+</ul>
+<h6 id="使用示例"><a class="doc-anchor" href="#使用示例">§</a>使用示例</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>alloc::sync::Arc;
+<span class="kw">use </span><span class="kw">crate</span>::process::process::ProcessControlBlock;
+
+<span class="kw">let </span>process = Arc::new(ProcessControlBlock::new(app_data));
+manager.add(process);
+
+<span class="comment">// 进程现在在就绪队列中等待调度
+</span><span class="macro">println!</span>(<span class="string">"进程已添加到就绪队列"</span>);</code></pre></div>
+<h6 id="并发考虑"><a class="doc-anchor" href="#并发考虑">§</a>并发考虑</h6>
+<p>在并发环境中，应通过适当的同步机制保护此操作：</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 全局接口已提供同步保护
+</span>add_process(process); <span class="comment">// 推荐方式
+
+// 直接使用需要手动同步
+</span>PROCESS_MANAGER.exclusive_access().add(process);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.fetch" class="method"><a class="src rightside" href="../../../src/os/process/manager.rs.html#345-347">Source</a><h4 class="code-header">pub fn <a href="#method.fetch" class="fn">fetch</a>(&amp;mut self) -&gt; Option&lt;Arc&lt;<a class="struct" href="../process/struct.ProcessControlBlock.html" title="struct os::process::process::ProcessControlBlock">ProcessControlBlock</a>&gt;&gt;</h4></section></summary><div class="docblock"><p>从就绪队列获取下一个待调度进程</p>
+<p>从队列头部移除并返回最早加入的进程，实现 FIFO 调度策略。
+如果队列为空，返回 <code>None</code>。</p>
+<h6 id="返回值-1"><a class="doc-anchor" href="#返回值-1">§</a>返回值</h6>
+<ul>
+<li><code>Some(Arc&lt;ProcessControlBlock&gt;)</code> - 成功获取到进程控制块</li>
+<li><code>None</code> - 就绪队列为空，没有可调度的进程</li>
+</ul>
+<h6 id="调度行为"><a class="doc-anchor" href="#调度行为">§</a>调度行为</h6>
+<p>按照进程加入队列的顺序进行调度：</p>
+<div class="example-wrap"><pre class="language-text"><code>队列状态变化:
+
+调用前:
+┌─────────┐   ┌─────────┐   ┌─────────┐
+│ Process1   │◄──│ Process2   │◄──│ Process3   │
+│(Oldest) │   │         │   │(Latest) │
+└─────────┘   └─────────┘   └─────────┘
+     ▲
+  fetch() 返回 Process1
+
+调用后:
+┌────---─────┐   ┌─────────┐
+│   Process2    │◄──│ Process3   │
+│(Now Oldest)│   │(Latest) │
+└───────---──┘   └─────────┘</code></pre></div><h6 id="性能特征-2"><a class="doc-anchor" href="#性能特征-2">§</a>性能特征</h6>
+<ul>
+<li><strong>时间复杂度</strong>: O(1) 常数时间</li>
+<li><strong>内存操作</strong>: 仅移动指针，不涉及数据拷贝</li>
+<li><strong>缓存效率</strong>: 访问队列头部具有良好的缓存局部性</li>
+</ul>
+<h6 id="空队列处理"><a class="doc-anchor" href="#空队列处理">§</a>空队列处理</h6>
+<p>当队列为空时安全返回 <code>None</code>，调用者应适当处理：</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">match </span>manager.fetch() {
+    <span class="prelude-val">Some</span>(process) =&gt; {
+        <span class="macro">println!</span>(<span class="string">"获取到进程 PID: {}"</span>, process.getpid());
+        <span class="comment">// 执行进程调度...
+    </span>}
+    <span class="prelude-val">None </span>=&gt; {
+        <span class="macro">println!</span>(<span class="string">"没有就绪进程，CPU 进入空闲状态"</span>);
+        <span class="comment">// 可能触发节能模式或等待中断
+    </span>}
+}</code></pre></div>
+<h6 id="进程生命周期"><a class="doc-anchor" href="#进程生命周期">§</a>进程生命周期</h6>
+<p>从队列中取出的进程通常会：</p>
+<ol>
+<li>状态从 <code>Ready</code> 转变为 <code>Running</code></li>
+<li>被加载到 CPU 执行</li>
+<li>根据执行结果重新加入队列或结束</li>
+</ol>
+<h6 id="调度公平性"><a class="doc-anchor" href="#调度公平性">§</a>调度公平性</h6>
+<p>FIFO 策略保证了调度的公平性：</p>
+<ul>
+<li>所有进程都有相同的调度机会</li>
+<li>不会出现进程饥饿问题</li>
+<li>调度行为完全可预测</li>
+</ul>
+<h6 id="使用示例-1"><a class="doc-anchor" href="#使用示例-1">§</a>使用示例</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 调度器主循环
+</span><span class="kw">loop </span>{
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(process) = manager.fetch() {
+        <span class="comment">// 切换到进程执行
+        </span>run_process(process);
+    } <span class="kw">else </span>{
+        <span class="comment">// 没有进程，等待事件
+        </span>wait_for_interrupt();
+    }
+}</code></pre></div>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-ProcessManager" class="impl"><a href="#impl-Freeze-for-ProcessManager" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.ProcessManager.html" title="struct os::process::manager::ProcessManager">ProcessManager</a></h3></section><section id="impl-RefUnwindSafe-for-ProcessManager" class="impl"><a href="#impl-RefUnwindSafe-for-ProcessManager" class="anchor">§</a><h3 class="code-header">impl !RefUnwindSafe for <a class="struct" href="struct.ProcessManager.html" title="struct os::process::manager::ProcessManager">ProcessManager</a></h3></section><section id="impl-Send-for-ProcessManager" class="impl"><a href="#impl-Send-for-ProcessManager" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.ProcessManager.html" title="struct os::process::manager::ProcessManager">ProcessManager</a></h3></section><section id="impl-Sync-for-ProcessManager" class="impl"><a href="#impl-Sync-for-ProcessManager" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.ProcessManager.html" title="struct os::process::manager::ProcessManager">ProcessManager</a></h3></section><section id="impl-Unpin-for-ProcessManager" class="impl"><a href="#impl-Unpin-for-ProcessManager" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.ProcessManager.html" title="struct os::process::manager::ProcessManager">ProcessManager</a></h3></section><section id="impl-UnwindSafe-for-ProcessManager" class="impl"><a href="#impl-UnwindSafe-for-ProcessManager" class="anchor">§</a><h3 class="code-header">impl !UnwindSafe for <a class="struct" href="struct.ProcessManager.html" title="struct os::process::manager::ProcessManager">ProcessManager</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

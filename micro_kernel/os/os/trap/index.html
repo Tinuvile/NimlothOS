@@ -6,7 +6,7 @@
 <h3 id="处理的陷阱类型"><a class="doc-anchor" href="#处理的陷阱类型">§</a>处理的陷阱类型</h3>
 <ul>
 <li><strong>系统调用</strong> (<code>UserEnvCall</code>): 用户程序请求内核服务</li>
-<li><strong>时钟中断</strong> (<code>SupervisorTimer</code>): 实现抢占式多任务调度</li>
+<li><strong>时钟中断</strong> (<code>SupervisorTimer</code>): 实现抢占式多进程调度</li>
 <li><strong>数据访问异常</strong> (<code>StoreFault</code>, <code>StorePageFault</code>, <code>LoadFault</code>, <code>LoadPageFault</code>): 数据内存访问违规</li>
 <li><strong>指令访问异常</strong> (<code>InstructionFault</code>, <code>InstructionPageFault</code>): 指令内存访问违规</li>
 <li><strong>非法指令</strong> (<code>IllegalInstruction</code>): 执行无效指令</li>

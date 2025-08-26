@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>//!
 <a href=#5 id=5 data-nosnippet>5</a>//! ## 主要特性
 <a href=#6 id=6 data-nosnippet>6</a>//!
-<a href=#7 id=7 data-nosnippet>7</a>//! - **多任务支持**: 基于时间片轮转的抢占式多任务调度
+<a href=#7 id=7 data-nosnippet>7</a>//! - **多进程支持**: 基于时间片轮转的抢占式多进程调度
 <a href=#8 id=8 data-nosnippet>8</a>//! - **内存管理**: SV39 三级页表，支持虚拟内存和地址空间隔离
 <a href=#9 id=9 data-nosnippet>9</a>//! - **系统调用**: 支持 read、write、exit、yield、time、pid、fork、exec、waitpid 等系统调用
 <a href=#10 id=10 data-nosnippet>10</a>//! - **陷阱处理**: 完整的异常、中断和系统调用处理机制
@@ -12,7 +12,7 @@
 <a href=#12 id=12 data-nosnippet>12</a>//!
 <a href=#13 id=13 data-nosnippet>13</a>//! ## 模块架构
 <a href=#14 id=14 data-nosnippet>14</a>//!
-<a href=#15 id=15 data-nosnippet>15</a>//! - [`task`] - 任务管理和调度系统
+<a href=#15 id=15 data-nosnippet>15</a>//! - [`process`] - 进程管理和调度系统
 <a href=#16 id=16 data-nosnippet>16</a>//! - [`mm`] - 内存管理系统（页表、页帧分配、地址空间）
 <a href=#17 id=17 data-nosnippet>17</a>//! - [`syscall`] - 系统调用处理和分发
 <a href=#18 id=18 data-nosnippet>18</a>//! - [`trap`] - 陷阱处理（异常、中断、系统调用）
@@ -30,7 +30,7 @@
 <a href=#30 id=30 data-nosnippet>30</a>//! ├─────────────────────────────────────────────────────────────┤
 <a href=#31 id=31 data-nosnippet>31</a>//! │                    System Calls                             │
 <a href=#32 id=32 data-nosnippet>32</a>//! ├─────────────────────────────────────────────────────────────┤
-<a href=#33 id=33 data-nosnippet>33</a>//! │  Task Mgmt  │  Memory Mgmt  │  Trap Handler │  Timer Mgmt   │
+<a href=#33 id=33 data-nosnippet>33</a>//! │  Process Mgmt  │  Memory Mgmt  │  Trap Handler │  Timer Mgmt   │
 <a href=#34 id=34 data-nosnippet>34</a>//! ├─────────────────────────────────────────────────────────────┤
 <a href=#35 id=35 data-nosnippet>35</a>//! │                   SBI Interface                             │
 <a href=#36 id=36 data-nosnippet>36</a>//! ├─────────────────────────────────────────────────────────────┤
@@ -51,11 +51,11 @@
 <a href=#51 id=51 data-nosnippet>51</a><span class="kw">mod </span>lang_items;
 <a href=#52 id=52 data-nosnippet>52</a><span class="kw">mod </span>log;
 <a href=#53 id=53 data-nosnippet>53</a><span class="kw">mod </span>mm;
-<a href=#54 id=54 data-nosnippet>54</a><span class="kw">mod </span>sbi;
-<a href=#55 id=55 data-nosnippet>55</a><span class="kw">mod </span>stack_trace;
-<a href=#56 id=56 data-nosnippet>56</a><span class="kw">mod </span>sync;
-<a href=#57 id=57 data-nosnippet>57</a><span class="kw">mod </span>syscall;
-<a href=#58 id=58 data-nosnippet>58</a><span class="kw">mod </span>task;
+<a href=#54 id=54 data-nosnippet>54</a><span class="kw">mod </span>process;
+<a href=#55 id=55 data-nosnippet>55</a><span class="kw">mod </span>sbi;
+<a href=#56 id=56 data-nosnippet>56</a><span class="kw">mod </span>stack_trace;
+<a href=#57 id=57 data-nosnippet>57</a><span class="kw">mod </span>sync;
+<a href=#58 id=58 data-nosnippet>58</a><span class="kw">mod </span>syscall;
 <a href=#59 id=59 data-nosnippet>59</a><span class="kw">mod </span>timer;
 <a href=#60 id=60 data-nosnippet>60</a><span class="kw">mod </span>trap;
 <a href=#61 id=61 data-nosnippet>61</a>
@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a><span class="doccomment">/// 内核主入口函数
 <a href=#73 id=73 data-nosnippet>73</a>///
 <a href=#74 id=74 data-nosnippet>74</a>/// 这是 Rust 代码的主要入口点，负责初始化整个操作系统内核。
-<a href=#75 id=75 data-nosnippet>75</a>/// 该函数永不返回，最终进入调度循环持续运行用户任务。
+<a href=#75 id=75 data-nosnippet>75</a>/// 该函数永不返回，最终进入调度循环持续运行用户进程。
 <a href=#76 id=76 data-nosnippet>76</a>///
 <a href=#77 id=77 data-nosnippet>77</a>/// ## 初始化流程
 <a href=#78 id=78 data-nosnippet>78</a>///
@@ -80,14 +80,14 @@
 <a href=#80 id=80 data-nosnippet>80</a>/// 2. [`log::init`] - 初始化日志系统
 <a href=#81 id=81 data-nosnippet>81</a>/// 3. [`mm::init`] - 初始化内存管理系统
 <a href=#82 id=82 data-nosnippet>82</a>/// 4. [`mm::remap_test`] - 测试内存重映射功能
-<a href=#83 id=83 data-nosnippet>83</a>/// 5. [`task::add_initproc`] - 注册初始用户进程
+<a href=#83 id=83 data-nosnippet>83</a>/// 5. [`process::add_initproc`] - 注册初始用户进程
 <a href=#84 id=84 data-nosnippet>84</a>/// 6. [`trap::init`] - 初始化陷阱处理系统
 <a href=#85 id=85 data-nosnippet>85</a>/// 7. [`timer::next_trigger`] - 设置第一次时钟中断
-<a href=#86 id=86 data-nosnippet>86</a>/// 8. [`task::run_tasks`] - 进入主调度循环
+<a href=#86 id=86 data-nosnippet>86</a>/// 8. [`process::run_processs`] - 进入主调度循环
 <a href=#87 id=87 data-nosnippet>87</a>///
 <a href=#88 id=88 data-nosnippet>88</a>/// ## Panics
 <a href=#89 id=89 data-nosnippet>89</a>///
-<a href=#90 id=90 data-nosnippet>90</a>/// 如果 `run_first_task` 意外返回，会触发 panic
+<a href=#90 id=90 data-nosnippet>90</a>/// 如果 `run_first_process` 意外返回，会触发 panic
 <a href=#91 id=91 data-nosnippet>91</a></span><span class="attr">#[<span class="kw">unsafe</span>(no_mangle)]
 <a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">pub fn </span>rust_main() -&gt; ! {
 <a href=#93 id=93 data-nosnippet>93</a>    clear_bss();
@@ -97,8 +97,8 @@
 <a href=#97 id=97 data-nosnippet>97</a>    trap::init();
 <a href=#98 id=98 data-nosnippet>98</a>    timer::next_trigger();
 <a href=#99 id=99 data-nosnippet>99</a>    fs::list_apps();
-<a href=#100 id=100 data-nosnippet>100</a>    task::add_initproc();
-<a href=#101 id=101 data-nosnippet>101</a>    task::run_tasks();
+<a href=#100 id=100 data-nosnippet>100</a>    process::add_initproc();
+<a href=#101 id=101 data-nosnippet>101</a>    process::run_processs();
 <a href=#102 id=102 data-nosnippet>102</a>
 <a href=#103 id=103 data-nosnippet>103</a>    <span class="macro">panic!</span>(<span class="string">"Unreachable in rust_main!"</span>);
 <a href=#104 id=104 data-nosnippet>104</a>}

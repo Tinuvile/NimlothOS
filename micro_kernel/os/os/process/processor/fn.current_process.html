@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="获取当前正在执行的进程（只读访问）"><title>current_process in os::process::processor - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">current_<wbr>process</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#引用语义" title="引用语义">引用语义</a></li><li><a href="#使用场景" title="使用场景">使用场景</a><ul><li><a href="#信息查询" title="信息查询">信息查询</a></li><li><a href="#权限检查" title="权限检查">权限检查</a></li><li><a href="#上下文获取" title="上下文获取">上下文获取</a></li></ul></li><li><a href="#性能考虑" title="性能考虑">性能考虑</a></li><li><a href="#线程安全" title="线程安全">线程安全</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>process::<wbr>processor</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">process</a>::<wbr><a href="index.html">processor</a></div><h1>Function <span class="fn">current_process</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/process/processor.rs.html#565-567">Source</a> </span></div><pre class="rust item-decl"><code>pub fn current_process() -&gt; Option&lt;Arc&lt;<a class="struct" href="../process/struct.ProcessControlBlock.html" title="struct os::process::process::ProcessControlBlock">ProcessControlBlock</a>&gt;&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>获取当前正在执行的进程（只读访问）</p>
+<p>返回当前进程的克隆引用，不改变处理器状态。适用于需要查询
+当前进程信息但不需要修改进程状态的场景。</p>
+<h3 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h3>
+<ul>
+<li><code>Some(Arc&lt;ProcessControlBlock&gt;)</code> - 当前进程的克隆引用</li>
+<li><code>None</code> - 处理器当前没有运行任何进程</li>
+</ul>
+<h3 id="引用语义"><a class="doc-anchor" href="#引用语义">§</a>引用语义</h3>
+<p>返回的是 <code>Arc</code> 的克隆，增加引用计数但不转移所有权：</p>
+<div class="example-wrap"><pre class="language-text"><code>处理器状态保持不变：current = Some(process)
+返回值：Arc::clone(process) - 新的引用</code></pre></div><h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3><h4 id="信息查询"><a class="doc-anchor" href="#信息查询">§</a>信息查询</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取当前进程信息
+</span><span class="kw">if let </span><span class="prelude-val">Some</span>(process) = current_process() {
+    <span class="macro">println!</span>(<span class="string">"Current PID: {}"</span>, process.getpid());
+    <span class="macro">println!</span>(<span class="string">"Process status: {:?}"</span>, process.inner_exclusive_access().process_status);
+} <span class="kw">else </span>{
+    <span class="macro">println!</span>(<span class="string">"No process currently running"</span>);
+}</code></pre></div>
+<h4 id="权限检查"><a class="doc-anchor" href="#权限检查">§</a>权限检查</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 验证系统调用权限
+</span><span class="kw">pub fn </span>sys_read(fd: usize, buf: <span class="kw-2">*mut </span>u8, len: usize) -&gt; isize {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(process) = current_process() {
+        <span class="comment">// 验证文件描述符属于当前进程...
+        // 验证内存访问权限...
+    </span>} <span class="kw">else </span>{
+        <span class="kw">return </span>-<span class="number">1</span>; <span class="comment">// 无当前进程
+    </span>}
+}</code></pre></div>
+<h4 id="上下文获取"><a class="doc-anchor" href="#上下文获取">§</a>上下文获取</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取当前进程的内存地址空间
+</span><span class="kw">let </span>current_memory_set = current_process()
+    .unwrap()
+    .inner_exclusive_access()
+    .memory_set
+    .token();</code></pre></div>
+<h3 id="性能考虑"><a class="doc-anchor" href="#性能考虑">§</a>性能考虑</h3>
+<ul>
+<li><strong>引用计数开销</strong>: Arc::clone 涉及原子操作，开销很小</li>
+<li><strong>锁开销</strong>: 短暂的独占访问，影响极小</li>
+<li><strong>内存友好</strong>: 不复制进程数据，只复制引用</li>
+</ul>
+<h3 id="线程安全"><a class="doc-anchor" href="#线程安全">§</a>线程安全</h3>
+<p>通过 <code>PROCESSOR.exclusive_access()</code> 保证读取的原子性，
+避免在读取过程中进程被切换导致的竞争条件。</p>
+</div></details></section></div></main></body></html>

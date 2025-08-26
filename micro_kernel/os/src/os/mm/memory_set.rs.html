@@ -1161,7 +1161,7 @@
 <a href=#1161 id=1161 data-nosnippet>1161</a>    /// kernel_space.activate();
 <a href=#1162 id=1162 data-nosnippet>1162</a>    ///
 <a href=#1163 id=1163 data-nosnippet>1163</a>    /// // 激活用户地址空间
-<a href=#1164 id=1164 data-nosnippet>1164</a>    /// let user_space = task.get_user_space();
+<a href=#1164 id=1164 data-nosnippet>1164</a>    /// let user_space = process.get_user_space();
 <a href=#1165 id=1165 data-nosnippet>1165</a>    /// user_space.activate();
 <a href=#1166 id=1166 data-nosnippet>1166</a>    /// ```
 <a href=#1167 id=1167 data-nosnippet>1167</a>    </span><span class="kw">pub fn </span>activate(<span class="kw-2">&amp;</span><span class="self">self</span>) {
@@ -1255,8 +1255,8 @@
 <a href=#1255 id=1255 data-nosnippet>1255</a>    /// // 获取内核地址空间标识符
 <a href=#1256 id=1256 data-nosnippet>1256</a>    /// let kernel_token = KERNEL_SPACE.exclusive_access().token();
 <a href=#1257 id=1257 data-nosnippet>1257</a>    ///
-<a href=#1258 id=1258 data-nosnippet>1258</a>    /// // 在任务切换中使用
-<a href=#1259 id=1259 data-nosnippet>1259</a>    /// let user_token = task.memory_set.token();
+<a href=#1258 id=1258 data-nosnippet>1258</a>    /// // 在进程切换中使用
+<a href=#1259 id=1259 data-nosnippet>1259</a>    /// let user_token = process.memory_set.token();
 <a href=#1260 id=1260 data-nosnippet>1260</a>    /// // 保存到陷阱上下文中...
 <a href=#1261 id=1261 data-nosnippet>1261</a>    /// ```
 <a href=#1262 id=1262 data-nosnippet>1262</a>    </span><span class="kw">pub fn </span>token(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
@@ -1423,11 +1423,11 @@
 <a href=#1423 id=1423 data-nosnippet>1423</a>    /// ### 典型调用序列
 <a href=#1424 id=1424 data-nosnippet>1424</a>    /// ```rust
 <a href=#1425 id=1425 data-nosnippet>1425</a>    /// // 在 fork 系统调用中
-<a href=#1426 id=1426 data-nosnippet>1426</a>    /// let parent_space = current_task.memory_set;
+<a href=#1426 id=1426 data-nosnippet>1426</a>    /// let parent_space = current_process.memory_set;
 <a href=#1427 id=1427 data-nosnippet>1427</a>    /// let child_space = MemorySet::from_existed_user(&amp;parent_space);
 <a href=#1428 id=1428 data-nosnippet>1428</a>    ///
-<a href=#1429 id=1429 data-nosnippet>1429</a>    /// // 创建子进程任务控制块
-<a href=#1430 id=1430 data-nosnippet>1430</a>    /// let child_task = TaskControlBlock::new_with_space(child_space);
+<a href=#1429 id=1429 data-nosnippet>1429</a>    /// // 创建子进程进程控制块
+<a href=#1430 id=1430 data-nosnippet>1430</a>    /// let child_process = ProcessControlBlock::new_with_space(child_space);
 <a href=#1431 id=1431 data-nosnippet>1431</a>    /// ```
 <a href=#1432 id=1432 data-nosnippet>1432</a>    ///
 <a href=#1433 id=1433 data-nosnippet>1433</a>    /// ## 安全性考虑
@@ -1454,16 +1454,16 @@
 <a href=#1454 id=1454 data-nosnippet>1454</a>    /// ```rust
 <a href=#1455 id=1455 data-nosnippet>1455</a>    /// // fork 系统调用的核心实现
 <a href=#1456 id=1456 data-nosnippet>1456</a>    /// fn sys_fork() -&gt; isize {
-<a href=#1457 id=1457 data-nosnippet>1457</a>    ///     let current_task = current_task().unwrap();
+<a href=#1457 id=1457 data-nosnippet>1457</a>    ///     let current_process = current_process().unwrap();
 <a href=#1458 id=1458 data-nosnippet>1458</a>    ///     
 <a href=#1459 id=1459 data-nosnippet>1459</a>    ///     // 复制父进程的地址空间
-<a href=#1460 id=1460 data-nosnippet>1460</a>    ///     let parent_space = &amp;current_task.inner_exclusive_access().memory_set;
+<a href=#1460 id=1460 data-nosnippet>1460</a>    ///     let parent_space = &amp;current_process.inner_exclusive_access().memory_set;
 <a href=#1461 id=1461 data-nosnippet>1461</a>    ///     let child_space = MemorySet::from_existed_user(parent_space);
 <a href=#1462 id=1462 data-nosnippet>1462</a>    ///     
 <a href=#1463 id=1463 data-nosnippet>1463</a>    ///     // 创建子进程...
-<a href=#1464 id=1464 data-nosnippet>1464</a>    ///     let child_task = TaskControlBlock::new_with_space(child_space);
+<a href=#1464 id=1464 data-nosnippet>1464</a>    ///     let child_process = ProcessControlBlock::new_with_space(child_space);
 <a href=#1465 id=1465 data-nosnippet>1465</a>    ///     
-<a href=#1466 id=1466 data-nosnippet>1466</a>    ///     child_task.getpid() as isize
+<a href=#1466 id=1466 data-nosnippet>1466</a>    ///     child_process.getpid() as isize
 <a href=#1467 id=1467 data-nosnippet>1467</a>    /// }
 <a href=#1468 id=1468 data-nosnippet>1468</a>    /// ```
 <a href=#1469 id=1469 data-nosnippet>1469</a>    ///

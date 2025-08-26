@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="获取当前进程的陷阱上下文"><title>current_trap_cx in os::process::processor - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">current_<wbr>trap_<wbr>cx</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#returns" title="Returns">Returns</a></li><li><a href="#panics" title="Panics">Panics</a></li><li><a href="#陷阱上下文结构" title="陷阱上下文结构">陷阱上下文结构</a></li><li><a href="#使用场景" title="使用场景">使用场景</a><ul><li><a href="#系统调用处理" title="系统调用处理">系统调用处理</a></li><li><a href="#中断处理" title="中断处理">中断处理</a></li><li><a href="#程序状态检查" title="程序状态检查">程序状态检查</a></li></ul></li><li><a href="#内存布局" title="内存布局">内存布局</a></li><li><a href="#生命周期" title="生命周期">生命周期</a></li><li><a href="#安全性考虑" title="安全性考虑">安全性考虑</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>process::<wbr>processor</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">process</a>::<wbr><a href="index.html">processor</a></div><h1>Function <span class="fn">current_trap_cx</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/process/processor.rs.html#766-771">Source</a> </span></div><pre class="rust item-decl"><code>pub fn current_trap_cx() -&gt; &amp;'static mut <a class="struct" href="../../trap/context/struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>获取当前进程的陷阱上下文</p>
+<p>返回指向当前进程陷阱上下文的可变引用，用于中断和系统调用处理。
+陷阱上下文包含了用户程序在陷入内核时的完整 CPU 状态。</p>
+<h3 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h3>
+<p><code>&amp;'static mut TrapContext</code> - 指向当前进程陷阱上下文的可变引用</p>
+<h3 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h3>
+<p>如果当前没有运行进程，函数会 panic。通常在中断/异常处理上下文中调用。</p>
+<h3 id="陷阱上下文结构"><a class="doc-anchor" href="#陷阱上下文结构">§</a>陷阱上下文结构</h3>
+<p>返回的陷阱上下文包含：</p>
+<div class="example-wrap"><pre class="language-text"><code>TrapContext {
+    x[0..32]:  通用寄存器（x0-x31）
+    sstatus:   处理器状态寄存器
+    sepc:      异常程序计数器
+    kernel_satp: 内核页表标识符
+    kernel_sp:   内核栈指针
+    trap_handler: 陷阱处理函数地址
+}</code></pre></div><h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3><h4 id="系统调用处理"><a class="doc-anchor" href="#系统调用处理">§</a>系统调用处理</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 获取系统调用参数和设置返回值
+</span><span class="kw">pub fn </span>syscall(syscall_id: usize, args: [usize; <span class="number">3</span>]) -&gt; isize {
+    <span class="kw">let </span>cx = current_trap_cx();
+     
+    <span class="comment">// 读取寄存器参数
+    </span><span class="kw">let </span>arg0 = cx.x[<span class="number">10</span>]; <span class="comment">// a0 寄存器
+    </span><span class="kw">let </span>arg1 = cx.x[<span class="number">11</span>]; <span class="comment">// a1 寄存器
+     
+    </span><span class="kw">let </span>result = <span class="kw">match </span>syscall_id {
+        <span class="comment">// 处理各种系统调用...
+    </span>};
+     
+    <span class="comment">// 设置返回值
+    </span>cx.x[<span class="number">10</span>] = result <span class="kw">as </span>usize; <span class="comment">// 通过 a0 寄存器返回
+</span>}</code></pre></div>
+<h4 id="中断处理"><a class="doc-anchor" href="#中断处理">§</a>中断处理</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 时钟中断处理
+</span><span class="kw">pub fn </span>handle_timer_interrupt() {
+    <span class="kw">let </span>cx = current_trap_cx();
+     
+    <span class="comment">// 保存中断时的程序计数器
+    </span><span class="kw">let </span>user_pc = cx.sepc;
+    <span class="macro">println!</span>(<span class="string">"Timer interrupt at PC: {:#x}"</span>, user_pc);
+     
+    <span class="comment">// 设置时间片到期标志...
+</span>}</code></pre></div>
+<h4 id="程序状态检查"><a class="doc-anchor" href="#程序状态检查">§</a>程序状态检查</h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 检查用户程序执行状态
+</span><span class="kw">pub fn </span>check_user_state() {
+    <span class="kw">let </span>cx = current_trap_cx();
+     
+    <span class="kw">if </span>cx.sstatus.spie() {
+        <span class="macro">println!</span>(<span class="string">"User program had interrupts enabled"</span>);
+    }
+     
+    <span class="macro">println!</span>(<span class="string">"User PC: {:#x}"</span>, cx.sepc);
+    <span class="macro">println!</span>(<span class="string">"User SP: {:#x}"</span>, cx.x[<span class="number">2</span>]); <span class="comment">// sp 寄存器
+</span>}</code></pre></div>
+<h3 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h3>
+<p>陷阱上下文位于用户地址空间的固定位置：</p>
+<div class="example-wrap"><pre class="language-text"><code>用户地址空间高地址区域:
+┌──────────────────────────────────┐ ← TRAMPOLINE
+│         Trampoline Page          │
+├──────────────────────────────────┤ ← TRAP_CONTEXT  
+│        Trap Context              │ ← current_trap_cx() 返回
+│  ┌────────────────────────────┐  │
+│  │ x[0..32]: General Registers│  │
+│  ├────────────────────────────┤  │
+│  │ sstatus: Status Register   │  │
+│  ├────────────────────────────┤  │
+│  │ sepc: Program Counter      │  │
+│  └────────────────────────────┘  │
+└──────────────────────────────────┘</code></pre></div><h3 id="生命周期"><a class="doc-anchor" href="#生命周期">§</a>生命周期</h3>
+<p>返回的引用具有 <code>'static</code> 生命周期，因为陷阱上下文在进程的整个
+生命周期内都有效，并且存储在固定的虚拟地址位置。</p>
+<h3 id="安全性考虑"><a class="doc-anchor" href="#安全性考虑">§</a>安全性考虑</h3>
+<ul>
+<li>返回可变引用，可以直接修改用户程序状态</li>
+<li>仅应在内核态的中断/系统调用处理中使用</li>
+<li>修改陷阱上下文会直接影响用户程序的执行</li>
+</ul>
+</div></details></section></div></main></body></html>

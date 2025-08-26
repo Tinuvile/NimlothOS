@@ -51,8 +51,8 @@
 <a href=#51 id=51 data-nosnippet>51</a></span><span class="kw">use </span><span class="kw">super</span>::File;
 <a href=#52 id=52 data-nosnippet>52</a><span class="kw">use </span><span class="kw">crate</span>::mm::UserBuffer;
 <a href=#53 id=53 data-nosnippet>53</a><span class="kw">use </span><span class="kw">crate</span>::print;
-<a href=#54 id=54 data-nosnippet>54</a><span class="kw">use </span><span class="kw">crate</span>::sbi::console_getchar;
-<a href=#55 id=55 data-nosnippet>55</a><span class="kw">use </span><span class="kw">crate</span>::task::suspend_current_and_run_next;
+<a href=#54 id=54 data-nosnippet>54</a><span class="kw">use </span><span class="kw">crate</span>::process::suspend_current_and_run_next;
+<a href=#55 id=55 data-nosnippet>55</a><span class="kw">use </span><span class="kw">crate</span>::sbi::console_getchar;
 <a href=#56 id=56 data-nosnippet>56</a>
 <a href=#57 id=57 data-nosnippet>57</a><span class="doccomment">/// 标准输入设备
 <a href=#58 id=58 data-nosnippet>58</a>///
@@ -204,8 +204,8 @@
 <a href=#204 id=204 data-nosnippet>204</a>    /// 当控制台没有可用字符时，函数会进入忙等待循环：
 <a href=#205 id=205 data-nosnippet>205</a>    /// - 调用 `console_getchar()` 检查是否有输入
 <a href=#206 id=206 data-nosnippet>206</a>    /// - 如果没有输入（返回 0），调用 `suspend_current_and_run_next()`
-<a href=#207 id=207 data-nosnippet>207</a>    /// - 让出 CPU 给其他任务执行
-<a href=#208 id=208 data-nosnippet>208</a>    /// - 当任务重新调度时，继续检查输入
+<a href=#207 id=207 data-nosnippet>207</a>    /// - 让出 CPU 给其他进程执行
+<a href=#208 id=208 data-nosnippet>208</a>    /// - 当进程重新调度时，继续检查输入
 <a href=#209 id=209 data-nosnippet>209</a>    ///
 <a href=#210 id=210 data-nosnippet>210</a>    /// ## 错误处理
 <a href=#211 id=211 data-nosnippet>211</a>    ///

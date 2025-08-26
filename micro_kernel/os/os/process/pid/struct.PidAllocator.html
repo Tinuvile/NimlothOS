@@ -1,0 +1,108 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="进程 ID 分配器"><title>PidAllocator in os::process::pid - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">PidAllocator</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#分配策略" title="分配策略">分配策略</a><ul><li><a href="#分配顺序" title="分配顺序">分配顺序</a></li><li><a href="#数据结构" title="数据结构">数据结构</a></li></ul></li><li><a href="#算法复杂度" title="算法复杂度">算法复杂度</a></li><li><a href="#线程安全" title="线程安全">线程安全</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.current" title="current">current</a></li><li><a href="#structfield.recycled" title="recycled">recycled</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.alloc" title="alloc">alloc</a></li><li><a href="#method.dealloc" title="dealloc">dealloc</a></li><li><a href="#method.new" title="new">new</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-PidAllocator" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-PidAllocator" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-PidAllocator" title="Send">Send</a></li><li><a href="#impl-Sync-for-PidAllocator" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-PidAllocator" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-PidAllocator" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>process::<wbr>pid</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">process</a>::<wbr><a href="index.html">pid</a></div><h1>Struct <span class="struct">PidAllocator</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/process/pid.rs.html#137-142">Source</a> </span></div><pre class="rust item-decl"><code>pub struct PidAllocator {
+    current: usize,
+    recycled: Vec&lt;usize&gt;,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>进程 ID 分配器</p>
+<p>管理系统中所有进程 ID 的分配和回收，采用高效的混合分配策略。
+优先复用已回收的 PID，在回收池为空时分配新的递增 PID。</p>
+<h3 id="分配策略"><a class="doc-anchor" href="#分配策略">§</a>分配策略</h3><h4 id="分配顺序"><a class="doc-anchor" href="#分配顺序">§</a>分配顺序</h4>
+<ol>
+<li><strong>优先回收</strong>: 首先检查回收池中是否有可用的 PID</li>
+<li><strong>递增分配</strong>: 回收池为空时，分配新的连续 PID</li>
+<li><strong>唯一性保证</strong>: 确保系统中不存在重复的活跃 PID</li>
+</ol>
+<h4 id="数据结构"><a class="doc-anchor" href="#数据结构">§</a>数据结构</h4>
+<ul>
+<li><code>current</code>: 下一个要分配的新 PID 值（单调递增）</li>
+<li><code>recycled</code>: 已回收的 PID 池，使用向量实现的栈结构</li>
+</ul>
+<h3 id="算法复杂度"><a class="doc-anchor" href="#算法复杂度">§</a>算法复杂度</h3>
+<ul>
+<li><strong>分配操作</strong>: O(1) - 无论是从回收池还是新分配</li>
+<li><strong>回收操作</strong>: O(n) - 需要检查重复回收（n 为回收池大小）</li>
+<li><strong>空间复杂度</strong>: O(r) - r 为已回收但未重新分配的 PID 数量</li>
+</ul>
+<h3 id="线程安全"><a class="doc-anchor" href="#线程安全">§</a>线程安全</h3>
+<p>本结构体本身不提供线程安全保证，需要配合 <code>UPSafeCell</code> 等同步原语使用。
+全局实例 <code>PID_ALLOCATOR</code> 通过互斥访问确保线程安全。</p>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.current" class="structfield section-header"><a href="#structfield.current" class="anchor field">§</a><code>current: usize</code></span><div class="docblock"><p>下一个要分配的新 PID（从 0 开始递增）</p>
+</div><span id="structfield.recycled" class="structfield section-header"><a href="#structfield.recycled" class="anchor field">§</a><code>recycled: Vec&lt;usize&gt;</code></span><div class="docblock"><p>回收的 PID 池，后进先出的栈结构</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-PidAllocator" class="impl"><a class="src rightside" href="../../../src/os/process/pid.rs.html#144-266">Source</a><a href="#impl-PidAllocator" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.PidAllocator.html" title="struct os::process::pid::PidAllocator">PidAllocator</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/os/process/pid.rs.html#161-166">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>() -&gt; Self</h4></section></summary><div class="docblock"><p>创建新的 PID 分配器</p>
+<p>初始化一个空的分配器，PID 从 0 开始分配，回收池为空。
+这是系统启动时调用的构造函数。</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>返回初始化完成的 <code>PidAllocator</code> 实例</p>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>allocator = PidAllocator::new();
+<span class="macro">assert_eq!</span>(allocator.current, <span class="number">0</span>);
+<span class="macro">assert!</span>(allocator.recycled.is_empty());</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.alloc" class="method"><a class="src rightside" href="../../../src/os/process/pid.rs.html#207-214">Source</a><h4 class="code-header">pub fn <a href="#method.alloc" class="fn">alloc</a>(&amp;mut self) -&gt; <a class="struct" href="struct.PidHandle.html" title="struct os::process::pid::PidHandle">PidHandle</a></h4></section></summary><div class="docblock"><p>分配一个新的进程 ID</p>
+<p>根据分配策略返回一个可用的 PID。优先从回收池中取出已释放的 PID，
+如果回收池为空，则分配下一个连续的新 PID。</p>
+<h6 id="分配逻辑"><a class="doc-anchor" href="#分配逻辑">§</a>分配逻辑</h6><div class="example-wrap"><pre class="language-text"><code>检查回收池
+    ↓
+有可用PID? ───Yes──→ 返回回收的PID
+    ↓ No
+分配新PID (current)
+    ↓
+current += 1
+    ↓
+返回新分配的PID</code></pre></div><h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<p>返回包装在 <code>PidHandle</code> 中的唯一 PID</p>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>allocator = PidAllocator::new();
+
+<span class="comment">// 分配前几个PID
+</span><span class="kw">let </span>pid1 = allocator.alloc(); <span class="comment">// PID = 0
+</span><span class="kw">let </span>pid2 = allocator.alloc(); <span class="comment">// PID = 1
+</span><span class="kw">let </span>pid3 = allocator.alloc(); <span class="comment">// PID = 2
+
+// 回收 PID 1
+</span>allocator.dealloc(<span class="number">1</span>);
+
+<span class="comment">// 下次分配会复用回收的 PID
+</span><span class="kw">let </span>pid4 = allocator.alloc(); <span class="comment">// PID = 1 (复用)</span></code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.dealloc" class="method"><a class="src rightside" href="../../../src/os/process/pid.rs.html#257-265">Source</a><h4 class="code-header">pub fn <a href="#method.dealloc" class="fn">dealloc</a>(&amp;mut self, pid: usize)</h4></section></summary><div class="docblock"><p>回收一个进程 ID</p>
+<p>将已使用完毕的 PID 放回回收池中，供后续分配复用。包含完整的
+安全检查以防止重复回收和无效回收。</p>
+<h6 id="安全检查"><a class="doc-anchor" href="#安全检查">§</a>安全检查</h6>
+<ol>
+<li><strong>有效性检查</strong>: 确保 PID 小于当前分配的最大值</li>
+<li><strong>重复检查</strong>: 防止同一 PID 被多次回收</li>
+<li><strong>系统一致性</strong>: 维护分配器内部状态的正确性</li>
+</ol>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>pid</code> - 要回收的进程 ID，必须是之前通过 <code>alloc()</code> 分配的有效 PID</li>
+</ul>
+<h6 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h6>
+<ul>
+<li>如果 <code>pid &gt;= current</code>，表示试图回收未分配的 PID</li>
+<li>如果 <code>pid</code> 已经在回收池中，表示重复回收</li>
+</ul>
+<h6 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>allocator = PidAllocator::new();
+
+<span class="comment">// 分配 PID
+</span><span class="kw">let </span>handle1 = allocator.alloc(); <span class="comment">// PID = 0
+</span><span class="kw">let </span>handle2 = allocator.alloc(); <span class="comment">// PID = 1
+
+// 正确回收
+</span>allocator.dealloc(<span class="number">0</span>); <span class="comment">// ✓ 正确
+
+// 以下操作会 panic
+// allocator.dealloc(0);  // ✗ 重复回收
+// allocator.dealloc(10); // ✗ 未分配的 PID</span></code></pre></div>
+<h6 id="实现注意事项"><a class="doc-anchor" href="#实现注意事项">§</a>实现注意事项</h6>
+<p>回收检查的时间复杂度为 O(n)，其中 n 是回收池大小。在高频率的
+进程创建/销毁场景下可能成为性能瓶颈，但对于系统安全性是必要的。</p>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-PidAllocator" class="impl"><a href="#impl-Freeze-for-PidAllocator" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.PidAllocator.html" title="struct os::process::pid::PidAllocator">PidAllocator</a></h3></section><section id="impl-RefUnwindSafe-for-PidAllocator" class="impl"><a href="#impl-RefUnwindSafe-for-PidAllocator" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.PidAllocator.html" title="struct os::process::pid::PidAllocator">PidAllocator</a></h3></section><section id="impl-Send-for-PidAllocator" class="impl"><a href="#impl-Send-for-PidAllocator" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.PidAllocator.html" title="struct os::process::pid::PidAllocator">PidAllocator</a></h3></section><section id="impl-Sync-for-PidAllocator" class="impl"><a href="#impl-Sync-for-PidAllocator" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.PidAllocator.html" title="struct os::process::pid::PidAllocator">PidAllocator</a></h3></section><section id="impl-Unpin-for-PidAllocator" class="impl"><a href="#impl-Unpin-for-PidAllocator" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.PidAllocator.html" title="struct os::process::pid::PidAllocator">PidAllocator</a></h3></section><section id="impl-UnwindSafe-for-PidAllocator" class="impl"><a href="#impl-UnwindSafe-for-PidAllocator" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.PidAllocator.html" title="struct os::process::pid::PidAllocator">PidAllocator</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

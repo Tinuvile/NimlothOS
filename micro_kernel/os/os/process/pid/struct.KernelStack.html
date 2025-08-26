@@ -1,0 +1,217 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="内核栈管理器"><title>KernelStack in os::process::pid - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Kernel<wbr>Stack</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#设计特性" title="设计特性">设计特性</a><ul><li><a href="#栈空间隔离" title="栈空间隔离">栈空间隔离</a></li><li><a href="#虚拟内存布局" title="虚拟内存布局">虚拟内存布局</a></li></ul></li><li><a href="#raii-资源管理" title="RAII 资源管理">RAII 资源管理</a></li><li><a href="#线程安全" title="线程安全">线程安全</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.pid" title="pid">pid</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.new" title="new">new</a></li><li><a href="#method.push_on_top" title="push_on_top">push_on_top</a></li><li><a href="#method.top" title="top">top</a></li></ul><h3><a href="#trait-implementations">Trait Implementations</a></h3><ul class="block trait-implementation"><li><a href="#impl-Drop-for-KernelStack" title="Drop">Drop</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-KernelStack" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-KernelStack" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-KernelStack" title="Send">Send</a></li><li><a href="#impl-Sync-for-KernelStack" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-KernelStack" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-KernelStack" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>process::<wbr>pid</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">process</a>::<wbr><a href="index.html">pid</a></div><h1>Struct <span class="struct">KernelStack</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/process/pid.rs.html#436-439">Source</a> </span></div><pre class="rust item-decl"><code>pub struct KernelStack {
+    pid: usize,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>内核栈管理器</p>
+<p>为每个进程分配和管理独立的内核栈空间。内核栈用于存储系统调用、中断处理
+和进程切换时的临时数据。每个内核栈在虚拟地址空间中占用固定的位置。</p>
+<h3 id="设计特性"><a class="doc-anchor" href="#设计特性">§</a>设计特性</h3><h4 id="栈空间隔离"><a class="doc-anchor" href="#栈空间隔离">§</a>栈空间隔离</h4>
+<ul>
+<li><strong>独立映射</strong>: 每个进程拥有完全独立的内核栈空间</li>
+<li><strong>保护页</strong>: 相邻栈之间有保护页防止栈溢出</li>
+<li><strong>固定大小</strong>: 每个栈的大小为 <code>KERNEL_STACK_SIZE</code> (通常 8KB)</li>
+<li><strong>预定位置</strong>: 栈位置由 PID 唯一确定，便于快速定位</li>
+</ul>
+<h4 id="虚拟内存布局"><a class="doc-anchor" href="#虚拟内存布局">§</a>虚拟内存布局</h4><div class="example-wrap"><pre class="language-text"><code>TRAMPOLINE (高地址)
+    ↓
+┌─────────────────┐ ← PID 0 栈顶
+│   Kernel Stack  │
+│     (PID 0)     │ ← 8KB
+└─────────────────┘ ← PID 0 栈底
+┌─────────────────┐ ← 保护页 (4KB)
+└─────────────────┘
+┌─────────────────┐ ← PID 1 栈顶
+│   Kernel Stack  │
+│     (PID 1)     │ ← 8KB  
+└─────────────────┘ ← PID 1 栈底
+┌─────────────────┐ ← 保护页 (4KB)
+└─────────────────┘
+    ↓
+(低地址方向)</code></pre></div><h3 id="raii-资源管理"><a class="doc-anchor" href="#raii-资源管理">§</a>RAII 资源管理</h3>
+<ul>
+<li><strong>自动分配</strong>: 构造时自动分配并映射虚拟内存</li>
+<li><strong>自动回收</strong>: 析构时自动解映射并释放内存</li>
+<li><strong>异常安全</strong>: 即使发生异常也能正确清理资源</li>
+<li><strong>零泄漏</strong>: 通过 Rust 的所有权系统保证无内存泄漏</li>
+</ul>
+<h3 id="线程安全"><a class="doc-anchor" href="#线程安全">§</a>线程安全</h3>
+<p>内核栈的分配和回收涉及全局内存管理器，通过互斥访问保证线程安全。
+但单个 <code>KernelStack</code> 实例本身不支持跨线程共享。</p>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.pid" class="structfield section-header"><a href="#structfield.pid" class="anchor field">§</a><code>pid: usize</code></span><div class="docblock"><p>关联的进程 ID，用于确定内核栈在虚拟地址空间中的位置</p>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-KernelStack" class="impl"><a class="src rightside" href="../../../src/os/process/pid.rs.html#441-622">Source</a><a href="#impl-KernelStack" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../../src/os/process/pid.rs.html#485-494">Source</a><h4 class="code-header">pub fn <a href="#method.new" class="fn">new</a>(pid_handle: &amp;<a class="struct" href="struct.PidHandle.html" title="struct os::process::pid::PidHandle">PidHandle</a>) -&gt; Self</h4></section></summary><div class="docblock"><p>为指定进程创建新的内核栈</p>
+<p>根据进程 ID 计算内核栈的虚拟地址范围，并在内核地址空间中建立映射。
+内核栈具有读写权限，用于存储系统调用和中断处理时的临时数据。</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>pid_handle</code> - 进程 ID 句柄的引用，用于确定栈的虚拟地址位置</li>
+</ul>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>返回初始化完成的 <code>KernelStack</code> 实例</p>
+<h6 id="实现过程"><a class="doc-anchor" href="#实现过程">§</a>实现过程</h6>
+<ol>
+<li><strong>地址计算</strong>: 通过 <code>kernel_stack_position()</code> 计算栈的起始和结束地址</li>
+<li><strong>内存映射</strong>: 在内核地址空间中建立虚拟到物理的页面映射</li>
+<li><strong>权限设置</strong>: 设置页面的读写权限 (R|W)</li>
+<li><strong>实例创建</strong>: 创建并返回 <code>KernelStack</code> 实例</li>
+</ol>
+<h6 id="内存分配"><a class="doc-anchor" href="#内存分配">§</a>内存分配</h6>
+<ul>
+<li><strong>按需分配</strong>: 物理页面在访问时才真正分配（延迟分配）</li>
+<li><strong>连续虚拟地址</strong>: 保证栈空间在虚拟地址上连续</li>
+<li><strong>页面对齐</strong>: 所有地址都按页边界对齐</li>
+</ul>
+<h6 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h6>
+<p>如果虚拟内存映射失败（如地址冲突或内存不足），函数会 panic</p>
+<h6 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 分配进程 ID
+</span><span class="kw">let </span>pid_handle = pid_alloc();
+
+<span class="comment">// 创建对应的内核栈
+</span><span class="kw">let </span>kernel_stack = KernelStack::new(<span class="kw-2">&amp;</span>pid_handle);
+
+<span class="comment">// 现在可以使用内核栈进行系统调用处理
+</span><span class="kw">let </span>stack_top = kernel_stack.top();
+<span class="macro">println!</span>(<span class="string">"Kernel stack top: 0x{:x}"</span>, stack_top);</code></pre></div>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.push_on_top" class="method"><a class="src rightside" href="../../../src/os/process/pid.rs.html#563-573">Source</a><h4 class="code-header">pub fn <a href="#method.push_on_top" class="fn">push_on_top</a>&lt;T&gt;(&amp;self, value: T) -&gt; *mut T<div class="where">where
+    T: Sized,</div></h4></section></summary><div class="docblock"><p>在内核栈顶压入数据</p>
+<p>在内核栈的顶部压入一个值，并返回指向该值的可变指针。这是一个泛型方法，
+可以压入任何实现了 <code>Sized</code> trait 的类型。主要用于在进程切换时保存上下文信息。</p>
+<h6 id="type-parameters"><a class="doc-anchor" href="#type-parameters">§</a>Type Parameters</h6>
+<ul>
+<li><code>T</code> - 要压入的数据类型，必须实现 <code>Sized</code> trait</li>
+</ul>
+<h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
+<ul>
+<li><code>value</code> - 要压入栈顶的值，通过值传递（移动语义）</li>
+</ul>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<p>返回指向栈顶压入值的可变原始指针 <code>*mut T</code></p>
+<h6 id="栈操作过程"><a class="doc-anchor" href="#栈操作过程">§</a>栈操作过程</h6><div class="example-wrap"><pre class="language-text"><code>压入前:                   压入后:
+┌──────────────┐         ┌──────────────┐
+│              │         │   New Data   │ ← Returned pointer
+│              │         ├──────────────┤ ← New stack top
+│              │         │              │
+│ Stack Space  │         │ Original     │
+│              │         │ Content      │
+│              │         │              │
+└──────────────┘         └──────────────┘
+↑ 栈顶                   ↑ 栈底</code></pre></div><h6 id="safety"><a class="doc-anchor" href="#safety">§</a>Safety</h6>
+<p>此方法使用 <code>unsafe</code> 代码直接操作内存，但通过以下方式确保安全：</p>
+<ul>
+<li>栈顶地址由 <code>top()</code> 正确计算</li>
+<li>减去数据大小确保不会越界</li>
+<li>目标地址在已映射的内核栈范围内</li>
+</ul>
+<h6 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h6>
+<ul>
+<li><strong>保存上下文</strong>: 在进程切换时保存 <code>TrapContext</code></li>
+<li><strong>传递参数</strong>: 向新进程传递初始化参数</li>
+<li><strong>临时存储</strong>: 存储系统调用期间的临时数据</li>
+</ul>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 创建内核栈
+</span><span class="kw">let </span>kernel_stack = KernelStack::new(<span class="kw-2">&amp;</span>pid_handle);
+
+<span class="comment">// 压入陷阱上下文
+</span><span class="kw">let </span>trap_ctx = TrapContext::init_app_context(entry_point, user_sp);
+<span class="kw">let </span>ctx_ptr = kernel_stack.push_on_top(trap_ctx);
+
+<span class="comment">// 现在可以通过 ctx_ptr 访问压入的数据
+</span><span class="kw">unsafe </span>{
+    (<span class="kw-2">*</span>ctx_ptr).sepc = new_entry_point;
+}</code></pre></div>
+<h6 id="注意事项"><a class="doc-anchor" href="#注意事项">§</a>注意事项</h6>
+<ul>
+<li><strong>栈溢出风险</strong>: 频繁压入大对象可能导致栈溢出</li>
+<li><strong>生命周期</strong>: 返回的指针的有效性与 <code>KernelStack</code> 实例相关</li>
+<li><strong>并发安全</strong>: 不支持多线程同时操作同一个内核栈</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.top" class="method"><a class="src rightside" href="../../../src/os/process/pid.rs.html#618-621">Source</a><h4 class="code-header">pub fn <a href="#method.top" class="fn">top</a>(&amp;self) -&gt; usize</h4></section></summary><div class="docblock"><p>获取内核栈顶地址</p>
+<p>返回内核栈的栈顶地址，用于进程切换和栈操作。
+栈顶地址指向内核栈的最高位置，栈从高地址向低地址增长。</p>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<p>内核栈的栈顶地址</p>
+<h6 id="栈布局"><a class="doc-anchor" href="#栈布局">§</a>栈布局</h6><div class="example-wrap"><pre class="language-text"><code>高地址
+┌─────────────────┐ ← top (返回的地址)
+│   Guard Page    │
+├─────────────────┤
+│   Kernel Stack  │
+│     Space       │
+├─────────────────┤
+│   Guard Page    │
+└─────────────────┘
+低地址</code></pre></div><h6 id="examples-2"><a class="doc-anchor" href="#examples-2">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>kernel_stack = KernelStack::new(<span class="kw-2">&amp;</span>pid_handle);
+<span class="kw">let </span>stack_top = kernel_stack.top();
+
+<span class="macro">println!</span>(<span class="string">"Kernel stack top: 0x{:x}"</span>, stack_top);
+
+<span class="comment">// 压入数据并计算新的栈顶
+</span><span class="kw">let </span>data_ptr = kernel_stack.push_on_top(some_data);
+<span class="kw">let </span>new_top = stack_top - core::mem::size_of::&lt;SomeData&gt;();
+<span class="macro">assert_eq!</span>(data_ptr <span class="kw">as </span>usize, new_top);</code></pre></div>
+<h6 id="性能特性"><a class="doc-anchor" href="#性能特性">§</a>性能特性</h6>
+<ul>
+<li><strong>O(1) 复杂度</strong>: 地址计算是简单的算术运算</li>
+<li><strong>无内存访问</strong>: 不需要访问实际的物理内存</li>
+<li><strong>缓存友好</strong>: 频繁调用不会产生缓存开销</li>
+</ul>
+</div></details></div></details></div><h2 id="trait-implementations" class="section-header">Trait Implementations<a href="#trait-implementations" class="anchor">§</a></h2><div id="trait-implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-Drop-for-KernelStack" class="impl"><a class="src rightside" href="../../../src/os/process/pid.rs.html#687-695">Source</a><a href="#impl-Drop-for-KernelStack" class="anchor">§</a><h3 class="code-header">impl Drop for <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3><div class="docblock"><p><code>KernelStack</code> 的自动资源清理</p>
+</div></section></summary><div class="docblock"><p>实现 <code>Drop</code> trait 为内核栈提供 RAII 风格的自动资源管理。当 <code>KernelStack</code>
+实例被销毁时，会自动清理对应的虚拟内存映射，防止内存泄漏。</p>
+<h5 id="清理过程"><a class="doc-anchor" href="#清理过程">§</a>清理过程</h5>
+<ol>
+<li><strong>地址计算</strong>: 重新计算内核栈的底部虚拟地址</li>
+<li><strong>地址转换</strong>: 将 usize 地址转换为 <code>VirtAddr</code> 类型</li>
+<li><strong>页面转换</strong>: 将虚拟地址转换为虚拟页号 (VPN)</li>
+<li><strong>映射移除</strong>: 从内核地址空间中移除整个内核栈区域的映射</li>
+<li><strong>物理页回收</strong>: 底层的物理页面被自动回收到页面分配器</li>
+</ol>
+<h5 id="自动触发时机"><a class="doc-anchor" href="#自动触发时机">§</a>自动触发时机</h5>
+<p><code>drop()</code> 方法在以下情况下自动调用：</p>
+<ul>
+<li><strong>作用域结束</strong>: <code>KernelStack</code> 变量离开作用域</li>
+<li><strong>显式销毁</strong>: 调用 <code>drop(kernel_stack)</code> 显式销毁</li>
+<li><strong>重新赋值</strong>: 变量被赋予新值时，旧值被销毁</li>
+<li><strong>容器清理</strong>: 从 Vec 或其他容器中移除时</li>
+<li><strong>程序终止</strong>: 程序结束时自动清理所有资源</li>
+</ul>
+<h5 id="内存管理"><a class="doc-anchor" href="#内存管理">§</a>内存管理</h5><div class="example-wrap"><pre class="language-text"><code>销毁前:                     销毁后:
+┌─────────────────┐         ┌─────────────────┐
+│ Virtual Address │         │ Virtual Address │
+│ Space           │         │                 │
+│ ┌─────────────┐ │         │    (Mapping     │
+│ │ Stack       │ │   --&gt;   │     Removed)    │
+│ │ Mapping     │ │         │                 │
+│ └─────────────┘ │         │                 │
+└─────────────────┘         └─────────────────┘
+      ↓                            
+┌─────────────────┐         ┌─────────────────┐
+│ Physical Memory │         │ Physical Memory │
+│ ┌─────────────┐ │         │ ┌─────────────┐ │
+│ │ Allocated   │ │   --&gt;   │ │ Free Pages  │ │
+│ │ Pages       │ │         │ │             │ │
+│ └─────────────┘ │         │ └─────────────┘ │
+└─────────────────┘         └─────────────────┘</code></pre></div><h5 id="线程安全-1"><a class="doc-anchor" href="#线程安全-1">§</a>线程安全</h5>
+<p>通过 <code>KERNEL_SPACE.exclusive_access()</code> 获取互斥访问权，确保在多线程环境下
+的内存管理操作是原子的和线程安全的。</p>
+<h5 id="异常安全"><a class="doc-anchor" href="#异常安全">§</a>异常安全</h5>
+<p>即使在 <code>drop()</code> 执行过程中发生 panic，内核地址空间的状态仍然保持一致，
+不会出现部分清理的情况。</p>
+<h5 id="性能特性-1"><a class="doc-anchor" href="#性能特性-1">§</a>性能特性</h5>
+<ul>
+<li><strong>延迟回收</strong>: 物理页面回收可能是延迟的，具体取决于内存管理器实现</li>
+<li><strong>批量操作</strong>: 移除整个区域的映射比逐页移除更高效</li>
+<li><strong>无额外分配</strong>: 清理过程不需要额外的内存分配</li>
+</ul>
+<h5 id="调试信息"><a class="doc-anchor" href="#调试信息">§</a>调试信息</h5>
+<p>在调试模式下，可以通过内存管理器的调试接口验证内核栈是否被正确清理。</p>
+</div><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.drop" class="method trait-impl"><a class="src rightside" href="../../../src/os/process/pid.rs.html#688-694">Source</a><a href="#method.drop" class="anchor">§</a><h4 class="code-header">fn <a class="fn">drop</a>(&amp;mut self)</h4></section></summary><div class='docblock'>Executes the destructor for this type. <a>Read more</a></div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-KernelStack" class="impl"><a href="#impl-Freeze-for-KernelStack" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3></section><section id="impl-RefUnwindSafe-for-KernelStack" class="impl"><a href="#impl-RefUnwindSafe-for-KernelStack" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3></section><section id="impl-Send-for-KernelStack" class="impl"><a href="#impl-Send-for-KernelStack" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3></section><section id="impl-Sync-for-KernelStack" class="impl"><a href="#impl-Sync-for-KernelStack" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3></section><section id="impl-Unpin-for-KernelStack" class="impl"><a href="#impl-Unpin-for-KernelStack" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3></section><section id="impl-UnwindSafe-for-KernelStack" class="impl"><a href="#impl-UnwindSafe-for-KernelStack" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.KernelStack.html" title="struct os::process::pid::KernelStack">KernelStack</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

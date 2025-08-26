@@ -1,0 +1,115 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="进程控制块模块"><title>os::process::process - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module process</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#进程控制块模块" title="进程控制块模块">进程控制块模块</a><ul><li><a href="#核心组件" title="核心组件">核心组件</a></li><li><a href="#标准文件描述符" title="标准文件描述符">标准文件描述符</a></li><li><a href="#设计原理" title="设计原理">设计原理</a></li><li><a href="#内存布局" title="内存布局">内存布局</a></li><li><a href="#进程状态转换" title="进程状态转换">进程状态转换</a></li><li><a href="#并发安全" title="并发安全">并发安全</a></li><li><a href="#使用示例" title="使用示例">使用示例</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In os::<wbr>process</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">process</a></div><h1>Module <span>process</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/process/process.rs.html#1-1454">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="进程控制块模块"><a class="doc-anchor" href="#进程控制块模块">§</a>进程控制块模块</h2>
+<p>提供进程控制块 (Process Control Block, TCB) 的实现，管理进程的完整生命周期。
+支持进程创建、fork、exec、状态管理等核心操作，是操作系统进程管理的核心数据结构。</p>
+<h3 id="核心组件"><a class="doc-anchor" href="#核心组件">§</a>核心组件</h3>
+<ul>
+<li><a href="struct.ProcessControlBlock.html" title="struct os::process::process::ProcessControlBlock"><code>ProcessControlBlock</code></a> - 进程控制块，包含进程的所有信息</li>
+<li><a href="struct.ProcessControlBlockInner.html" title="struct os::process::process::ProcessControlBlockInner"><code>ProcessControlBlockInner</code></a> - TCB 内部可变部分，受互斥锁保护</li>
+<li><a href="enum.ProcessStatus.html" title="enum os::process::process::ProcessStatus"><code>ProcessStatus</code></a> - 进程状态枚举，表示进程的运行状态</li>
+</ul>
+<h3 id="标准文件描述符"><a class="doc-anchor" href="#标准文件描述符">§</a>标准文件描述符</h3>
+<p>每个进程创建时自动分配三个标准文件描述符：</p>
+<ul>
+<li><strong>标准输入 (stdin, fd=0)</strong>: 程序的标准输入源，实现为 <a href="../../fs/stdio/struct.Stdin.html" title="struct os::fs::stdio::Stdin"><code>Stdin</code></a></li>
+<li><strong>标准输出 (stdout, fd=1)</strong>: 程序的正常输出目标，实现为 <a href="../../fs/stdio/struct.Stdout.html" title="struct os::fs::stdio::Stdout"><code>Stdout</code></a></li>
+<li><strong>标准错误 (stderr, fd=2)</strong>: 程序的错误输出目标，实现为 <a href="../../fs/stdio/struct.Stderr.html" title="struct os::fs::stdio::Stderr"><code>Stderr</code></a></li>
+</ul>
+<p>这些标准文件描述符遵循POSIX标准，提供基本的输入输出功能。
+在fork操作中，子进程会继承父进程的所有文件描述符。</p>
+<h3 id="设计原理"><a class="doc-anchor" href="#设计原理">§</a>设计原理</h3><h4 id="分离设计"><a class="doc-anchor" href="#分离设计">§</a>分离设计</h4>
+<p>TCB 采用内外分离的设计模式：</p>
+<ul>
+<li><strong>不变部分</strong>：PID 和内核栈在进程生命周期内保持不变</li>
+<li><strong>可变部分</strong>：进程状态、内存集合等需要互斥保护的数据</li>
+</ul>
+<h4 id="进程层次结构"><a class="doc-anchor" href="#进程层次结构">§</a>进程层次结构</h4>
+<p>支持完整的进程树结构：</p>
+<ul>
+<li><strong>父子关系</strong>：通过 <code>parent</code> 和 <code>children</code> 字段维护</li>
+<li><strong>引用计数</strong>：使用 <code>Arc</code> 和 <code>Weak</code> 防止循环引用</li>
+<li><strong>孤儿进程处理</strong>：父进程退出时子进程重新指向 init 进程</li>
+</ul>
+<h3 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h3>
+<p>每个进程的内存空间布局：</p>
+<div class="example-wrap"><pre class="language-text"><code>高地址 TRAMPOLINE (0x3ffffff000)
+┌──────────────────────────────────────────────────────┐
+│                   Trampoline                         │
+│                    (R+X)                             │
+├──────────────────────────────────────────────────────┤
+│                 Trap Context                         │
+│                    (R+W)                             │
+├──────────────────────────────────────────────────────┤
+│                  User Stack                          │
+│                   (R+W+U)                            │
+├──────────────────────────────────────────────────────┤
+│               Program Sections                       │
+│            (.text/.data/.bss etc)                    │
+│              (Based on ELF flags)                    │
+└──────────────────────────────────────────────────────┘
+低地址 (0x10000)
+
+内核空间 - 每个进程独立的内核栈：
+┌──────────────────────────────────────────────────────┐
+│             Process N Kernel Stack                   │
+├──────────────────────────────────────────────────────┤
+│                  Guard Page                          │
+├──────────────────────────────────────────────────────┤
+│           Process N-1 Kernel Stack                   │
+└──────────────────────────────────────────────────────┘</code></pre></div><h3 id="进程状态转换"><a class="doc-anchor" href="#进程状态转换">§</a>进程状态转换</h3><div class="example-wrap"><pre class="language-text"><code>          fork/exec
+        ┌──────────┐
+        │          │
+        ▼          │
+    ┌───────┐      │      Scheduler Selection
+    │ Ready │◄─────┘ ◄─────────────┐
+    └───┬───┘                      │
+        │                          │
+        │ Scheduler Selection      │ Timeslice Expire/Yield
+        │                          │
+        ▼                          │
+   ┌─────────┐                     │
+   │ Running │───────────────────-─┘
+   └────┬────┘
+        │
+        │ exit() System Call
+        │
+        ▼
+    ┌───────┐
+    │Zombie │ ◄── Wait for Parent wait()
+    └───────┘</code></pre></div><h3 id="并发安全"><a class="doc-anchor" href="#并发安全">§</a>并发安全</h3>
+<ul>
+<li><strong>互斥保护</strong>：可变部分使用 <code>UPSafeCell</code> 保证线程安全</li>
+<li><strong>原子操作</strong>：PID 分配和内核栈管理通过全局锁保护</li>
+<li><strong>引用计数</strong>：<code>Arc</code> 确保进程对象的生命周期管理</li>
+</ul>
+<h3 id="使用示例"><a class="doc-anchor" href="#使用示例">§</a>使用示例</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>alloc::sync::Arc;
+
+<span class="comment">// 创建新进程
+</span><span class="kw">let </span>elf_data = app_data(<span class="number">0</span>);
+<span class="kw">let </span>process = Arc::new(ProcessControlBlock::new(elf_data));
+
+<span class="comment">// 检查标准文件描述符
+</span>{
+    <span class="kw">let </span>inner = process.inner_exclusive_access();
+    <span class="comment">// 验证标准文件描述符已正确初始化
+    </span><span class="macro">assert!</span>(inner.fd_table[<span class="number">0</span>].is_some()); <span class="comment">// stdin
+    </span><span class="macro">assert!</span>(inner.fd_table[<span class="number">1</span>].is_some()); <span class="comment">// stdout  
+    </span><span class="macro">assert!</span>(inner.fd_table[<span class="number">2</span>].is_some()); <span class="comment">// stderr
+</span>}
+
+<span class="comment">// Fork 子进程
+</span><span class="kw">let </span>child_process = process.fork();
+
+<span class="comment">// 检查子进程继承了父进程的文件描述符
+</span>{
+    <span class="kw">let </span>child_inner = child_process.inner_exclusive_access();
+    <span class="macro">assert_eq!</span>(child_inner.fd_table.len(), process.inner_exclusive_access().fd_table.len());
+}
+
+<span class="comment">// 执行新程序
+</span>process.exec(new_elf_data);
+
+<span class="comment">// 获取进程状态
+</span><span class="kw">let </span>inner = process.inner_exclusive_access();
+<span class="macro">println!</span>(<span class="string">"Process status: {:?}"</span>, inner.process_status);</code></pre></div>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.ProcessControlBlock.html" title="struct os::process::process::ProcessControlBlock">Process<wbr>Control<wbr>Block</a></dt><dd>进程控制块 (Process Control Block)</dd><dt><a class="struct" href="struct.ProcessControlBlockInner.html" title="struct os::process::process::ProcessControlBlockInner">Process<wbr>Control<wbr>Block<wbr>Inner</a></dt><dd>进程控制块内部可变状态</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.ProcessStatus.html" title="enum os::process::process::ProcessStatus">Process<wbr>Status</a></dt><dd>进程状态枚举</dd></dl></section></div></main></body></html>

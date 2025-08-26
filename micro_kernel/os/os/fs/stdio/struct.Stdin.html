@@ -42,8 +42,8 @@
 <ul>
 <li>调用 <code>console_getchar()</code> 检查是否有输入</li>
 <li>如果没有输入（返回 0），调用 <code>suspend_current_and_run_next()</code></li>
-<li>让出 CPU 给其他任务执行</li>
-<li>当任务重新调度时，继续检查输入</li>
+<li>让出 CPU 给其他进程执行</li>
+<li>当进程重新调度时，继续检查输入</li>
 </ul>
 <h6 id="错误处理"><a class="doc-anchor" href="#错误处理">§</a>错误处理</h6>
 <ul>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["add_process","fetch_process","pid2process","remove_from_pid2process"],"struct":["PID2TCB","PROCESS_MANAGER","ProcessManager"]};
