@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="管道（Pipe）实现模块"><title>os::fs::pipe - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module pipe</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#管道pipe实现模块" title="管道（Pipe）实现模块">管道（Pipe）实现模块</a><ul><li><a href="#设计要点" title="设计要点">设计要点</a></li><li><a href="#与文件接口的关系" title="与文件接口的关系">与文件接口的关系</a></li><li><a href="#使用示例" title="使用示例">使用示例</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In os::fs</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">fs</a></div><h1>Module <span>pipe</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/fs/pipe.rs.html#1-234">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="管道pipe实现模块"><a class="doc-anchor" href="#管道pipe实现模块">§</a>管道（Pipe）实现模块</h2>
+<p>提供用户态进程间通过字节流进行通信的管道实现。管道由一段环形缓冲区
+和两个端点组成：只读端与只写端。读端从缓冲区取字节，写端向缓冲区写入
+字节，配合调度器实现阻塞式读写与生产者-消费者语义。</p>
+<h3 id="设计要点"><a class="doc-anchor" href="#设计要点">§</a>设计要点</h3>
+<ul>
+<li><strong>环形缓冲区</strong>：固定容量（<code>RING_BUFFER_SIZE</code>）的字节数组，利用 <code>head/tail</code> 指针
+与状态位实现无额外拷贝的顺序读写。</li>
+<li><strong>阻塞语义</strong>：
+<ul>
+<li>当读端在缓冲区为空时阻塞（让出 CPU），直至有数据可读或写端全部关闭。</li>
+<li>当写端在缓冲区满时阻塞（让出 CPU），直至有空间可写。</li>
+</ul>
+</li>
+<li><strong>端点生命周期</strong>：通过 <code>Arc</code>/<code>Weak</code> 追踪写端是否仍存活，读端可在写端全部关闭且
+缓冲区为空时返回 EOF。</li>
+<li><strong>并发安全</strong>：内部通过 <code>UPSafeCell</code> 提供独占访问；临界区应尽量缩短，阻塞前先释放锁。</li>
+</ul>
+<h3 id="与文件接口的关系"><a class="doc-anchor" href="#与文件接口的关系">§</a>与文件接口的关系</h3>
+<p>本模块中的 <code>Pipe</code> 实现了内核抽象 <code>File</code>，可与标准文件描述符框架无缝协作：</p>
+<ul>
+<li><code>read(&amp;self, UserBuffer) -&gt; usize</code></li>
+<li><code>write(&amp;self, UserBuffer) -&gt; usize</code></li>
+<li><code>readable()</code> / <code>writable()</code></li>
+</ul>
+<h3 id="使用示例"><a class="doc-anchor" href="#使用示例">§</a>使用示例</h3>
+<p>通过系统调用层包装：</p>
+<ol>
+<li>进程 A 调用 <code>pipe()</code> 获得一对 <code>fd[0]</code>（读端）、<code>fd[1]</code>（写端）。</li>
+<li>父进程 <code>fork()</code> 后将写端 <code>dup</code>/重定向给子进程标准输出，读端给另一个子进程标准输入。</li>
+<li>两个子进程之间即可通过管道字节流进行通信。</li>
+</ol>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.Pipe.html" title="struct os::fs::pipe::Pipe">Pipe</a></dt><dd>管道端点</dd><dt><a class="struct" href="struct.PipeRingBuffer.html" title="struct os::fs::pipe::PipeRingBuffer">Pipe<wbr>Ring<wbr>Buffer</a></dt><dd>管道环形缓冲区</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.RingBufferStatus.html" title="enum os::fs::pipe::RingBufferStatus">Ring<wbr>Buffer<wbr>Status</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt></dl><h2 id="constants" class="section-header">Constants<a href="#constants" class="anchor">§</a></h2><dl class="item-table"><dt><a class="constant" href="constant.RING_BUFFER_SIZE.html" title="constant os::fs::pipe::RING_BUFFER_SIZE">RING_<wbr>BUFFER_<wbr>SIZE</a><span title="Restricted Visibility">&nbsp;🔒</span> </dt></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.make_pipe.html" title="fn os::fs::pipe::make_pipe">make_<wbr>pipe</a></dt><dd>创建一对管道端点（读端、写端）</dd></dl></section></div></main></body></html>

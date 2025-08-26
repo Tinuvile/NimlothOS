@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="处理器管理模块"><title>os::task::processor - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module processor</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#处理器管理模块" title="处理器管理模块">处理器管理模块</a><ul><li><a href="#核心组件" title="核心组件">核心组件</a></li><li><a href="#调度机制" title="调度机制">调度机制</a></li><li><a href="#处理器架构" title="处理器架构">处理器架构</a></li><li><a href="#上下文切换流程" title="上下文切换流程">上下文切换流程</a></li><li><a href="#使用示例" title="使用示例">使用示例</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#functions" title="Functions">Functions</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In os::<wbr>task</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">task</a></div><h1>Module <span>processor</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/task/processor.rs.html#1-1092">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="处理器管理模块"><a class="doc-anchor" href="#处理器管理模块">§</a>处理器管理模块</h2>
+<p>提供处理器状态管理和任务调度的核心功能，实现抢占式多任务调度系统。
+管理当前正在执行的任务，协调任务切换和处理器资源分配。</p>
+<h3 id="核心组件"><a class="doc-anchor" href="#核心组件">§</a>核心组件</h3>
+<ul>
+<li><a href="struct.Processor.html" title="struct os::task::processor::Processor"><code>Processor</code></a> - 处理器状态管理器，维护当前任务和空闲上下文</li>
+<li><a href="struct.PROCESSOR.html" title="struct os::task::processor::PROCESSOR"><code>PROCESSOR</code></a> - 全局处理器实例，系统唯一的处理器管理器</li>
+<li><a href="fn.run_tasks.html" title="fn os::task::processor::run_tasks"><code>run_tasks</code></a> - 主调度循环，负责任务分发和执行</li>
+<li><a href="fn.schedule.html" title="fn os::task::processor::schedule"><code>schedule</code></a> - 任务调度函数，实现任务上下文切换</li>
+</ul>
+<h3 id="调度机制"><a class="doc-anchor" href="#调度机制">§</a>调度机制</h3><h4 id="调度策略"><a class="doc-anchor" href="#调度策略">§</a>调度策略</h4>
+<p>采用<strong>协作式调度</strong>与<strong>抢占式调度</strong>相结合的混合调度模式：</p>
+<ul>
+<li><strong>时间片轮转</strong>: 基于时钟中断的抢占式调度</li>
+<li><strong>主动让出</strong>: 任务可以主动调用 <code>yield</code> 让出 CPU</li>
+<li><strong>阻塞调度</strong>: I/O 等待时自动切换到其他任务</li>
+</ul>
+<h4 id="任务状态转换"><a class="doc-anchor" href="#任务状态转换">§</a>任务状态转换</h4><div class="example-wrap"><pre class="language-text"><code>┌─────────────┐   Scheduler    ┌─────────────┐
+│    Ready    │ ─────────────► │   Running   │
+└─────────────┘   Selection    └──────┬──────┘
+      ▲                               │
+      │                               │
+      │    Timeout/Yield/Block        │
+      └───────────────────────────────┘</code></pre></div><h3 id="处理器架构"><a class="doc-anchor" href="#处理器架构">§</a>处理器架构</h3><div class="example-wrap"><pre class="language-text"><code>┌─────────────────────────────────────────────────────────┐
+│                    CPU Core                             │
+│  ┌─────────────┐                    ┌─────────────┐     │
+│  │   Current   │                    │  Idle Task  │     │
+│  │    Task     │ ◄──── Switch ────► │   Context   │     │
+│  │   Context   │                    │             │     │
+│  └─────────────┘                    └─────────────┘     │
+└─────────────────────────────────────────────────────────┘
+             ▲                                ▲
+             │                                │
+       ┌─────────────┐                ┌─────────────┐
+       │ User Space  │                │ Scheduler   │
+       │   Tasks     │                │   Loop      │
+       └─────────────┘                └─────────────┘</code></pre></div><h3 id="上下文切换流程"><a class="doc-anchor" href="#上下文切换流程">§</a>上下文切换流程</h3><div class="example-wrap"><pre class="language-text"><code>Task A Run ──► Interrupt/Syscall ──► Save Context A ──► Load Context B ──► Task B Run
+   │                               │                 │             │
+   │                               ▼                 ▼             │
+   │                        ┌─────────────┐ ┌─────────────┐        │
+   │                        │ TaskContext │ │ TaskContext │        │
+   │                        │     A       │ │     B       │        │
+   │                        └─────────────┘ └─────────────┘        │
+   │                                                               │
+   └─────────────────── Time Slice Rotation ◄──────────────────────┘</code></pre></div><h3 id="使用示例"><a class="doc-anchor" href="#使用示例">§</a>使用示例</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 系统初始化后启动调度器
+</span>run_tasks(); <span class="comment">// 进入主调度循环，永不返回
+
+// 在中断处理中进行任务切换
+</span><span class="kw">pub fn </span>handle_timer_interrupt() {
+    <span class="comment">// 处理时钟中断...
+    </span>schedule(current_task_cx_ptr); <span class="comment">// 切换到其他任务
+</span>}
+
+<span class="comment">// 获取当前任务信息
+</span><span class="kw">if let </span><span class="prelude-val">Some</span>(task) = current_task() {
+    <span class="macro">println!</span>(<span class="string">"Current PID: {}"</span>, task.getpid());
+}</code></pre></div>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.PROCESSOR.html" title="struct os::task::processor::PROCESSOR">PROCESSOR</a></dt><dd>全局处理器实例</dd><dt><a class="struct" href="struct.Processor.html" title="struct os::task::processor::Processor">Processor</a></dt><dd>处理器状态管理器</dd></dl><h2 id="functions" class="section-header">Functions<a href="#functions" class="anchor">§</a></h2><dl class="item-table"><dt><a class="fn" href="fn.current_task.html" title="fn os::task::processor::current_task">current_<wbr>task</a></dt><dd>获取当前正在执行的任务（只读访问）</dd><dt><a class="fn" href="fn.current_trap_cx.html" title="fn os::task::processor::current_trap_cx">current_<wbr>trap_<wbr>cx</a></dt><dd>获取当前任务的陷阱上下文</dd><dt><a class="fn" href="fn.current_user_token.html" title="fn os::task::processor::current_user_token">current_<wbr>user_<wbr>token</a></dt><dd>获取当前任务的用户地址空间标识符</dd><dt><a class="fn" href="fn.run_tasks.html" title="fn os::task::processor::run_tasks">run_<wbr>tasks</a></dt><dd>主调度循环 - 系统调度器的核心</dd><dt><a class="fn" href="fn.schedule.html" title="fn os::task::processor::schedule">schedule</a></dt><dd>任务调度函数 - 从当前任务切换回调度器</dd><dt><a class="fn" href="fn.take_current_task.html" title="fn os::task::processor::take_current_task">take_<wbr>current_<wbr>task</a></dt><dd>取出当前正在执行的任务</dd></dl></section></div></main></body></html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="标准错误设备"><title>Stderr in os::fs::stdio - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Stderr</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#输出特性" title="输出特性">输出特性</a></li><li><a href="#实现原理" title="实现原理">实现原理</a></li><li><a href="#线程安全" title="线程安全">线程安全</a></li><li><a href="#使用场景" title="使用场景">使用场景</a></li><li><a href="#与标准输出的区别" title="与标准输出的区别">与标准输出的区别</a></li><li><a href="#与posix标准的兼容性" title="与POSIX标准的兼容性">与POSIX标准的兼容性</a></li><li><a href="#examples" title="Examples">Examples</a></li></ul><h3><a href="#trait-implementations">Trait Implementations</a></h3><ul class="block trait-implementation"><li><a href="#impl-File-for-Stderr" title="File">File</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-Stderr" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-Stderr" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-Stderr" title="Send">Send</a></li><li><a href="#impl-Sync-for-Stderr" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-Stderr" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-Stderr" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>fs::<wbr>stdio</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">fs</a>::<wbr><a href="index.html">stdio</a></div><h1>Struct <span class="struct">Stderr</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/fs/stdio.rs.html#160">Source</a> </span></div><pre class="rust item-decl"><code>pub struct Stderr;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>标准错误设备</p>
+<p>实现向控制台输出错误信息的功能，支持 UTF-8 编码的文本输出。
+与标准输出类似，但专门用于输出错误信息，便于与正常输出区分。</p>
+<h3 id="输出特性"><a class="doc-anchor" href="#输出特性">§</a>输出特性</h3>
+<ul>
+<li><strong>实时输出</strong>: 错误信息立即显示到控制台</li>
+<li><strong>UTF-8 支持</strong>: 完全支持 Unicode 字符输出</li>
+<li><strong>批量处理</strong>: 支持跨页面的用户缓冲区</li>
+<li><strong>权限控制</strong>: 只支持写入操作，不支持读取</li>
+<li><strong>错误区分</strong>: 专门用于输出错误信息</li>
+</ul>
+<h3 id="实现原理"><a class="doc-anchor" href="#实现原理">§</a>实现原理</h3>
+<p>通过 <code>print!</code> 宏将用户缓冲区的内容输出到控制台。
+支持跨页面的用户缓冲区，自动处理页面边界。
+与标准输出使用相同的输出机制，但在语义上区分用途。</p>
+<h3 id="线程安全"><a class="doc-anchor" href="#线程安全">§</a>线程安全</h3>
+<p>该结构是线程安全的，多个线程可以同时向标准错误写入。
+输出操作是原子的，不会出现字符交错的情况。</p>
+<h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3>
+<ul>
+<li><strong>错误信息输出</strong>: 程序运行时的错误和警告信息</li>
+<li><strong>调试信息</strong>: 开发过程中的调试输出</li>
+<li><strong>日志记录</strong>: 系统运行状态的日志信息</li>
+<li><strong>用户提示</strong>: 向用户显示错误提示信息</li>
+</ul>
+<h3 id="与标准输出的区别"><a class="doc-anchor" href="#与标准输出的区别">§</a>与标准输出的区别</h3>
+<p>在当前的实现中，标准错误和标准输出都输出到同一个控制台，
+但在语义上它们有不同的用途：</p>
+<ul>
+<li><strong>标准输出</strong>: 用于正常的程序输出</li>
+<li><strong>标准错误</strong>: 用于错误信息和诊断输出</li>
+</ul>
+<p>这种设计允许用户程序将正常输出和错误输出分开处理，
+便于日志记录、错误处理和输出重定向。</p>
+<h3 id="与posix标准的兼容性"><a class="doc-anchor" href="#与posix标准的兼容性">§</a>与POSIX标准的兼容性</h3>
+<p>标准错误输出遵循POSIX标准：</p>
+<ul>
+<li>文件描述符2对应标准错误</li>
+<li>支持标准的错误输出语义</li>
+<li>与标准输出分离，便于重定向</li>
+</ul>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>stderr = Stderr;
+<span class="kw">let </span>error_msg = <span class="string">b"Error: File not found\n"</span>;
+<span class="kw">let </span>user_buf = UserBuffer::new(error_msg);
+<span class="kw">let </span>bytes_written = stderr.write(user_buf);
+<span class="macro">assert_eq!</span>(bytes_written, <span class="number">22</span>);</code></pre></div>
+</div></details><h2 id="trait-implementations" class="section-header">Trait Implementations<a href="#trait-implementations" class="anchor">§</a></h2><div id="trait-implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-File-for-Stderr" class="impl"><a class="src rightside" href="../../../src/os/fs/stdio.rs.html#363-463">Source</a><a href="#impl-File-for-Stderr" class="anchor">§</a><h3 class="code-header">impl <a class="trait" href="../trait.File.html" title="trait os::fs::File">File</a> for <a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.readable" class="method trait-impl"><a class="src rightside" href="../../../src/os/fs/stdio.rs.html#369-371">Source</a><a href="#method.readable" class="anchor">§</a><h4 class="code-header">fn <a href="../trait.File.html#tymethod.readable" class="fn">readable</a>(&amp;self) -&gt; bool</h4></section></summary><div class="docblock"><p>检查标准错误是否可读</p>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>总是返回 <code>false</code>，因为标准错误不支持读取操作</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.writable" class="method trait-impl"><a class="src rightside" href="../../../src/os/fs/stdio.rs.html#378-380">Source</a><a href="#method.writable" class="anchor">§</a><h4 class="code-header">fn <a href="../trait.File.html#tymethod.writable" class="fn">writable</a>(&amp;self) -&gt; bool</h4></section></summary><div class="docblock"><p>检查标准错误是否可写</p>
+<h6 id="returns-1"><a class="doc-anchor" href="#returns-1">§</a>Returns</h6>
+<p>总是返回 <code>true</code>，因为标准错误总是可写的</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.read" class="method trait-impl"><a class="src rightside" href="../../../src/os/fs/stdio.rs.html#396-398">Source</a><a href="#method.read" class="anchor">§</a><h4 class="code-header">fn <a href="../trait.File.html#tymethod.read" class="fn">read</a>(&amp;self, _user_buf: <a class="struct" href="../../mm/page_table/struct.UserBuffer.html" title="struct os::mm::page_table::UserBuffer">UserBuffer</a>) -&gt; usize</h4></section></summary><div class="docblock"><p>从标准错误读取数据</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>_user_buf</code> - 用户缓冲区（未使用）</li>
+</ul>
+<h6 id="panics"><a class="doc-anchor" href="#panics">§</a>Panics</h6>
+<p>总是触发 panic，因为标准错误不支持读取操作</p>
+<h6 id="设计说明"><a class="doc-anchor" href="#设计说明">§</a>设计说明</h6>
+<p>标准错误是只写设备，不支持读取操作。如果尝试读取，
+会触发 panic 以明确表示操作不被支持。</p>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.write" class="method trait-impl"><a class="src rightside" href="../../../src/os/fs/stdio.rs.html#457-462">Source</a><a href="#method.write" class="anchor">§</a><h4 class="code-header">fn <a href="../trait.File.html#tymethod.write" class="fn">write</a>(&amp;self, user_buf: <a class="struct" href="../../mm/page_table/struct.UserBuffer.html" title="struct os::mm::page_table::UserBuffer">UserBuffer</a>) -&gt; usize</h4></section></summary><div class="docblock"><p>向标准错误写入文本</p>
+<p>将用户缓冲区中的错误信息输出到控制台。支持跨页面的用户缓冲区，
+自动处理页面边界和 UTF-8 编码。</p>
+<h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
+<ul>
+<li><code>user_buf</code> - 用户缓冲区，包含要输出的错误信息</li>
+</ul>
+<h6 id="returns-2"><a class="doc-anchor" href="#returns-2">§</a>Returns</h6>
+<p>返回写入的字节数，等于用户缓冲区的总长度</p>
+<h6 id="输出过程"><a class="doc-anchor" href="#输出过程">§</a>输出过程</h6>
+<ol>
+<li><strong>缓冲区遍历</strong>: 遍历用户缓冲区的所有页面</li>
+<li><strong>文本转换</strong>: 将每个页面的字节转换为 UTF-8 字符串</li>
+<li><strong>控制台输出</strong>: 使用 <code>print!</code> 宏输出到控制台</li>
+<li><strong>结果统计</strong>: 统计所有输出的字节数</li>
+</ol>
+<h6 id="文本处理"><a class="doc-anchor" href="#文本处理">§</a>文本处理</h6>
+<ul>
+<li><strong>UTF-8 支持</strong>: 完全支持 Unicode 字符输出</li>
+<li><strong>页面边界</strong>: 自动处理跨页面的用户缓冲区</li>
+<li><strong>实时显示</strong>: 错误信息立即显示到控制台，无需缓冲</li>
+</ul>
+<h6 id="错误处理"><a class="doc-anchor" href="#错误处理">§</a>错误处理</h6>
+<ul>
+<li>如果用户缓冲区包含无效的 UTF-8 序列，会触发 panic</li>
+<li>如果控制台输出失败，会触发 panic</li>
+</ul>
+<h6 id="性能说明"><a class="doc-anchor" href="#性能说明">§</a>性能说明</h6>
+<p>该操作是同步的，会立即输出到控制台。对于大量错误信息，
+输出速度取决于控制台的性能。</p>
+<h6 id="线程安全-1"><a class="doc-anchor" href="#线程安全-1">§</a>线程安全</h6>
+<p>多个线程可以同时向标准错误写入，输出操作是原子的，
+不会出现字符交错的情况。</p>
+<h6 id="与标准输出的区别-1"><a class="doc-anchor" href="#与标准输出的区别-1">§</a>与标准输出的区别</h6>
+<p>在当前的实现中，标准错误和标准输出都输出到同一个控制台，
+但在语义上它们有不同的用途：</p>
+<ul>
+<li><strong>标准输出</strong>: 用于正常的程序输出</li>
+<li><strong>标准错误</strong>: 用于错误信息和诊断输出</li>
+</ul>
+<h6 id="examples-1"><a class="doc-anchor" href="#examples-1">§</a>Examples</h6>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>stderr = Stderr;
+<span class="kw">let </span>error_msg = <span class="string">b"Error: File not found"</span>;
+<span class="kw">let </span>user_buf = UserBuffer::new(error_msg);
+<span class="kw">let </span>bytes_written = stderr.write(user_buf);
+<span class="macro">assert_eq!</span>(bytes_written, <span class="number">20</span>);</code></pre></div>
+</div></details></div></details></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-Stderr" class="impl"><a href="#impl-Freeze-for-Stderr" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></h3></section><section id="impl-RefUnwindSafe-for-Stderr" class="impl"><a href="#impl-RefUnwindSafe-for-Stderr" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></h3></section><section id="impl-Send-for-Stderr" class="impl"><a href="#impl-Send-for-Stderr" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></h3></section><section id="impl-Sync-for-Stderr" class="impl"><a href="#impl-Sync-for-Stderr" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></h3></section><section id="impl-Unpin-for-Stderr" class="impl"><a href="#impl-Unpin-for-Stderr" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></h3></section><section id="impl-UnwindSafe-for-Stderr" class="impl"><a href="#impl-UnwindSafe-for-Stderr" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

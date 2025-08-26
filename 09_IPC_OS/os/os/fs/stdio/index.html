@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="标准输入输出模块"><title>os::fs::stdio - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module stdio</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#标准输入输出模块" title="标准输入输出模块">标准输入输出模块</a><ul><li><a href="#核心组件" title="核心组件">核心组件</a></li><li><a href="#设备特性" title="设备特性">设备特性</a></li><li><a href="#标准文件描述符" title="标准文件描述符">标准文件描述符</a></li><li><a href="#使用示例" title="使用示例">使用示例</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In os::fs</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">fs</a></div><h1>Module <span>stdio</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/fs/stdio.rs.html#1-463">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="标准输入输出模块"><a class="doc-anchor" href="#标准输入输出模块">§</a>标准输入输出模块</h2>
+<p>提供标准输入输出设备的实现，包括标准输入 (stdin)、标准输出 (stdout) 和标准错误 (stderr)。
+这些设备实现了 <code>File</code> trait，可以像普通文件一样进行读写操作。</p>
+<h3 id="核心组件"><a class="doc-anchor" href="#核心组件">§</a>核心组件</h3>
+<ul>
+<li><a href="struct.Stdin.html" title="struct os::fs::stdio::Stdin"><code>Stdin</code></a> - 标准输入设备，从控制台读取字符</li>
+<li><a href="struct.Stdout.html" title="struct os::fs::stdio::Stdout"><code>Stdout</code></a> - 标准输出设备，向控制台输出文本</li>
+<li><a href="struct.Stderr.html" title="struct os::fs::stdio::Stderr"><code>Stderr</code></a> - 标准错误设备，向控制台输出错误信息</li>
+</ul>
+<h3 id="设备特性"><a class="doc-anchor" href="#设备特性">§</a>设备特性</h3>
+<ul>
+<li><strong>阻塞读取</strong>: 标准输入在没有数据时会让出 CPU</li>
+<li><strong>实时输出</strong>: 标准输出和标准错误立即显示到控制台</li>
+<li><strong>权限控制</strong>: 标准输入只读，标准输出和标准错误只写</li>
+<li><strong>字符处理</strong>: 支持 UTF-8 编码的文本处理</li>
+<li><strong>错误区分</strong>: 标准错误用于输出错误信息，便于与正常输出区分</li>
+</ul>
+<h3 id="标准文件描述符"><a class="doc-anchor" href="#标准文件描述符">§</a>标准文件描述符</h3>
+<p>每个进程创建时自动分配以下标准文件描述符：</p>
+<ul>
+<li><code>fd_table[0]</code> - 标准输入 (stdin)</li>
+<li><code>fd_table[1]</code> - 标准输出 (stdout)</li>
+<li><code>fd_table[2]</code> - 标准错误 (stderr)</li>
+</ul>
+<h3 id="使用示例"><a class="doc-anchor" href="#使用示例">§</a>使用示例</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span><span class="kw">crate</span>::fs::{Stdin, Stdout, Stderr, File};
+
+<span class="comment">// 从标准输入读取字符
+</span><span class="kw">let </span>stdin = Stdin;
+<span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0u8</span>; <span class="number">1</span>];
+<span class="kw">let </span>user_buf = UserBuffer::new(<span class="kw-2">&amp;mut </span>buf);
+<span class="kw">let </span>bytes_read = stdin.read(user_buf);
+
+<span class="comment">// 向标准输出写入文本
+</span><span class="kw">let </span>stdout = Stdout;
+<span class="kw">let </span>data = <span class="string">b"Hello, World!"</span>;
+<span class="kw">let </span>user_buf = UserBuffer::new(data);
+<span class="kw">let </span>bytes_written = stdout.write(user_buf);
+
+<span class="comment">// 向标准错误写入错误信息
+</span><span class="kw">let </span>stderr = Stderr;
+<span class="kw">let </span>error_msg = <span class="string">b"Error: File not found"</span>;
+<span class="kw">let </span>user_buf = UserBuffer::new(error_msg);
+<span class="kw">let </span>bytes_written = stderr.write(user_buf);</code></pre></div>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.Stderr.html" title="struct os::fs::stdio::Stderr">Stderr</a></dt><dd>标准错误设备</dd><dt><a class="struct" href="struct.Stdin.html" title="struct os::fs::stdio::Stdin">Stdin</a></dt><dd>标准输入设备</dd><dt><a class="struct" href="struct.Stdout.html" title="struct os::fs::stdio::Stdout">Stdout</a></dt><dd>标准输出设备</dd></dl></section></div></main></body></html>

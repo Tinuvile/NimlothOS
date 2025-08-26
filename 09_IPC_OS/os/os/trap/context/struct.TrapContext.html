@@ -1,0 +1,152 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="陷阱上下文结构"><title>TrapContext in os::trap::context - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc struct"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../os/index.html">os</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Trap<wbr>Context</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#内存布局" title="内存布局">内存布局</a></li><li><a href="#与任务上下文的区别" title="与任务上下文的区别">与任务上下文的区别</a></li><li><a href="#寄存器说明" title="寄存器说明">寄存器说明</a></li></ul><h3><a href="#fields">Fields</a></h3><ul class="block structfield"><li><a href="#structfield.kernel_satp" title="kernel_satp">kernel_satp</a></li><li><a href="#structfield.kernel_sp" title="kernel_sp">kernel_sp</a></li><li><a href="#structfield.sepc" title="sepc">sepc</a></li><li><a href="#structfield.sstatus" title="sstatus">sstatus</a></li><li><a href="#structfield.trap_handler" title="trap_handler">trap_handler</a></li><li><a href="#structfield.x" title="x">x</a></li></ul><h3><a href="#implementations">Methods</a></h3><ul class="block method"><li><a href="#method.app_init_context" title="app_init_context">app_init_context</a></li><li><a href="#method.sp" title="sp">sp</a></li></ul><h3><a href="#trait-implementations">Trait Implementations</a></h3><ul class="block trait-implementation"><li><a href="#impl-Clone-for-TrapContext" title="Clone">Clone</a></li><li><a href="#impl-Copy-for-TrapContext" title="Copy">Copy</a></li><li><a href="#impl-Debug-for-TrapContext" title="Debug">Debug</a></li></ul><h3><a href="#synthetic-implementations">Auto Trait Implementations</a></h3><ul class="block synthetic-implementation"><li><a href="#impl-Freeze-for-TrapContext" title="Freeze">Freeze</a></li><li><a href="#impl-RefUnwindSafe-for-TrapContext" title="RefUnwindSafe">RefUnwindSafe</a></li><li><a href="#impl-Send-for-TrapContext" title="Send">Send</a></li><li><a href="#impl-Sync-for-TrapContext" title="Sync">Sync</a></li><li><a href="#impl-Unpin-for-TrapContext" title="Unpin">Unpin</a></li><li><a href="#impl-UnwindSafe-for-TrapContext" title="UnwindSafe">UnwindSafe</a></li></ul><h3><a href="#blanket-implementations">Blanket Implementations</a></h3><ul class="block blanket-implementation"><li><a href="#impl-Any-for-T" title="Any">Any</a></li><li><a href="#impl-Borrow%3CT%3E-for-T" title="Borrow&#60;T&#62;">Borrow&#60;T&#62;</a></li><li><a href="#impl-BorrowMut%3CT%3E-for-T" title="BorrowMut&#60;T&#62;">BorrowMut&#60;T&#62;</a></li><li><a href="#impl-CloneToUninit-for-T" title="CloneToUninit">CloneToUninit</a></li><li><a href="#impl-From%3CT%3E-for-T" title="From&#60;T&#62;">From&#60;T&#62;</a></li><li><a href="#impl-Into%3CU%3E-for-T" title="Into&#60;U&#62;">Into&#60;U&#62;</a></li><li><a href="#impl-ToOwned-for-T" title="ToOwned">ToOwned</a></li><li><a href="#impl-TryFrom%3CU%3E-for-T" title="TryFrom&#60;U&#62;">TryFrom&#60;U&#62;</a></li><li><a href="#impl-TryInto%3CU%3E-for-T" title="TryInto&#60;U&#62;">TryInto&#60;U&#62;</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In os::<wbr>trap::<wbr>context</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">os</a>::<wbr><a href="../index.html">trap</a>::<wbr><a href="index.html">context</a></div><h1>Struct <span class="struct">TrapContext</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/os/trap/context.rs.html#49-121">Source</a> </span></div><pre class="rust item-decl"><code><div class="code-attribute">#[repr(C)]</div>pub struct TrapContext {
+    pub x: [usize; 32],
+    pub sstatus: Sstatus,
+    pub sepc: usize,
+    pub kernel_satp: usize,
+    pub kernel_sp: usize,
+    pub trap_handler: usize,
+}</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>陷阱上下文结构</p>
+<p>保存用户态程序触发陷阱时的完整 CPU 状态，包括所有通用寄存器和
+关键的控制状态寄存器 (CSR)。陷阱处理完成后使用此上下文恢复用户态执行。</p>
+<h3 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h3>
+<p>使用 <code>#[repr(C)]</code> 确保内存布局与汇编代码兼容：</p>
+<ul>
+<li>通用寄存器 <code>x0-x31</code> 按顺序排列（32 × 8 字节）</li>
+<li><code>sstatus</code> 寄存器紧随其后（8 字节）</li>
+<li><code>sepc</code> 寄存器（8 字节）</li>
+<li><code>kernel_satp</code> 内核页表标识符（8 字节）</li>
+<li><code>kernel_sp</code> 内核栈指针（8 字节）</li>
+<li><code>trap_handler</code> 陷阱处理函数地址（8 字节）</li>
+</ul>
+<p>总大小：288 字节（36 × 8 字节）</p>
+<h3 id="与任务上下文的区别"><a class="doc-anchor" href="#与任务上下文的区别">§</a>与任务上下文的区别</h3><div><table><thead><tr><th>对比项</th><th>陷阱上下文</th><th>任务上下文</th></tr></thead><tbody>
+<tr><td>寄存器数量</td><td>32个通用寄存器</td><td>14个被调用者保存寄存器</td></tr>
+<tr><td>CSR寄存器</td><td>sstatus, sepc</td><td>无</td></tr>
+<tr><td>使用场景</td><td>用户态↔内核态</td><td>任务切换</td></tr>
+<tr><td>保存时机</td><td>陷阱发生时</td><td>任务调度时</td></tr>
+</tbody></table>
+</div><h3 id="寄存器说明"><a class="doc-anchor" href="#寄存器说明">§</a>寄存器说明</h3>
+<ul>
+<li><code>x0</code>: 硬件零寄存器，始终为 0</li>
+<li><code>x1</code> (<code>ra</code>): 返回地址</li>
+<li><code>x2</code> (<code>sp</code>): 栈指针</li>
+<li><code>x3</code> (<code>gp</code>): 全局指针</li>
+<li><code>x4</code> (<code>tp</code>): 线程指针</li>
+<li><code>x5-x7</code> (<code>t0-t2</code>): 临时寄存器</li>
+<li><code>x8-x9</code> (<code>s0-s1</code>): 被调用者保存寄存器</li>
+<li><code>x10-x11</code> (<code>a0-a1</code>): 函数参数/返回值</li>
+<li><code>x12-x17</code> (<code>a2-a7</code>): 函数参数</li>
+<li><code>x18-x27</code> (<code>s2-s11</code>): 被调用者保存寄存器</li>
+<li><code>x28-x31</code> (<code>t3-t6</code>): 临时寄存器</li>
+</ul>
+</div></details><h2 id="fields" class="fields section-header">Fields<a href="#fields" class="anchor">§</a></h2><span id="structfield.x" class="structfield section-header"><a href="#structfield.x" class="anchor field">§</a><code>x: [usize; 32]</code></span><div class="docblock"><p>通用寄存器 x0-x31</p>
+<p>保存用户态的所有通用寄存器状态。其中：</p>
+<ul>
+<li><code>x[10]</code> (<code>a0</code>) 用于存储系统调用返回值</li>
+<li><code>x[10-12]</code> (<code>a0-a2</code>) 用于系统调用参数</li>
+<li><code>x[17]</code> (<code>a7</code>) 用于系统调用号</li>
+</ul>
+</div><span id="structfield.sstatus" class="structfield section-header"><a href="#structfield.sstatus" class="anchor field">§</a><code>sstatus: Sstatus</code></span><div class="docblock"><p>监督者状态寄存器 (sstatus)</p>
+<p>包含处理器状态信息，主要字段包括：</p>
+<ul>
+<li><code>SPP</code>: 先前特权级，记录陷阱前的特权级</li>
+<li><code>SPIE</code>: 先前中断使能，记录陷阱前的中断状态</li>
+<li><code>SIE</code>: 监督者中断使能</li>
+</ul>
+</div><span id="structfield.sepc" class="structfield section-header"><a href="#structfield.sepc" class="anchor field">§</a><code>sepc: usize</code></span><div class="docblock"><p>监督者异常程序计数器 (sepc)</p>
+<p>指向触发陷阱的指令地址。对于：</p>
+<ul>
+<li><strong>异常</strong>: 指向导致异常的指令</li>
+<li><strong>中断</strong>: 指向被中断的指令</li>
+<li><strong>系统调用</strong>: 指向 <code>ecall</code> 指令（需要手动 +4 跳过）</li>
+</ul>
+</div><span id="structfield.kernel_satp" class="structfield section-header"><a href="#structfield.kernel_satp" class="anchor field">§</a><code>kernel_satp: usize</code></span><div class="docblock"><p>内核页表标识符</p>
+<p>存储内核地址空间的页表标识符，用于在陷阱处理时切换到内核地址空间。
+该值通常是内核页表的 <code>satp</code> 寄存器值，包含页表模式和根页表物理页号。</p>
+<h4 id="作用"><a class="doc-anchor" href="#作用">§</a>作用</h4>
+<p>在用户态触发陷阱时，需要切换到内核地址空间来执行陷阱处理代码，
+此字段保存了内核地址空间的页表信息。</p>
+</div><span id="structfield.kernel_sp" class="structfield section-header"><a href="#structfield.kernel_sp" class="anchor field">§</a><code>kernel_sp: usize</code></span><div class="docblock"><p>内核栈指针</p>
+<p>存储该任务在内核态执行时使用的栈指针。每个任务都有独立的内核栈，
+用于在陷阱处理时保存寄存器状态和执行内核代码。</p>
+<h4 id="内核栈布局"><a class="doc-anchor" href="#内核栈布局">§</a>内核栈布局</h4>
+<p>内核栈从高地址向低地址增长，栈顶指向 <code>TrapContext</code> 结构体：</p>
+<div class="example-wrap"><pre class="language-text"><code>高地址
+┌─────────────────┐
+│   Task Control  │
+│     Block       │
+├─────────────────┤ ← kernel_sp 指向这里
+│   TrapContext   │
+├─────────────────┤
+│  Kernel Stack   │
+│     Space       │
+└─────────────────┘
+低地址</code></pre></div></div><span id="structfield.trap_handler" class="structfield section-header"><a href="#structfield.trap_handler" class="anchor field">§</a><code>trap_handler: usize</code></span><div class="docblock"><p>陷阱处理函数地址</p>
+<p>存储陷阱处理函数的入口地址，通常指向 <code>trap_handler</code> 函数。
+在陷阱发生时，硬件会跳转到此地址开始执行陷阱处理代码。</p>
+<h4 id="陷阱处理流程"><a class="doc-anchor" href="#陷阱处理流程">§</a>陷阱处理流程</h4>
+<ol>
+<li>硬件自动保存部分状态到 CSR 寄存器</li>
+<li>跳转到 <code>trap_handler</code> 地址执行</li>
+<li>陷阱处理函数保存完整的用户态上下文</li>
+<li>调用具体的陷阱处理逻辑</li>
+<li>恢复用户态上下文并返回</li>
+</ol>
+</div><h2 id="implementations" class="section-header">Implementations<a href="#implementations" class="anchor">§</a></h2><div id="implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-TrapContext" class="impl"><a class="src rightside" href="../../../src/os/trap/context.rs.html#123-193">Source</a><a href="#impl-TrapContext" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.sp" class="method"><a class="src rightside" href="../../../src/os/trap/context.rs.html#132-134">Source</a><h4 class="code-header">pub fn <a href="#method.sp" class="fn">sp</a>(&amp;mut self, sp: usize)</h4></section></summary><div class="docblock"><p>设置栈指针寄存器</p>
+<p>修改用户栈指针 (<code>sp</code> 寄存器, <code>x[2]</code>)，用于在创建新任务时
+设置用户态栈的位置。</p>
+<h6 id="arguments"><a class="doc-anchor" href="#arguments">§</a>Arguments</h6>
+<ul>
+<li><code>sp</code> - 新的栈指针值，指向用户栈顶</li>
+</ul>
+</div></details><details class="toggle method-toggle" open><summary><section id="method.app_init_context" class="method"><a class="src rightside" href="../../../src/os/trap/context.rs.html#173-192">Source</a><h4 class="code-header">pub fn <a href="#method.app_init_context" class="fn">app_init_context</a>(
+    entry: usize,
+    sp: usize,
+    kernel_satp: usize,
+    kernel_sp: usize,
+    trap_handler: usize,
+) -&gt; Self</h4></section></summary><div class="docblock"><p>创建应用程序初始陷阱上下文</p>
+<p>为新创建的用户应用程序创建初始的陷阱上下文，设置程序入口地址、
+用户栈指针、内核环境信息和适当的处理器状态，使应用程序能够在用户态正确运行。</p>
+<h6 id="arguments-1"><a class="doc-anchor" href="#arguments-1">§</a>Arguments</h6>
+<ul>
+<li><code>entry</code> - 应用程序入口地址，通常是应用程序的 <code>_start</code> 符号地址</li>
+<li><code>sp</code> - 用户栈指针，指向为该应用程序分配的用户栈顶</li>
+<li><code>kernel_satp</code> - 内核页表标识符，用于陷阱处理时的地址空间切换</li>
+<li><code>kernel_sp</code> - 内核栈指针，指向该任务的内核栈顶</li>
+<li><code>trap_handler</code> - 陷阱处理函数地址，用于处理该任务的陷阱</li>
+</ul>
+<h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
+<p>返回配置好的 <code>TrapContext</code>，可以用于首次调度该应用程序</p>
+<h6 id="配置说明"><a class="doc-anchor" href="#配置说明">§</a>配置说明</h6>
+<ul>
+<li><strong>通用寄存器</strong>: 全部初始化为 0</li>
+<li><strong>栈指针</strong>: 设置为指定的用户栈地址</li>
+<li><strong>程序计数器</strong>: 设置为应用程序入口地址</li>
+<li><strong>特权级</strong>: 设置为用户态 (<code>SPP::User</code>)</li>
+<li><strong>内核环境</strong>: 设置内核页表、内核栈和陷阱处理函数</li>
+</ul>
+<h6 id="执行流程"><a class="doc-anchor" href="#执行流程">§</a>执行流程</h6>
+<p>当此上下文被 <code>__restore</code> 恢复时：</p>
+<ol>
+<li>恢复所有寄存器状态（大部分为 0）</li>
+<li>将 <code>sepc</code> 加载到程序计数器</li>
+<li>执行 <code>sret</code> 指令跳转到用户态</li>
+<li>开始执行应用程序代码</li>
+</ol>
+<h6 id="陷阱处理准备"><a class="doc-anchor" href="#陷阱处理准备">§</a>陷阱处理准备</h6>
+<p>通过设置 <code>kernel_satp</code>、<code>kernel_sp</code> 和 <code>trap_handler</code>，确保当用户程序
+触发陷阱时能够正确切换到内核环境并执行相应的处理逻辑。</p>
+</div></details></div></details></div><h2 id="trait-implementations" class="section-header">Trait Implementations<a href="#trait-implementations" class="anchor">§</a></h2><div id="trait-implementations-list"><details class="toggle implementors-toggle" open><summary><section id="impl-Clone-for-TrapContext" class="impl"><a class="src rightside" href="../../../src/os/trap/context.rs.html#48">Source</a><a href="#impl-Clone-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl Clone for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.clone" class="method trait-impl"><a class="src rightside" href="../../../src/os/trap/context.rs.html#48">Source</a><a href="#method.clone" class="anchor">§</a><h4 class="code-header">fn <a class="fn">clone</a>(&amp;self) -&gt; <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h4></section></summary><div class='docblock'>Returns a copy of the value. <a>Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.clone_from" class="method trait-impl"><span class="since rightside" title="Stable since Rust version 1.0.0">1.0.0</span><a href="#method.clone_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">clone_from</a>(&amp;mut self, source: &amp;Self)</h4></section></summary><div class='docblock'>Performs copy-assignment from <code>source</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Debug-for-TrapContext" class="impl"><a class="src rightside" href="../../../src/os/trap/context.rs.html#48">Source</a><a href="#impl-Debug-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl Debug for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.fmt" class="method trait-impl"><a class="src rightside" href="../../../src/os/trap/context.rs.html#48">Source</a><a href="#method.fmt" class="anchor">§</a><h4 class="code-header">fn <a class="fn">fmt</a>(&amp;self, f: &amp;mut Formatter&lt;'_&gt;) -&gt; Result</h4></section></summary><div class='docblock'>Formats the value using the given formatter. <a>Read more</a></div></details></div></details><section id="impl-Copy-for-TrapContext" class="impl"><a class="src rightside" href="../../../src/os/trap/context.rs.html#48">Source</a><a href="#impl-Copy-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl Copy for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section></div><h2 id="synthetic-implementations" class="section-header">Auto Trait Implementations<a href="#synthetic-implementations" class="anchor">§</a></h2><div id="synthetic-implementations-list"><section id="impl-Freeze-for-TrapContext" class="impl"><a href="#impl-Freeze-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl Freeze for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section><section id="impl-RefUnwindSafe-for-TrapContext" class="impl"><a href="#impl-RefUnwindSafe-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl RefUnwindSafe for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section><section id="impl-Send-for-TrapContext" class="impl"><a href="#impl-Send-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl Send for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section><section id="impl-Sync-for-TrapContext" class="impl"><a href="#impl-Sync-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl Sync for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section><section id="impl-Unpin-for-TrapContext" class="impl"><a href="#impl-Unpin-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl Unpin for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section><section id="impl-UnwindSafe-for-TrapContext" class="impl"><a href="#impl-UnwindSafe-for-TrapContext" class="anchor">§</a><h3 class="code-header">impl UnwindSafe for <a class="struct" href="struct.TrapContext.html" title="struct os::trap::context::TrapContext">TrapContext</a></h3></section></div><h2 id="blanket-implementations" class="section-header">Blanket Implementations<a href="#blanket-implementations" class="anchor">§</a></h2><div id="blanket-implementations-list"><details class="toggle implementors-toggle"><summary><section id="impl-Any-for-T" class="impl"><a href="#impl-Any-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Any for T<div class="where">where
+    T: 'static + ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.type_id" class="method trait-impl"><a href="#method.type_id" class="anchor">§</a><h4 class="code-header">fn <a class="fn">type_id</a>(&amp;self) -&gt; TypeId</h4></section></summary><div class='docblock'>Gets the <code>TypeId</code> of <code>self</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Borrow%3CT%3E-for-T" class="impl"><a href="#impl-Borrow%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; Borrow&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow" class="method trait-impl"><a href="#method.borrow" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow</a>(&amp;self) -&gt; &amp;T</h4></section></summary><div class='docblock'>Immutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-BorrowMut%3CT%3E-for-T" class="impl"><a href="#impl-BorrowMut%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; BorrowMut&lt;T&gt; for T<div class="where">where
+    T: ?Sized,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.borrow_mut" class="method trait-impl"><a href="#method.borrow_mut" class="anchor">§</a><h4 class="code-header">fn <a class="fn">borrow_mut</a>(&amp;mut self) -&gt; &amp;mut T</h4></section></summary><div class='docblock'>Mutably borrows from an owned value. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-CloneToUninit-for-T" class="impl"><a href="#impl-CloneToUninit-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; CloneToUninit for T<div class="where">where
+    T: Clone,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.clone_to_uninit" class="method trait-impl"><a href="#method.clone_to_uninit" class="anchor">§</a><h4 class="code-header">unsafe fn <a class="fn">clone_to_uninit</a>(&amp;self, dst: *mut u8)</h4></section></summary><span class="item-info"><div class="stab unstable"><span class="emoji">🔬</span><span>This is a nightly-only experimental API. (<code>clone_to_uninit</code>)</span></div></span><div class='docblock'>Performs copy-assignment from <code>self</code> to <code>dst</code>. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-From%3CT%3E-for-T" class="impl"><a href="#impl-From%3CT%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; From&lt;T&gt; for T</h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.from" class="method trait-impl"><a href="#method.from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">from</a>(t: T) -&gt; T</h4></section></summary><div class="docblock"><p>Returns the argument unchanged.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-Into%3CU%3E-for-T" class="impl"><a href="#impl-Into%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; Into&lt;U&gt; for T<div class="where">where
+    U: From&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.into" class="method trait-impl"><a href="#method.into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">into</a>(self) -&gt; U</h4></section></summary><div class="docblock"><p>Calls <code>U::from(self)</code>.</p>
+<p>That is, this conversion is whatever the implementation of
+<code>[From]&lt;T&gt; for U</code> chooses to do.</p>
+</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-ToOwned-for-T" class="impl"><a href="#impl-ToOwned-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T&gt; ToOwned for T<div class="where">where
+    T: Clone,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Owned" class="associatedtype trait-impl"><a href="#associatedtype.Owned" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Owned</a> = T</h4></section></summary><div class='docblock'>The resulting type after obtaining ownership.</div></details><details class="toggle method-toggle" open><summary><section id="method.to_owned" class="method trait-impl"><a href="#method.to_owned" class="anchor">§</a><h4 class="code-header">fn <a class="fn">to_owned</a>(&amp;self) -&gt; T</h4></section></summary><div class='docblock'>Creates owned data from borrowed data, usually by cloning. <a>Read more</a></div></details><details class="toggle method-toggle" open><summary><section id="method.clone_into" class="method trait-impl"><a href="#method.clone_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">clone_into</a>(&amp;self, target: &amp;mut T)</h4></section></summary><div class='docblock'>Uses borrowed data to replace owned data, usually by cloning. <a>Read more</a></div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryFrom%3CU%3E-for-T" class="impl"><a href="#impl-TryFrom%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryFrom&lt;U&gt; for T<div class="where">where
+    U: Into&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error-1" class="associatedtype trait-impl"><a href="#associatedtype.Error-1" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = Infallible</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_from" class="method trait-impl"><a href="#method.try_from" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_from</a>(value: U) -&gt; Result&lt;T, &lt;T as TryFrom&lt;U&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details><details class="toggle implementors-toggle"><summary><section id="impl-TryInto%3CU%3E-for-T" class="impl"><a href="#impl-TryInto%3CU%3E-for-T" class="anchor">§</a><h3 class="code-header">impl&lt;T, U&gt; TryInto&lt;U&gt; for T<div class="where">where
+    U: TryFrom&lt;T&gt;,</div></h3></section></summary><div class="impl-items"><details class="toggle" open><summary><section id="associatedtype.Error" class="associatedtype trait-impl"><a href="#associatedtype.Error" class="anchor">§</a><h4 class="code-header">type <a class="associatedtype">Error</a> = &lt;U as TryFrom&lt;T&gt;&gt;::Error</h4></section></summary><div class='docblock'>The type returned in the event of a conversion error.</div></details><details class="toggle method-toggle" open><summary><section id="method.try_into" class="method trait-impl"><a href="#method.try_into" class="anchor">§</a><h4 class="code-header">fn <a class="fn">try_into</a>(self) -&gt; Result&lt;U, &lt;U as TryFrom&lt;T&gt;&gt;::Error&gt;</h4></section></summary><div class='docblock'>Performs the conversion.</div></details></div></details></div></section></div></main></body></html>

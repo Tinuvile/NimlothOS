@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["cpu_id","init","thread_id","timestamp"],"static":["TICK_COUNT"],"struct":["SimpleLogger"]};
