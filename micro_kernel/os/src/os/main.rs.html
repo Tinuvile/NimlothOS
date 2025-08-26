@@ -82,53 +82,50 @@
 <a href=#82 id=82 data-nosnippet>82</a>/// 4. [`mm::remap_test`] - 测试内存重映射功能
 <a href=#83 id=83 data-nosnippet>83</a>/// 5. [`task::add_initproc`] - 注册初始用户进程
 <a href=#84 id=84 data-nosnippet>84</a>/// 6. [`trap::init`] - 初始化陷阱处理系统
-<a href=#85 id=85 data-nosnippet>85</a>/// 7. [`trap::enable_timer_interrupt`] - 启用时钟中断
-<a href=#86 id=86 data-nosnippet>86</a>/// 8. [`timer::next_trigger`] - 设置第一次时钟中断
-<a href=#87 id=87 data-nosnippet>87</a>/// 10. [`task::run_tasks`] - 进入主调度循环
-<a href=#88 id=88 data-nosnippet>88</a>///
-<a href=#89 id=89 data-nosnippet>89</a>/// ## Panics
-<a href=#90 id=90 data-nosnippet>90</a>///
-<a href=#91 id=91 data-nosnippet>91</a>/// 如果 `run_first_task` 意外返回，会触发 panic
-<a href=#92 id=92 data-nosnippet>92</a></span><span class="attr">#[<span class="kw">unsafe</span>(no_mangle)]
-<a href=#93 id=93 data-nosnippet>93</a></span><span class="kw">pub fn </span>rust_main() -&gt; ! {
-<a href=#94 id=94 data-nosnippet>94</a>    clear_bss();
-<a href=#95 id=95 data-nosnippet>95</a>    log::init();
-<a href=#96 id=96 data-nosnippet>96</a>    <span class="macro">info!</span>(<span class="string">"[kernel] Hello, world!"</span>);
-<a href=#97 id=97 data-nosnippet>97</a>    mm::init();
-<a href=#98 id=98 data-nosnippet>98</a>    mm::remap_test();
-<a href=#99 id=99 data-nosnippet>99</a>    trap::init();
-<a href=#100 id=100 data-nosnippet>100</a>    trap::enable_timer_interrupt();
-<a href=#101 id=101 data-nosnippet>101</a>    timer::next_trigger();
-<a href=#102 id=102 data-nosnippet>102</a>    fs::list_apps();
-<a href=#103 id=103 data-nosnippet>103</a>    task::add_initproc();
-<a href=#104 id=104 data-nosnippet>104</a>    task::run_tasks();
+<a href=#85 id=85 data-nosnippet>85</a>/// 7. [`timer::next_trigger`] - 设置第一次时钟中断
+<a href=#86 id=86 data-nosnippet>86</a>/// 8. [`task::run_tasks`] - 进入主调度循环
+<a href=#87 id=87 data-nosnippet>87</a>///
+<a href=#88 id=88 data-nosnippet>88</a>/// ## Panics
+<a href=#89 id=89 data-nosnippet>89</a>///
+<a href=#90 id=90 data-nosnippet>90</a>/// 如果 `run_first_task` 意外返回，会触发 panic
+<a href=#91 id=91 data-nosnippet>91</a></span><span class="attr">#[<span class="kw">unsafe</span>(no_mangle)]
+<a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">pub fn </span>rust_main() -&gt; ! {
+<a href=#93 id=93 data-nosnippet>93</a>    clear_bss();
+<a href=#94 id=94 data-nosnippet>94</a>    log::init();
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="macro">::log::info!</span>(<span class="string">"[kernel] Hello, world!"</span>);
+<a href=#96 id=96 data-nosnippet>96</a>    mm::init();
+<a href=#97 id=97 data-nosnippet>97</a>    trap::init();
+<a href=#98 id=98 data-nosnippet>98</a>    timer::next_trigger();
+<a href=#99 id=99 data-nosnippet>99</a>    fs::list_apps();
+<a href=#100 id=100 data-nosnippet>100</a>    task::add_initproc();
+<a href=#101 id=101 data-nosnippet>101</a>    task::run_tasks();
+<a href=#102 id=102 data-nosnippet>102</a>
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="macro">panic!</span>(<span class="string">"Unreachable in rust_main!"</span>);
+<a href=#104 id=104 data-nosnippet>104</a>}
 <a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="macro">panic!</span>(<span class="string">"Unreachable in rust_main!"</span>);
-<a href=#107 id=107 data-nosnippet>107</a>}
-<a href=#108 id=108 data-nosnippet>108</a>
-<a href=#109 id=109 data-nosnippet>109</a><span class="doccomment">/// 清零 BSS 段
+<a href=#106 id=106 data-nosnippet>106</a><span class="doccomment">/// 清零 BSS 段
+<a href=#107 id=107 data-nosnippet>107</a>///
+<a href=#108 id=108 data-nosnippet>108</a>/// BSS 段包含程序中未初始化的全局变量和静态变量。
+<a href=#109 id=109 data-nosnippet>109</a>/// 根据 C 标准和 Rust 语义，这些变量应该被初始化为零。
 <a href=#110 id=110 data-nosnippet>110</a>///
-<a href=#111 id=111 data-nosnippet>111</a>/// BSS 段包含程序中未初始化的全局变量和静态变量。
-<a href=#112 id=112 data-nosnippet>112</a>/// 根据 C 标准和 Rust 语义，这些变量应该被初始化为零。
+<a href=#111 id=111 data-nosnippet>111</a>/// 该函数遍历从 `sbss` 到 `ebss` 的内存区域，将每个字节设置为 0。
+<a href=#112 id=112 data-nosnippet>112</a>/// 这些符号由链接器脚本 (`linker-qemu.ld`) 定义。
 <a href=#113 id=113 data-nosnippet>113</a>///
-<a href=#114 id=114 data-nosnippet>114</a>/// 该函数遍历从 `sbss` 到 `ebss` 的内存区域，将每个字节设置为 0。
-<a href=#115 id=115 data-nosnippet>115</a>/// 这些符号由链接器脚本 (`linker-qemu.ld`) 定义。
-<a href=#116 id=116 data-nosnippet>116</a>///
-<a href=#117 id=117 data-nosnippet>117</a>/// ## Safety
-<a href=#118 id=118 data-nosnippet>118</a>///
-<a href=#119 id=119 data-nosnippet>119</a>/// 该函数使用 `unsafe` 代码：
-<a href=#120 id=120 data-nosnippet>120</a>/// - 调用外部 C 函数符号 `sbss` 和 `ebss`
-<a href=#121 id=121 data-nosnippet>121</a>/// - 直接操作内存地址
-<a href=#122 id=122 data-nosnippet>122</a>/// - 使用 `write_volatile` 确保编译器不会优化掉写操作
-<a href=#123 id=123 data-nosnippet>123</a>///
-<a href=#124 id=124 data-nosnippet>124</a>/// 这个函数必须在任何 Rust 代码使用全局变量之前调用。
-<a href=#125 id=125 data-nosnippet>125</a></span><span class="kw">fn </span>clear_bss() {
-<a href=#126 id=126 data-nosnippet>126</a>    <span class="kw">unsafe extern </span><span class="string">"C" </span>{
-<a href=#127 id=127 data-nosnippet>127</a>        safe <span class="kw">fn </span>sbss();
-<a href=#128 id=128 data-nosnippet>128</a>        safe <span class="kw">fn </span>ebss();
-<a href=#129 id=129 data-nosnippet>129</a>    }
-<a href=#130 id=130 data-nosnippet>130</a>    <span class="kw">unsafe </span>{
-<a href=#131 id=131 data-nosnippet>131</a>        core::slice::from_raw_parts_mut(sbss <span class="kw">as </span>usize <span class="kw">as </span><span class="kw-2">*mut </span>u8, ebss <span class="kw">as </span>usize - sbss <span class="kw">as </span>usize)
-<a href=#132 id=132 data-nosnippet>132</a>            .fill(<span class="number">0</span>);
-<a href=#133 id=133 data-nosnippet>133</a>    }
-<a href=#134 id=134 data-nosnippet>134</a>}</code></pre></div></section></main></body></html>
+<a href=#114 id=114 data-nosnippet>114</a>/// ## Safety
+<a href=#115 id=115 data-nosnippet>115</a>///
+<a href=#116 id=116 data-nosnippet>116</a>/// 该函数使用 `unsafe` 代码：
+<a href=#117 id=117 data-nosnippet>117</a>/// - 调用外部 C 函数符号 `sbss` 和 `ebss`
+<a href=#118 id=118 data-nosnippet>118</a>/// - 直接操作内存地址
+<a href=#119 id=119 data-nosnippet>119</a>/// - 使用 `write_volatile` 确保编译器不会优化掉写操作
+<a href=#120 id=120 data-nosnippet>120</a>///
+<a href=#121 id=121 data-nosnippet>121</a>/// 这个函数必须在任何 Rust 代码使用全局变量之前调用。
+<a href=#122 id=122 data-nosnippet>122</a></span><span class="kw">fn </span>clear_bss() {
+<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">unsafe extern </span><span class="string">"C" </span>{
+<a href=#124 id=124 data-nosnippet>124</a>        safe <span class="kw">fn </span>sbss();
+<a href=#125 id=125 data-nosnippet>125</a>        safe <span class="kw">fn </span>ebss();
+<a href=#126 id=126 data-nosnippet>126</a>    }
+<a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">unsafe </span>{
+<a href=#128 id=128 data-nosnippet>128</a>        core::slice::from_raw_parts_mut(sbss <span class="kw">as </span>usize <span class="kw">as </span><span class="kw-2">*mut </span>u8, ebss <span class="kw">as </span>usize - sbss <span class="kw">as </span>usize)
+<a href=#129 id=129 data-nosnippet>129</a>            .fill(<span class="number">0</span>);
+<a href=#130 id=130 data-nosnippet>130</a>    }
+<a href=#131 id=131 data-nosnippet>131</a>}</code></pre></div></section></main></body></html>
