@@ -21,7 +21,7 @@ jobs:
         run: |
           cd os
           cargo doc --no-deps --verbose -Z build-std=core,alloc
-      - name: Build easy-fs doc
+      - name: Build components doc
         run: |
           cd components
           cargo doc --no-deps --verbose
