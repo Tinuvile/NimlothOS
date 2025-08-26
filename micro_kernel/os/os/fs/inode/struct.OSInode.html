@@ -3,7 +3,7 @@
     writable: bool,
     inner: <a class="struct" href="../../sync/up/struct.UPSafeCell.html" title="struct os::sync::up::UPSafeCell">UPSafeCell</a>&lt;<a class="struct" href="struct.OSInodeInner.html" title="struct os::fs::inode::OSInodeInner">OSInodeInner</a>&gt;,
 }</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>操作系统级别的文件 Inode</p>
-<p>封装底层 Easy-FS 文件系统的 inode，提供操作系统级别的文件操作接口。
+<p>封装底层 Micro-FS 文件系统的 inode，提供操作系统级别的文件操作接口。
 支持读写权限控制、文件偏移量管理和批量文件操作。</p>
 <h3 id="内部结构"><a class="doc-anchor" href="#内部结构">§</a>内部结构</h3>
 <p>包含读写权限标志和内部状态管理结构，通过 <code>UPSafeCell</code> 提供线程安全。</p>
@@ -20,7 +20,7 @@
 <ul>
 <li><code>readable</code> - 文件是否可读</li>
 <li><code>writable</code> - 文件是否可写</li>
-<li><code>inode</code> - 底层 Easy-FS inode 的引用</li>
+<li><code>inode</code> - 底层 Micro-FS inode 的引用</li>
 </ul>
 <h6 id="returns"><a class="doc-anchor" href="#returns">§</a>Returns</h6>
 <p>新创建的 <code>OSInode</code> 实例</p>

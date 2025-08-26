@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/fs/inode.rs`."><title>inode.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">os/fs/</div>inode.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! # 文件 Inode 管理模块
 <a href=#2 id=2 data-nosnippet>2</a>//!
 <a href=#3 id=3 data-nosnippet>3</a>//! 提供操作系统级别的文件 inode 管理功能，包括文件读写、元数据操作、
-<a href=#4 id=4 data-nosnippet>4</a>//! 文件系统访问等功能。封装底层 Easy-FS 文件系统，为上层提供统一的文件接口。
+<a href=#4 id=4 data-nosnippet>4</a>//! 文件系统访问等功能。封装底层 Micro-FS 文件系统，为上层提供统一的文件接口。
 <a href=#5 id=5 data-nosnippet>5</a>//!
 <a href=#6 id=6 data-nosnippet>6</a>//! ## 核心组件
 <a href=#7 id=7 data-nosnippet>7</a>//!
@@ -40,7 +40,7 @@
 <a href=#40 id=40 data-nosnippet>40</a><span class="kw">use </span>alloc::sync::Arc;
 <a href=#41 id=41 data-nosnippet>41</a><span class="kw">use </span>alloc::vec::Vec;
 <a href=#42 id=42 data-nosnippet>42</a><span class="kw">use </span>bitflags::<span class="kw-2">*</span>;
-<a href=#43 id=43 data-nosnippet>43</a><span class="kw">use </span>components::easy_fs::{EasyFileSystem, Inode};
+<a href=#43 id=43 data-nosnippet>43</a><span class="kw">use </span>components::micro_fs::{Inode, MicroFileSystem};
 <a href=#44 id=44 data-nosnippet>44</a><span class="kw">use </span>lazy_static::<span class="kw-2">*</span>;
 <a href=#45 id=45 data-nosnippet>45</a>
 <a href=#46 id=46 data-nosnippet>46</a><span class="doccomment">/// OSInode 的内部状态结构
@@ -51,7 +51,7 @@
 <a href=#51 id=51 data-nosnippet>51</a>/// ## 字段说明
 <a href=#52 id=52 data-nosnippet>52</a>///
 <a href=#53 id=53 data-nosnippet>53</a>/// - `offset` - 当前文件偏移量，表示下次读写操作的位置
-<a href=#54 id=54 data-nosnippet>54</a>/// - `inode` - 底层 Easy-FS inode 的引用计数智能指针
+<a href=#54 id=54 data-nosnippet>54</a>/// - `inode` - 底层 Micro-FS inode 的引用计数智能指针
 <a href=#55 id=55 data-nosnippet>55</a>///
 <a href=#56 id=56 data-nosnippet>56</a>/// ## 状态管理
 <a href=#57 id=57 data-nosnippet>57</a>///
@@ -65,7 +65,7 @@
 <a href=#65 id=65 data-nosnippet>65</a>
 <a href=#66 id=66 data-nosnippet>66</a><span class="doccomment">/// 操作系统级别的文件 Inode
 <a href=#67 id=67 data-nosnippet>67</a>///
-<a href=#68 id=68 data-nosnippet>68</a>/// 封装底层 Easy-FS 文件系统的 inode，提供操作系统级别的文件操作接口。
+<a href=#68 id=68 data-nosnippet>68</a>/// 封装底层 Micro-FS 文件系统的 inode，提供操作系统级别的文件操作接口。
 <a href=#69 id=69 data-nosnippet>69</a>/// 支持读写权限控制、文件偏移量管理和批量文件操作。
 <a href=#70 id=70 data-nosnippet>70</a>///
 <a href=#71 id=71 data-nosnippet>71</a>/// ## 内部结构
@@ -97,7 +97,7 @@
 <a href=#97 id=97 data-nosnippet>97</a>    ///
 <a href=#98 id=98 data-nosnippet>98</a>    /// * `readable` - 文件是否可读
 <a href=#99 id=99 data-nosnippet>99</a>    /// * `writable` - 文件是否可写
-<a href=#100 id=100 data-nosnippet>100</a>    /// * `inode` - 底层 Easy-FS inode 的引用
+<a href=#100 id=100 data-nosnippet>100</a>    /// * `inode` - 底层 Micro-FS inode 的引用
 <a href=#101 id=101 data-nosnippet>101</a>    ///
 <a href=#102 id=102 data-nosnippet>102</a>    /// ## Returns
 <a href=#103 id=103 data-nosnippet>103</a>    ///
@@ -275,8 +275,8 @@
 <a href=#275 id=275 data-nosnippet>275</a>    ///
 <a href=#276 id=276 data-nosnippet>276</a>    /// ## 初始化过程
 <a href=#277 id=277 data-nosnippet>277</a>    ///
-<a href=#278 id=278 data-nosnippet>278</a>    /// 1. **文件系统打开**: 通过 `EasyFileSystem::open()` 打开底层文件系统
-<a href=#279 id=279 data-nosnippet>279</a>    /// 2. **根目录获取**: 调用 `EasyFileSystem::root_inode()` 获取根目录 inode
+<a href=#278 id=278 data-nosnippet>278</a>    /// 1. **文件系统打开**: 通过 `MicroFileSystem::open()` 打开底层文件系统
+<a href=#279 id=279 data-nosnippet>279</a>    /// 2. **根目录获取**: 调用 `MicroFileSystem::root_inode()` 获取根目录 inode
 <a href=#280 id=280 data-nosnippet>280</a>    /// 3. **引用包装**: 将根目录 inode 包装在 `Arc` 中以支持多线程共享访问
 <a href=#281 id=281 data-nosnippet>281</a>    ///
 <a href=#282 id=282 data-nosnippet>282</a>    /// ## 使用场景
@@ -289,7 +289,7 @@
 <a href=#289 id=289 data-nosnippet>289</a>    /// ## 线程安全
 <a href=#290 id=290 data-nosnippet>290</a>    ///
 <a href=#291 id=291 data-nosnippet>291</a>    /// 该实例是线程安全的，多个线程可以同时访问根目录进行文件操作。
-<a href=#292 id=292 data-nosnippet>292</a>    /// 具体的并发控制由底层 Easy-FS 文件系统实现。
+<a href=#292 id=292 data-nosnippet>292</a>    /// 具体的并发控制由底层 Micro-FS 文件系统实现。
 <a href=#293 id=293 data-nosnippet>293</a>    ///
 <a href=#294 id=294 data-nosnippet>294</a>    /// ## 生命周期
 <a href=#295 id=295 data-nosnippet>295</a>    ///
@@ -313,8 +313,8 @@
 <a href=#313 id=313 data-nosnippet>313</a>    /// }
 <a href=#314 id=314 data-nosnippet>314</a>    /// ```
 <a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">pub static </span><span class="kw-2">ref </span>ROOT_INODE: Arc&lt;Inode&gt; = {
-<a href=#316 id=316 data-nosnippet>316</a>        <span class="kw">let </span>efs = EasyFileSystem::open(BLOCK_DEVICE.clone());
-<a href=#317 id=317 data-nosnippet>317</a>        Arc::new(EasyFileSystem::root_inode(<span class="kw-2">&amp;</span>efs))
+<a href=#316 id=316 data-nosnippet>316</a>        <span class="kw">let </span>efs = MicroFileSystem::open(BLOCK_DEVICE.clone());
+<a href=#317 id=317 data-nosnippet>317</a>        Arc::new(MicroFileSystem::root_inode(<span class="kw-2">&amp;</span>efs))
 <a href=#318 id=318 data-nosnippet>318</a>    };
 <a href=#319 id=319 data-nosnippet>319</a>}
 <a href=#320 id=320 data-nosnippet>320</a>
