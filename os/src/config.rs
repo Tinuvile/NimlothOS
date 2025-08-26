@@ -11,7 +11,7 @@ pub const USER_STACK_SIZE: usize = 4096 * 2;
 
 /// 内核栈大小 (8KB)
 ///
-/// 每个任务在内核态执行时使用的栈大小，用于处理系统调用、
+/// 每个进程在内核态执行时使用的栈大小，用于处理系统调用、
 /// 中断和异常时的函数调用。
 pub const KERNEL_STACK_SIZE: usize = 4096 * 2;
 

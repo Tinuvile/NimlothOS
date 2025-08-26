@@ -46,7 +46,7 @@
 //! - `SYSCALL_SIGPROCMASK` (135) - 设置信号掩码
 //! - `SYSCALL_SIGRETURN` (139)   - 从信号处理返回
 
-use crate::task::SignalAction;
+use crate::process::SignalAction;
 use fs::*;
 use process::*;
 

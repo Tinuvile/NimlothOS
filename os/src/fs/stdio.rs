@@ -51,8 +51,8 @@
 use super::File;
 use crate::mm::UserBuffer;
 use crate::print;
+use crate::process::suspend_current_and_run_next;
 use crate::sbi::console_getchar;
-use crate::task::suspend_current_and_run_next;
 
 /// 标准输入设备
 ///
@@ -204,8 +204,8 @@ impl File for Stdin {
     /// 当控制台没有可用字符时，函数会进入忙等待循环：
     /// - 调用 `console_getchar()` 检查是否有输入
     /// - 如果没有输入（返回 0），调用 `suspend_current_and_run_next()`
-    /// - 让出 CPU 给其他任务执行
-    /// - 当任务重新调度时，继续检查输入
+    /// - 让出 CPU 给其他进程执行
+    /// - 当进程重新调度时，继续检查输入
     ///
     /// ## 错误处理
     ///

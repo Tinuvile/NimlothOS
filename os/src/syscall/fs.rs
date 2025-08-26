@@ -27,7 +27,7 @@
 
 use crate::fs::{OpenFlags, make_pipe, open_file};
 use crate::mm::{UserBuffer, translated_byte_buffer, translated_refmut, translated_str};
-use crate::task::{current_task, current_user_token};
+use crate::process::{current_process, current_user_token};
 use alloc::sync::Arc;
 
 /// 系统调用：向文件描述符写入数据
@@ -58,8 +58,8 @@ use alloc::sync::Arc;
 /// 确保地址空间隔离和内存安全。
 pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
     let token = current_user_token();
-    let task = current_task().unwrap();
-    let inner = task.inner_exclusive_access();
+    let process = current_process().unwrap();
+    let inner = process.inner_exclusive_access();
     if fd >= inner.fd_table.len() {
         return -1;
     }
@@ -104,8 +104,8 @@ pub fn sys_write(fd: usize, buf: *const u8, len: usize) -> isize {
 /// 确保地址空间隔离和内存安全。
 pub fn sys_read(fd: usize, buf: *const u8, len: usize) -> isize {
     let token = current_user_token();
-    let task = current_task().unwrap();
-    let inner = task.inner_exclusive_access();
+    let process = current_process().unwrap();
+    let inner = process.inner_exclusive_access();
     if fd >= inner.fd_table.len() {
         return -1;
     }
@@ -154,11 +154,11 @@ pub fn sys_read(fd: usize, buf: *const u8, len: usize) -> isize {
 ///
 /// 通过 [`translated_str`] 安全地读取用户空间的文件路径字符串。
 pub fn sys_open(path: *const u8, flags: u32) -> isize {
-    let task = current_task().unwrap();
+    let process = current_process().unwrap();
     let token = current_user_token();
     let path = translated_str(token, path);
     if let Some(inode) = open_file(path.as_str(), OpenFlags::from_bits(flags).unwrap()) {
-        let mut inner = task.inner_exclusive_access();
+        let mut inner = process.inner_exclusive_access();
         let fd = inner.alloc_fd();
         inner.fd_table[fd] = Some(inode);
         fd as isize
@@ -193,8 +193,8 @@ pub fn sys_open(path: *const u8, flags: u32) -> isize {
 /// - 释放相关的文件对象引用
 /// - 使该文件描述符号可以被后续的 `open` 调用重用
 pub fn sys_close(fd: usize) -> isize {
-    let task = current_task().unwrap();
-    let mut inner = task.inner_exclusive_access();
+    let process = current_process().unwrap();
+    let mut inner = process.inner_exclusive_access();
     if fd >= inner.fd_table.len() {
         return -1;
     }
@@ -224,8 +224,8 @@ pub fn sys_close(fd: usize) -> isize {
 /// - 新旧两个 fd 指向同一 `File` 对象，读写偏移共享
 /// - 关闭任意一个 fd 不影响另一个 fd 的有效性（引用计数减少）
 pub fn sys_dup(fd: usize) -> isize {
-    let task = current_task().unwrap();
-    let mut inner = task.inner_exclusive_access();
+    let process = current_process().unwrap();
+    let mut inner = process.inner_exclusive_access();
     if fd >= inner.fd_table.len() {
         return -1;
     }
@@ -257,9 +257,9 @@ pub fn sys_dup(fd: usize) -> isize {
 /// - 使用 `translated_refmut` 将两个 fd 写回到用户空间
 /// - fd 的实际分配来源于当前进程的 fd 表
 pub fn sys_pipe(pipe: *mut usize) -> isize {
-    let task = current_task().unwrap();
+    let process = current_process().unwrap();
     let token = current_user_token();
-    let mut inner = task.inner_exclusive_access();
+    let mut inner = process.inner_exclusive_access();
     let (pipe_read, pipe_write) = make_pipe();
     let read_fd = inner.alloc_fd();
     inner.fd_table[read_fd] = Some(pipe_read);

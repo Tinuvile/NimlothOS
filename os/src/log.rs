@@ -248,7 +248,7 @@ macro_rules! error {
 /// ## Usage
 ///
 /// ```rust
-/// warn!("Task {} is taking too long", task_id);
+/// warn!("Process {} is taking too long", process_id);
 /// warn!("Low memory warning: {} bytes remaining", free_memory);
 /// ```
 #[macro_export]
@@ -266,7 +266,7 @@ macro_rules! warn {
 ///
 /// ```rust
 /// info!("System initialized successfully");
-/// info!("Task {} completed in {} ms", task_id, duration);
+/// info!("Process {} completed in {} ms", process_id, duration);
 /// ```
 #[macro_export]
 macro_rules! info {

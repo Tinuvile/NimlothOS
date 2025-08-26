@@ -26,7 +26,7 @@
 //! 2. 父进程 `fork()` 后将写端 `dup`/重定向给子进程标准输出，读端给另一个子进程标准输入。
 //! 3. 两个子进程之间即可通过管道字节流进行通信。
 
-use crate::{fs::File, sync::UPSafeCell, task::suspend_current_and_run_next};
+use crate::{fs::File, process::suspend_current_and_run_next, sync::UPSafeCell};
 use alloc::sync::{Arc, Weak};
 
 const RING_BUFFER_SIZE: usize = 32;

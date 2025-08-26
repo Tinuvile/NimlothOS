@@ -1161,7 +1161,7 @@ impl MemorySet {
     /// kernel_space.activate();
     ///
     /// // 激活用户地址空间
-    /// let user_space = task.get_user_space();
+    /// let user_space = process.get_user_space();
     /// user_space.activate();
     /// ```
     pub fn activate(&self) {
@@ -1255,8 +1255,8 @@ impl MemorySet {
     /// // 获取内核地址空间标识符
     /// let kernel_token = KERNEL_SPACE.exclusive_access().token();
     ///
-    /// // 在任务切换中使用
-    /// let user_token = task.memory_set.token();
+    /// // 在进程切换中使用
+    /// let user_token = process.memory_set.token();
     /// // 保存到陷阱上下文中...
     /// ```
     pub fn token(&self) -> usize {
@@ -1423,11 +1423,11 @@ impl MemorySet {
     /// ### 典型调用序列
     /// ```rust
     /// // 在 fork 系统调用中
-    /// let parent_space = current_task.memory_set;
+    /// let parent_space = current_process.memory_set;
     /// let child_space = MemorySet::from_existed_user(&parent_space);
     ///
-    /// // 创建子进程任务控制块
-    /// let child_task = TaskControlBlock::new_with_space(child_space);
+    /// // 创建子进程进程控制块
+    /// let child_process = ProcessControlBlock::new_with_space(child_space);
     /// ```
     ///
     /// ## 安全性考虑
@@ -1454,16 +1454,16 @@ impl MemorySet {
     /// ```rust
     /// // fork 系统调用的核心实现
     /// fn sys_fork() -> isize {
-    ///     let current_task = current_task().unwrap();
+    ///     let current_process = current_process().unwrap();
     ///     
     ///     // 复制父进程的地址空间
-    ///     let parent_space = &current_task.inner_exclusive_access().memory_set;
+    ///     let parent_space = &current_process.inner_exclusive_access().memory_set;
     ///     let child_space = MemorySet::from_existed_user(parent_space);
     ///     
     ///     // 创建子进程...
-    ///     let child_task = TaskControlBlock::new_with_space(child_space);
+    ///     let child_process = ProcessControlBlock::new_with_space(child_space);
     ///     
-    ///     child_task.getpid() as isize
+    ///     child_process.getpid() as isize
     /// }
     /// ```
     ///

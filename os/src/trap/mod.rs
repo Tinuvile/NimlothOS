@@ -8,7 +8,7 @@
 //! ## 处理的陷阱类型
 //!
 //! - **系统调用** (`UserEnvCall`): 用户程序请求内核服务
-//! - **时钟中断** (`SupervisorTimer`): 实现抢占式多任务调度
+//! - **时钟中断** (`SupervisorTimer`): 实现抢占式多进程调度
 //! - **数据访问异常** (`StoreFault`, `StorePageFault`, `LoadFault`, `LoadPageFault`): 数据内存访问违规
 //! - **指令访问异常** (`InstructionFault`, `InstructionPageFault`): 指令内存访问违规
 //! - **非法指令** (`IllegalInstruction`): 执行无效指令
@@ -32,13 +32,13 @@
 //! - `sepc`: 异常程序计数器，指向触发陷阱的指令地址
 
 use crate::config::{TRAMPOLINE, TRAP_CONTEXT};
-use crate::syscall::syscall;
-use crate::task::{
+use crate::process::{
     SignalFlags, check_signals_error_of_current, current_add_signal, current_trap_cx,
     current_user_token, exit_current_and_run_next, handle_signals,
 };
+use crate::syscall::syscall;
 use crate::timer::next_trigger;
-use crate::{println, task::suspend_current_and_run_next};
+use crate::{println, process::suspend_current_and_run_next};
 use core::arch::{asm, global_asm};
 use riscv::register::{
     mtvec::TrapMode,
@@ -70,7 +70,7 @@ global_asm!(include_str!("trap.S"));
 ///
 /// ## Note
 ///
-/// 此函数只设置内核态陷阱入口，用户态陷阱入口会在任务切换时
+/// 此函数只设置内核态陷阱入口，用户态陷阱入口会在进程切换时
 /// 通过 `set_user_trap_entry()` 动态设置。
 pub fn init() {
     set_kernel_trap_entry();
@@ -80,12 +80,12 @@ pub fn init() {
 /// 启用时钟中断
 ///
 /// 在监督者中断使能寄存器 (`sie`) 中启用时钟中断位，
-/// 允许时钟中断触发陷阱进入内核进行任务调度。
+/// 允许时钟中断触发陷阱进入内核进行进程调度。
 ///
 /// ## 功能
 ///
 /// - 设置 `sie.STIE` 位，启用监督者时钟中断
-/// - 配合时钟设备实现抢占式多任务调度
+/// - 配合时钟设备实现抢占式多进程调度
 /// - 必须在时钟设备配置完成后调用
 ///
 /// ## Safety
@@ -140,7 +140,7 @@ pub fn trap_from_kernel() -> ! {
 /// 陷阱处理主函数
 ///
 /// 用户态陷阱统一入口：
-/// - 系统调用：两次获取/写回 Trap 上下文（因期间可能发生任务切换）
+/// - 系统调用：两次获取/写回 Trap 上下文（因期间可能发生进程切换）
 /// - 访问/执行异常：不直接终止，改为投递 `SIGSEGV`/`SIGILL` 等信号
 /// - 时钟中断：设置下一次触发并让出 CPU
 /// 处理完毕后进入信号阶段，必要时退出当前进程，然后返回用户态继续执行。

@@ -36,9 +36,9 @@
 use crate::fs::{OpenFlags, open_file};
 use crate::mm::{translated_ref, translated_refmut, translated_str};
 use crate::println;
-use crate::task::{
-    MAX_SIG, SignalAction, SignalFlags, add_task, current_task, current_user_token,
-    exit_current_and_run_next, pid2task, suspend_current_and_run_next,
+use crate::process::{
+    MAX_SIG, SignalAction, SignalFlags, add_process, current_process, current_user_token,
+    exit_current_and_run_next, pid2process, suspend_current_and_run_next,
 };
 use crate::timer::time_ms;
 use alloc::sync::Arc;
@@ -47,7 +47,7 @@ use alloc::vec::Vec;
 /// 系统调用：进程退出
 ///
 /// 实现 `exit(2)` 系统调用，终止当前正在运行的应用程序。
-/// 该函数会清理当前任务的资源，并调度下一个就绪任务运行。
+/// 该函数会清理当前进程的资源，并调度下一个就绪进程运行。
 ///
 /// ## Arguments
 ///
@@ -63,13 +63,13 @@ use alloc::vec::Vec;
 /// ## Behavior
 ///
 /// 1. 记录进程退出信息到内核日志
-/// 2. 将当前任务标记为已退出状态
-/// 3. 调度并切换到下一个就绪任务
-/// 4. 如果没有其他任务，系统将处理所有任务完成的情况
+/// 2. 将当前进程标记为已退出状态
+/// 3. 调度并切换到下一个就绪进程
+/// 4. 如果没有其他进程，系统将处理所有进程完成的情况
 ///
 /// ## Panics
 ///
-/// 如果任务切换函数意外返回，会触发 panic（这在正常情况下不应该发生）
+/// 如果进程切换函数意外返回，会触发 panic（这在正常情况下不应该发生）
 pub fn sys_exit(exit_code: i32) -> isize {
     println!("[kernel] Application exited with code {}", exit_code);
     exit_current_and_run_next(exit_code);
@@ -78,25 +78,25 @@ pub fn sys_exit(exit_code: i32) -> isize {
 
 /// 系统调用：让出 CPU 时间片
 ///
-/// 实现 `sched_yield(2)` 系统调用，当前任务主动让出 CPU，
-/// 允许调度器选择其他就绪任务运行。这是一种协作式多任务的实现方式。
+/// 实现 `sched_yield(2)` 系统调用，当前进程主动让出 CPU，
+/// 允许调度器选择其他就绪进程运行。这是一种协作式多进程的实现方式。
 ///
 /// ## Returns
 ///
-/// 成功时返回 0。当任务重新获得 CPU 时间片时，会从此处继续执行。
+/// 成功时返回 0。当进程重新获得 CPU 时间片时，会从此处继续执行。
 ///
 /// ## Behavior
 ///
-/// 1. 将当前任务状态从 `Running` 改为 `Ready`
-/// 2. 调度器选择下一个就绪任务运行
-/// 3. 执行任务上下文切换
-/// 4. 当前任务将来重新被调度时，从此函数返回
+/// 1. 将当前进程状态从 `Running` 改为 `Ready`
+/// 2. 调度器选择下一个就绪进程运行
+/// 3. 执行进程上下文切换
+/// 4. 当前进程将来重新被调度时，从此函数返回
 ///
 /// ## Use Cases
 ///
-/// - 长时间运行的任务主动让出 CPU，提高系统响应性
+/// - 长时间运行的进程主动让出 CPU，提高系统响应性
 /// - 等待某些条件满足时的忙等待优化
-/// - 实现用户空间的协作式多任务
+/// - 实现用户空间的协作式多进程
 pub fn sys_yield() -> isize {
     suspend_current_and_run_next();
     0
@@ -149,7 +149,7 @@ pub fn sys_time() -> isize {
 /// - 日志记录和调试
 /// - 父子进程关系识别
 pub fn sys_pid() -> isize {
-    current_task().unwrap().pid.0 as isize
+    current_process().unwrap().pid.0 as isize
 }
 
 /// 系统调用：创建子进程（fork）
@@ -165,7 +165,7 @@ pub fn sys_pid() -> isize {
 ///
 /// ## 行为说明
 ///
-/// 1. 复制父进程的任务控制块及地址空间（深拷贝）
+/// 1. 复制父进程的进程控制块及地址空间（深拷贝）
 /// 2. 设置子进程 Trap 上下文的返回值 `a0 = 0`
 /// 3. 将子进程加入就绪队列等待调度
 ///
@@ -174,12 +174,12 @@ pub fn sys_pid() -> isize {
 /// - 子进程拥有独立的物理页面副本，修改互不影响
 /// - Trampoline 等只读共享页面除外
 pub fn sys_fork() -> isize {
-    let current_task = current_task().unwrap();
-    let new_task = current_task.fork();
-    let new_pid = new_task.pid.0;
-    let trap_cx = new_task.inner_exclusive_access().trap_cx();
+    let current_process = current_process().unwrap();
+    let new_process = current_process.fork();
+    let new_pid = new_process.pid.0;
+    let trap_cx = new_process.inner_exclusive_access().trap_cx();
     trap_cx.x[10] = 0; // x[10] = a0
-    add_task(new_task);
+    add_process(new_process);
     new_pid as isize
 }
 
@@ -202,7 +202,7 @@ pub fn sys_fork() -> isize {
 /// 1. 从用户态读取程序名字符串
 /// 2. 打开文件
 /// 3. 读取文件内容
-/// 4. 调用任务的 `exec` 方法重建地址空间并跳转到新入口
+/// 4. 调用进程的 `exec` 方法重建地址空间并跳转到新入口
 ///
 /// ## 进程替换特性
 ///
@@ -231,9 +231,9 @@ pub fn sys_exec(path: *const u8, mut args: *const usize) -> isize {
     }
     if let Some(data) = open_file(path.as_str(), OpenFlags::RDONLY) {
         let all_data = data.read_all();
-        let task = current_task().unwrap();
+        let process = current_process().unwrap();
         let argc = args_vec.len();
-        task.exec(all_data.as_slice(), args_vec);
+        process.exec(all_data.as_slice(), args_vec);
         argc as isize
     } else {
         -1
@@ -260,7 +260,7 @@ pub fn sys_exec(path: *const u8, mut args: *const usize) -> isize {
 ///
 /// 1. 校验待等待的子进程是否存在
 /// 2. 查找符合条件且已处于 Zombie 状态的子进程
-/// 3. 回收其 Task 对象，获取退出码并写回用户缓冲区
+/// 3. 回收其 Process 对象，获取退出码并写回用户缓冲区
 ///
 /// ## 等待策略
 ///
@@ -271,7 +271,7 @@ pub fn sys_exec(path: *const u8, mut args: *const usize) -> isize {
 /// ## 僵尸进程处理
 ///
 /// 成功等待后，系统会：
-/// - 回收子进程的 Task 对象
+/// - 回收子进程的 Process 对象
 /// - 获取子进程的退出码
 /// - 将退出码写入用户提供的缓冲区
 /// - 清理子进程资源
@@ -281,8 +281,8 @@ pub fn sys_exec(path: *const u8, mut args: *const usize) -> isize {
 /// 通过 `translated_refmut()` 将退出码写入用户空间，调用前已验证指针
 /// 在当前地址空间内有效（失败会 panic；未来可改为错误返回）。
 pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
-    let task = current_task().unwrap();
-    let mut inner = task.inner_exclusive_access();
+    let process = current_process().unwrap();
+    let mut inner = process.inner_exclusive_access();
     if !inner
         .children
         .iter()
@@ -317,10 +317,10 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
 /// ## Returns
 ///
 /// - 成功：返回旧的屏蔽集合（按位编码）
-/// - 失败：返回 -1（如位集合非法或当前任务不存在）
+/// - 失败：返回 -1（如位集合非法或当前进程不存在）
 pub fn sys_sigprocmask(mask: u32) -> isize {
-    if let Some(task) = current_task() {
-        let mut inner = task.inner_exclusive_access();
+    if let Some(process) = current_process() {
+        let mut inner = process.inner_exclusive_access();
         let old_mask = inner.signal_mask;
         if let Some(flag) = SignalFlags::from_bits(mask) {
             inner.signal_mask = flag;
@@ -347,14 +347,14 @@ pub fn sys_sigprocmask(mask: u32) -> isize {
 /// - 0：发送成功
 /// - -1：目标不存在 / `signum` 非法 / 信号已存在
 pub fn sys_kill(pid: usize, signum: i32) -> isize {
-    if let Some(task) = pid2task(pid) {
+    if let Some(process) = pid2process(pid) {
         if let Some(flag) = SignalFlags::from_bits(1 << signum) {
             // insert the signal if legal
-            let mut task_ref = task.inner_exclusive_access();
-            if task_ref.signals.contains(flag) {
+            let mut process_ref = process.inner_exclusive_access();
+            if process_ref.signals.contains(flag) {
                 return -1;
             }
-            task_ref.signals.insert(flag);
+            process_ref.signals.insert(flag);
             0
         } else {
             -1
@@ -396,8 +396,8 @@ pub fn sys_sigaction(
     old_action: *mut SignalAction,
 ) -> isize {
     let token = current_user_token();
-    let task = current_task().unwrap();
-    let mut inner = task.inner_exclusive_access();
+    let process = current_process().unwrap();
+    let mut inner = process.inner_exclusive_access();
     if signum as usize > MAX_SIG {
         return -1;
     }
@@ -422,10 +422,10 @@ pub fn sys_sigaction(
 /// ## Returns
 ///
 /// - `a0`：原用户态上下文中的 a0 值
-/// - -1：当前任务不存在
+/// - -1：当前进程不存在
 pub fn sys_sigreturn() -> isize {
-    if let Some(task) = current_task() {
-        let mut inner = task.inner_exclusive_access();
+    if let Some(process) = current_process() {
+        let mut inner = process.inner_exclusive_access();
         inner.handling_sig = -1;
         let trap_ctx = inner.trap_cx();
         *trap_ctx = inner.trap_ctx_backup.unwrap();
