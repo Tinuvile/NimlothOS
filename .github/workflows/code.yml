@@ -23,7 +23,7 @@ jobs:
           cargo doc --no-deps --verbose -Z build-std=core,alloc
       - name: Build easy-fs doc
         run: |
-          cd easy-fs
+          cd components
           cargo doc --no-deps --verbose
       - name: Create combined doc directory
         run: |
@@ -31,9 +31,9 @@ jobs:
           # 复制 os 文档到 combined_docs/os/
           mkdir -p combined_docs/os
           cp -r os/target/riscv64gc-unknown-none-elf/doc/* combined_docs/os/
-          # 复制 easy-fs 文档到 combined_docs/easy_fs/
-          mkdir -p combined_docs/easy_fs
-          cp -r easy-fs/target/doc/* combined_docs/easy_fs/
+          # 复制 components 文档到 combined_docs/components/
+          mkdir -p combined_docs/components
+          cp -r components/target/doc/* combined_docs/components/
           # 创建主页面，重定向到 os 文档
           cat > combined_docs/index.html << 'EOF'
           <!DOCTYPE html>
