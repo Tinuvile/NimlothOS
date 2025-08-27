@@ -1,6 +1,6 @@
 use clap::{App, Arg};
 use components::micro_fs::{BlockDevice, MicroFileSystem};
-use std::fs::{read_dir, File, OpenOptions};
+use std::fs::{File, OpenOptions, read_dir};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -95,7 +95,7 @@ fn efs_test() -> std::io::Result<()> {
             .write(true)
             .create(true)
             .open("target/fs.img")?;
-        f.set_len(8192 * 512).unwrap();
+        f.set_len(100 * 1024 * 1024).unwrap();
         f
     })));
     MicroFileSystem::create(block_file.clone(), 4096, 1);
@@ -146,6 +146,7 @@ fn efs_test() -> std::io::Result<()> {
     random_str_test(400 * BLOCK_SZ);
     random_str_test(1000 * BLOCK_SZ);
     random_str_test(2000 * BLOCK_SZ);
+    random_str_test(3069 * BLOCK_SZ);
 
     Ok(())
 }

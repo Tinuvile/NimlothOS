@@ -60,7 +60,7 @@ const EFS_MAGIC: u32 = 0x3b800001;
 const NAME_LENGTH_LIMIT: usize = 27;
 
 /// 直接数据块数量
-const INODE_DIRECT_COUNT: usize = 28;
+const INODE_DIRECT_COUNT: usize = 27;
 
 /// 直接块边界
 const DIRECT_BOUND: usize = INODE_DIRECT_COUNT;
@@ -73,6 +73,9 @@ const INDIRECT1_BOUND: usize = DIRECT_BOUND + INODE_INDIRECT1_COUNT;
 
 /// 二级间接块能索引的数据块数量
 const INODE_INDIRECT2_COUNT: usize = INODE_INDIRECT1_COUNT * INODE_INDIRECT1_COUNT;
+
+/// 三级间接块能索引的数据块数量
+const INODE_INDIRECT3_COUNT: usize = INODE_INDIRECT2_COUNT * INODE_INDIRECT1_COUNT;
 
 /// 二级间接块边界
 #[allow(unused)]
@@ -127,30 +130,33 @@ pub struct SuperBlock {
 /// ## 数据块索引结构
 ///
 /// ```text
-/// ┌───────────┬───────────────────┬────────────────┬────---───-─────┐
-/// │ Size (4B) │ Direct[28] (112B) │ Indirect1 (4B) │ Indirect2 (4B) │
-/// └───────────┴───────────────────┴────────────────┴───────---──────┘
+/// ┌───────────┬───────────────────┬────────────────┬────────────────┬────────────────┐
+/// │ Size (4B) │ Direct[27] (108B) │ Indirect1 (4B) │ Indirect2 (4B) │ Indirect3 (4B) │
+/// └───────────┴───────────────────┴────────────────┴────────────────┴────────────────┘
 /// ```
 ///
 /// ## 索引策略
 ///
-/// - **直接块**：前 28 个数据块直接存储在 `direct` 数组中
+/// - **直接块**：前 27 个数据块直接存储在 `direct` 数组中
 /// - **一级间接块**：通过 `indirect1` 指向的块存储块 ID 数组
 /// - **二级间接块**：通过 `indirect2` 指向的块存储一级间接块的块 ID 数组
+/// - **三级间接块**：通过 `indirect3` 指向的块存储二级间接块的块 ID 数组
 ///
 /// ## 最大文件大小
 ///
 /// 理论上支持的最大文件大小：
-/// - 直接块：28 × 512B = 14KB
+/// - 直接块：27 × 512B = 13.5KB
 /// - 一级间接块：128 × 512B = 64KB
 /// - 二级间接块：128 × 128 × 512B = 8MB
-/// - 总计：约 8.1MB
+/// - 三级间接块：128 × 128 × 128 × 512B = 1GB
+/// - 总计：约 1GB
 #[repr(C)]
 pub struct DiskInode {
     pub size: u32,
     pub direct: [u32; INODE_DIRECT_COUNT],
     pub indirect1: u32,
     pub indirect2: u32,
+    pub indirect3: u32,
     type_: DiskInodeType,
 }
 
@@ -265,7 +271,7 @@ impl DiskInode {
                 .read(0, |indirect_block: &IndirectBlock| {
                     indirect_block[inner_id - INODE_DIRECT_COUNT]
                 })
-        } else {
+        } else if inner_id < INDIRECT2_BOUND {
             let last = inner_id - INDIRECT1_BOUND;
             let indirect1 = block_cache(self.indirect2 as usize, Arc::clone(block_device))
                 .lock()
@@ -276,6 +282,23 @@ impl DiskInode {
                 .lock()
                 .read(0, |indirect1: &IndirectBlock| {
                     indirect1[last % INODE_INDIRECT1_COUNT]
+                })
+        } else {
+            let last = inner_id - INDIRECT2_BOUND;
+            let indirect1 = block_cache(self.indirect3 as usize, Arc::clone(block_device))
+                .lock()
+                .read(0, |indirect3: &IndirectBlock| {
+                    indirect3[last / INODE_INDIRECT2_COUNT]
+                });
+            let indirect2 = block_cache(indirect1 as usize, Arc::clone(block_device))
+                .lock()
+                .read(0, |indirect2: &IndirectBlock| {
+                    indirect2[(last % INODE_INDIRECT2_COUNT) / INODE_INDIRECT1_COUNT]
+                });
+            block_cache(indirect2 as usize, Arc::clone(block_device))
+                .lock()
+                .read(0, |indirect1: &IndirectBlock| {
+                    indirect1[(last % INODE_INDIRECT2_COUNT) % INODE_INDIRECT1_COUNT]
                 })
         }
     }
@@ -313,13 +336,26 @@ impl DiskInode {
     pub fn total_blocks(size: u32) -> u32 {
         let data_blocks = Self::_data_blocks(size) as usize;
         let mut total = data_blocks;
+        // indirect1
         if data_blocks > INODE_DIRECT_COUNT {
             total += 1;
         }
+        // indirect2
         if data_blocks > INDIRECT1_BOUND {
             total += 1;
-            total +=
+            let level2_blocks =
                 (data_blocks - INDIRECT1_BOUND + INODE_INDIRECT1_COUNT - 1) / INODE_INDIRECT1_COUNT;
+            total += level2_blocks.min(INODE_INDIRECT1_COUNT);
+        }
+        // indirect3
+        if data_blocks > INDIRECT2_BOUND {
+            total += 1;
+            // sub indirect2
+            total +=
+                (data_blocks - INDIRECT2_BOUND + INODE_INDIRECT2_COUNT - 1) / INODE_INDIRECT2_COUNT;
+            // sub indirect1
+            total +=
+                (data_blocks - INDIRECT2_BOUND + INODE_INDIRECT1_COUNT - 1) / INODE_INDIRECT1_COUNT;
         }
         total as u32
     }
@@ -425,6 +461,58 @@ impl DiskInode {
                     }
                 }
             });
+        // 处理三级间接索引：更新计数并按需分配/填充 indirect3
+        if total_blocks > INODE_INDIRECT2_COUNT as u32 {
+            if current_blocks == INODE_INDIRECT2_COUNT as u32 {
+                self.indirect3 = new_blocks.next().unwrap();
+            }
+            current_blocks -= INODE_INDIRECT2_COUNT as u32;
+            total_blocks -= INODE_INDIRECT2_COUNT as u32;
+        } else {
+            return;
+        }
+        // 填充 indirect3 (a0, b0, c0) -> (a1, b1, c1)
+        let mut a0 = current_blocks as usize / INODE_INDIRECT2_COUNT;
+        let mut b0 = (current_blocks as usize % INODE_INDIRECT2_COUNT) / INODE_INDIRECT1_COUNT;
+        let mut c0 = (current_blocks as usize % INODE_INDIRECT2_COUNT) % INODE_INDIRECT1_COUNT;
+        let a1 = total_blocks as usize / INODE_INDIRECT2_COUNT;
+        let b1 = (total_blocks as usize % INODE_INDIRECT2_COUNT) / INODE_INDIRECT1_COUNT;
+        let c1 = (total_blocks as usize % INODE_INDIRECT2_COUNT) % INODE_INDIRECT1_COUNT;
+        // 从 低层 -> 高层
+        block_cache(self.indirect3 as usize, Arc::clone(block_device))
+            .lock()
+            .modify(0, |indirect3: &mut IndirectBlock| {
+                while (a0 < a1) || (a0 == a1 && b0 < b1) || (a0 == a1 && b0 == b1 && c0 < c1) {
+                    if b0 == 0 {
+                        indirect3[a0] = new_blocks.next().unwrap();
+                    }
+                    // 填充当前 indirect3 的 a0 层对应的 indirect2
+                    block_cache(indirect3[a0] as usize, Arc::clone(block_device))
+                        .lock()
+                        .modify(0, |indirect2: &mut IndirectBlock| {
+                            if c0 == 0 {
+                                indirect2[b0] = new_blocks.next().unwrap();
+                            }
+                            // 填充当前 indirect2 的 b0 层对应的 indirect1
+                            block_cache(indirect2[b0] as usize, Arc::clone(block_device))
+                                .lock()
+                                .modify(0, |indirect1: &mut IndirectBlock| {
+                                    indirect1[c0] = new_blocks.next().unwrap();
+                                });
+                            // 移动到下一个需要分配的 block
+                            c0 += 1;
+                            if c0 == INODE_INDIRECT1_COUNT {
+                                c0 = 0;
+                                b0 += 1;
+                            }
+                        });
+                    // 移动到下一个需要分配的 block
+                    if b0 == INODE_INDIRECT2_COUNT {
+                        b0 = 0;
+                        a0 += 1;
+                    }
+                }
+            });
     }
 
     /// 清空文件内容并回收所有数据块
@@ -505,6 +593,72 @@ impl DiskInode {
                 }
             });
         self.indirect2 = 0;
+        assert!(data_blocks <= INODE_INDIRECT3_COUNT);
+        if data_blocks > INODE_INDIRECT2_COUNT {
+            v.push(self.indirect3);
+            data_blocks -= INODE_INDIRECT2_COUNT;
+        } else {
+            return v;
+        }
+        // 释放 indirect3
+        assert!(data_blocks <= INODE_INDIRECT3_COUNT);
+        let a2 = data_blocks / INODE_INDIRECT2_COUNT;
+        let b2 = (data_blocks % INODE_INDIRECT2_COUNT) / INODE_INDIRECT1_COUNT;
+        let c2 = (data_blocks % INODE_INDIRECT2_COUNT) % INODE_INDIRECT1_COUNT;
+        block_cache(self.indirect3 as usize, Arc::clone(block_device))
+            .lock()
+            .modify(0, |indirect3: &mut IndirectBlock| {
+                // 满的 indirect2 释放
+                for entry in indirect3.iter().take(a2) {
+                    v.push(*entry);
+                    block_cache(*entry as usize, Arc::clone(block_device))
+                        .lock()
+                        .modify(0, |indirect2: &mut IndirectBlock| {
+                            // 满的 indirect1 释放
+                            for entry in indirect2.iter() {
+                                v.push(*entry);
+                                block_cache(*entry as usize, Arc::clone(block_device))
+                                    .lock()
+                                    .modify(0, |indirect1: &mut IndirectBlock| {
+                                        for entry in indirect1.iter() {
+                                            v.push(*entry);
+                                        }
+                                    });
+                            }
+                        });
+                    // 最后一个 indirect2 释放
+                    if b2 > 0 {
+                        v.push(indirect3[a2]);
+                        block_cache(indirect3[a2] as usize, Arc::clone(block_device))
+                            .lock()
+                            .modify(0, |indirect2: &mut IndirectBlock| {
+                                // 满的 indirect1 释放
+                                for entry in indirect2.iter().take(b2) {
+                                    v.push(*entry);
+                                    block_cache(*entry as usize, Arc::clone(block_device))
+                                        .lock()
+                                        .modify(0, |indirect1: &mut IndirectBlock| {
+                                            for entry in indirect1.iter() {
+                                                v.push(*entry);
+                                            }
+                                        });
+                                }
+                                // 最后一个 indirect1 释放
+                                if c2 > 0 {
+                                    v.push(indirect2[b2]);
+                                    block_cache(indirect2[b2] as usize, Arc::clone(block_device))
+                                        .lock()
+                                        .modify(0, |indirect1: &mut IndirectBlock| {
+                                            for entry in indirect1.iter().take(c2) {
+                                                v.push(*entry);
+                                            }
+                                        });
+                                }
+                            });
+                    }
+                }
+            });
+        self.indirect3 = 0;
         v
     }
 
