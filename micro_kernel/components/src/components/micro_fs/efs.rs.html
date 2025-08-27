@@ -159,7 +159,7 @@
 <a href=#159 id=159 data-nosnippet>159</a>        block_cache(root_inode_block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span>block_device))
 <a href=#160 id=160 data-nosnippet>160</a>            .lock()
 <a href=#161 id=161 data-nosnippet>161</a>            .modify(root_inode_offset, |disk_inode: <span class="kw-2">&amp;mut </span>DiskInode| {
-<a href=#162 id=162 data-nosnippet>162</a>                disk_inode.initialize(DiskInodeType::Directory);
+<a href=#162 id=162 data-nosnippet>162</a>                disk_inode.initialize(DiskInodeType::Dir);
 <a href=#163 id=163 data-nosnippet>163</a>            });
 <a href=#164 id=164 data-nosnippet>164</a>        block_cache_sync_all();
 <a href=#165 id=165 data-nosnippet>165</a>        Arc::new(Mutex::new(efs))
