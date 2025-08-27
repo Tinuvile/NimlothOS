@@ -77,4 +77,16 @@
 <a href=#77 id=77 data-nosnippet>77</a>}
 <a href=#78 id=78 data-nosnippet>78</a>
 <a href=#79 id=79 data-nosnippet>79</a><span class="comment">// 从开发板配置中重新导出时钟频率和内存信息
-<a href=#80 id=80 data-nosnippet>80</a></span><span class="kw">pub use </span><span class="kw">crate</span>::board::{CLOCK_FREQ, MEMORY_END, MMIO};</code></pre></div></section></main></body></html>
+<a href=#80 id=80 data-nosnippet>80</a></span><span class="kw">pub use </span><span class="kw">crate</span>::board::{CLOCK_FREQ, MEMORY_END, MMIO};
+<a href=#81 id=81 data-nosnippet>81</a>
+<a href=#82 id=82 data-nosnippet>82</a><span class="doccomment">/// MLFQ 队列数量
+<a href=#83 id=83 data-nosnippet>83</a>///
+<a href=#84 id=84 data-nosnippet>84</a>/// 多级反馈队列的优先级级数，队列 0 为最高优先级，
+<a href=#85 id=85 data-nosnippet>85</a>/// 队列 3 为最低优先级。
+<a href=#86 id=86 data-nosnippet>86</a></span><span class="kw">pub const </span>MLFQ_QUEUE_COUNT: usize = <span class="number">4</span>;
+<a href=#87 id=87 data-nosnippet>87</a>
+<a href=#88 id=88 data-nosnippet>88</a><span class="doccomment">/// MLFQ 基础时间片 (时钟周期数)
+<a href=#89 id=89 data-nosnippet>89</a>///
+<a href=#90 id=90 data-nosnippet>90</a>/// 最高优先级队列的时间片长度，低优先级队列的时间片
+<a href=#91 id=91 data-nosnippet>91</a>/// 会按倍数递增，保证响应性和吞吐量的平衡。
+<a href=#92 id=92 data-nosnippet>92</a></span><span class="kw">pub const </span>MLFQ_BASE_TIME_SLICE: usize = CLOCK_FREQ / <span class="number">100</span>; <span class="comment">// 10ms</span></code></pre></div></section></main></body></html>

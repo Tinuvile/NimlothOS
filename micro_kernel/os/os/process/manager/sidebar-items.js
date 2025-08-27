@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["add_process","fetch_process","pid2process","remove_from_pid2process"],"struct":["PID2TCB","PROCESS_MANAGER","ProcessManager"]};
+window.SIDEBAR_ITEMS = {"fn":["add_process","add_process_with_priority","boost_process_priority","fetch_process","get_time_slice","pid2process","remove_from_pid2process"],"struct":["PID2TCB","PROCESS_MANAGER","ProcessManager"]};
