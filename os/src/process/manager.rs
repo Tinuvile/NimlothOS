@@ -302,6 +302,7 @@ impl ProcessManager {
     ///
     /// ## 参数
     /// * `process` - 要添加的进程控制块
+    #[allow(unused)]
     pub fn add_new(&mut self, process: Arc<ProcessControlBlock>) {
         self.add(process, 0);
     }
@@ -761,6 +762,7 @@ pub fn get_time_slice(priority: usize) -> usize {
 ///
 /// ## 参数
 /// * `process` - 要提升优先级的进程控制块
+#[allow(unused)]
 pub fn boost_process_priority(process: Arc<ProcessControlBlock>) {
     // 重置为最高优先级
     {

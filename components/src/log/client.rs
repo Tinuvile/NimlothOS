@@ -2,10 +2,9 @@
 //!
 //! 提供与原系统兼容的客户端接口和便捷宏。
 
-use crate::log::transport::{SyscallReadFn, SyscallWriteFn};
-use crate::log::{DEFAULT_LOG_FD, LogLevel, LogMessage, LogTransport, PipeTransport};
+use crate::log::transport::SyscallWriteFn;
+use crate::log::{LogLevel, LogMessage, LogTransport, PipeTransport};
 use alloc::boxed::Box;
-use alloc::sync::Arc;
 use core::sync::atomic::{AtomicU32, Ordering};
 
 /// 客户端错误类型
@@ -213,7 +212,8 @@ fn get_timestamp() -> u32 {
     COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
-// 系统调用声明（实际集成时需要）
+// 系统调用声明
+#[allow(unused)]
 unsafe extern "C" {
     fn sys_pid() -> isize;
     fn sys_time() -> isize;

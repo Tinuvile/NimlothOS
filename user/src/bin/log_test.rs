@@ -6,8 +6,7 @@ extern crate alloc;
 #[macro_use]
 extern crate user_lib;
 
-use alloc::format;
-use components::log::{LogClient, LogLevel};
+use components::log::LogClient;
 use user_lib::{close, exit, fork, pipe, read, waitpid, write};
 
 // 包装系统调用函数以匹配components的接口

@@ -47,8 +47,6 @@
 //! - `SYSCALL_SIGRETURN` (139)   - 从信号处理返回
 
 use crate::process::SignalAction;
-use fs::*;
-use process::*;
 
 mod fs;
 mod process;

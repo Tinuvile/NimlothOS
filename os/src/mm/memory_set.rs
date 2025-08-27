@@ -1588,6 +1588,7 @@ impl MemorySet {
 /// // 通常在内核初始化完成后调用
 /// remap_test(); // 如果通过，打印 "remap_test passed!"
 /// ```
+#[allow(unused)]
 pub fn remap_test() {
     let kernel_space = KERNEL_SPACE.exclusive_access();
     let mid_text: VirtAddr = ((stext as usize + etext as usize) / 2).into();

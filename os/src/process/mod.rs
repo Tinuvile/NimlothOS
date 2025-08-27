@@ -84,8 +84,7 @@ mod switch;
 
 pub use context::ProcessContext;
 pub use manager::{
-    add_process, add_process_with_priority, boost_process_priority, get_time_slice, pid2process,
-    remove_from_pid2process,
+    add_process, add_process_with_priority, get_time_slice, pid2process, remove_from_pid2process,
 };
 pub use processor::{
     current_process, current_trap_cx, current_user_token, run_process, schedule,

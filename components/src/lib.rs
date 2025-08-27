@@ -1,8 +1,7 @@
-#![no_std]
-
 //! # NimlothOS 组件系统
 //!
 //! 提供操作系统各种组件的模块化实现，包括微内核日志系统等。
+#![no_std]
 
 extern crate alloc;
 

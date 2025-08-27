@@ -304,6 +304,7 @@ impl MicroFileSystem {
     /// 2. 清空 inode 内容，重置为初始状态
     /// 3. 回收 inode 占用的所有数据块
     /// 4. 更新相关的目录项
+    #[allow(unused)]
     pub fn dealloc_inode(&mut self, inode_id: u32) {
         /* TODO: Implement this -> support file delete
         self.inode_bitmap

@@ -19,7 +19,7 @@
 //!
 //! ### 文件接口
 //! - [`File`] - 文件抽象 trait，定义基本的文件操作
-//! - [`OSInode`] - 操作系统级别的 inode 封装
+//! - [`inode::OSInode`] - 操作系统级别的 inode 封装
 //! - [`Stdin`] / [`Stdout`] - 标准输入输出设备
 //!
 //! ### 文件操作
@@ -59,7 +59,7 @@ mod inode;
 mod pipe;
 mod stdio;
 
-pub use inode::{OSInode, OpenFlags, list_apps, open_file};
+pub use inode::{OpenFlags, list_apps, open_file};
 pub use pipe::make_pipe;
 pub use stdio::{Stderr, Stdin, Stdout};
 
