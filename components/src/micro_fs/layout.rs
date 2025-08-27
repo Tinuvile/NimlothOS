@@ -168,7 +168,7 @@ pub enum DiskInodeType {
     /// 普通文件
     File,
     /// 目录文件
-    Directory,
+    Dir,
 }
 
 impl SuperBlock {
@@ -226,6 +226,7 @@ impl DiskInode {
         self.direct.iter_mut().for_each(|v| *v = 0);
         self.indirect1 = 0;
         self.indirect2 = 0;
+        self.indirect3 = 0;
         self.type_ = type_;
     }
 
@@ -234,7 +235,7 @@ impl DiskInode {
     /// ## Returns
     /// 如果是目录返回 `true`，否则返回 `false`
     pub fn dir(&self) -> bool {
-        self.type_ == DiskInodeType::Directory
+        self.type_ == DiskInodeType::Dir
     }
 
     /// 检查是否为普通文件

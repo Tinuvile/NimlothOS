@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use components::micro_fs::{BlockDevice, MicroFileSystem};
+use components::micro_fs::{BlockDevice, Inode, MicroFileSystem};
 use std::fs::{File, OpenOptions, read_dir};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
@@ -87,6 +87,32 @@ fn micro_fs_pack() -> std::io::Result<()> {
     Ok(())
 }
 
+fn read_string(file: &Arc<Inode>) -> String {
+    let mut read_buffer = [0u8; 512];
+    let mut offset = 0usize;
+    let mut read_str = String::new();
+    loop {
+        let len = file.read_at(offset, &mut read_buffer);
+        if len == 0 {
+            break;
+        }
+        offset += len;
+        read_str.push_str(core::str::from_utf8(&read_buffer[..len]).unwrap());
+    }
+    read_str
+}
+
+fn tree(inode: &Arc<Inode>, name: &str, depth: usize) {
+    for _ in 0..depth {
+        print!("  ");
+    }
+    println!("{}", name);
+    for name in inode.ls() {
+        let child = inode.find(&name).unwrap();
+        tree(&child, &name, depth + 1);
+    }
+}
+
 #[test]
 fn efs_test() -> std::io::Result<()> {
     let block_file = Arc::new(BlockFile(Mutex::new({
@@ -148,5 +174,44 @@ fn efs_test() -> std::io::Result<()> {
     random_str_test(2000 * BLOCK_SZ);
     random_str_test(3069 * BLOCK_SZ);
 
+    Ok(())
+}
+
+#[test]
+fn efs_dir_test() -> std::io::Result<()> {
+    let block_file = Arc::new(BlockFile(Mutex::new({
+        let f = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open("target/fs_dir.img")?;
+        f.set_len(8192 * 512).unwrap();
+        f
+    })));
+    MicroFileSystem::create(block_file.clone(), 4096, 1);
+    let efs = MicroFileSystem::open(block_file.clone());
+    let root = Arc::new(MicroFileSystem::root_inode(&efs));
+    root.create("f1");
+    root.create("f2");
+
+    let d1 = root.create_dir("d1").unwrap();
+
+    let f3 = d1.create("f3").unwrap();
+    let d2 = d1.create_dir("d2").unwrap();
+
+    let f4 = d2.create("f4").unwrap();
+    tree(&root, "/", 0);
+
+    let f3_content = "3333333";
+    let f4_content = "4444444444444444444";
+    f3.write_at(0, f3_content.as_bytes());
+    f4.write_at(0, f4_content.as_bytes());
+
+    assert_eq!(read_string(&d1.find("f3").unwrap()), f3_content);
+    assert_eq!(read_string(&root.find("/d1/f3").unwrap()), f3_content);
+    assert_eq!(read_string(&d2.find("f4").unwrap()), f4_content);
+    assert_eq!(read_string(&d1.find("d2/f4").unwrap()), f4_content);
+    assert_eq!(read_string(&root.find("/d1/d2/f4").unwrap()), f4_content);
+    assert!(f3.find("whatever").is_none());
     Ok(())
 }
