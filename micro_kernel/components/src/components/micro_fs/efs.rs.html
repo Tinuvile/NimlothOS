@@ -304,81 +304,82 @@
 <a href=#304 id=304 data-nosnippet>304</a>    /// 2. 清空 inode 内容，重置为初始状态
 <a href=#305 id=305 data-nosnippet>305</a>    /// 3. 回收 inode 占用的所有数据块
 <a href=#306 id=306 data-nosnippet>306</a>    /// 4. 更新相关的目录项
-<a href=#307 id=307 data-nosnippet>307</a>    </span><span class="kw">pub fn </span>dealloc_inode(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inode_id: u32) {
-<a href=#308 id=308 data-nosnippet>308</a>        <span class="comment">/* TODO: Implement this -&gt; support file delete
-<a href=#309 id=309 data-nosnippet>309</a>        self.inode_bitmap
-<a href=#310 id=310 data-nosnippet>310</a>            .dealloc(&amp;self.block_device, inode_id as usize);
-<a href=#311 id=311 data-nosnippet>311</a>        block_cache(
-<a href=#312 id=312 data-nosnippet>312</a>            self.disk_inode_pos(inode_id).0 as usize,
-<a href=#313 id=313 data-nosnippet>313</a>            Arc::clone(&amp;self.block_device),
-<a href=#314 id=314 data-nosnippet>314</a>        )
-<a href=#315 id=315 data-nosnippet>315</a>        .lock()
-<a href=#316 id=316 data-nosnippet>316</a>        .modify(
-<a href=#317 id=317 data-nosnippet>317</a>            self.disk_inode_pos(inode_id).1,
-<a href=#318 id=318 data-nosnippet>318</a>            |disk_inode: &amp;mut DiskInode| {
-<a href=#319 id=319 data-nosnippet>319</a>                disk_inode.initialize(DiskInodeType::Free);
-<a href=#320 id=320 data-nosnippet>320</a>            },
-<a href=#321 id=321 data-nosnippet>321</a>        );
-<a href=#322 id=322 data-nosnippet>322</a>        */
-<a href=#323 id=323 data-nosnippet>323</a>        </span><span class="kw">return</span>;
-<a href=#324 id=324 data-nosnippet>324</a>    }
-<a href=#325 id=325 data-nosnippet>325</a>
-<a href=#326 id=326 data-nosnippet>326</a>    <span class="doccomment">/// 释放指定的数据块
-<a href=#327 id=327 data-nosnippet>327</a>    ///
-<a href=#328 id=328 data-nosnippet>328</a>    /// 将指定的数据块标记为可用，并清空其内容。
-<a href=#329 id=329 data-nosnippet>329</a>    /// 该操作会更新位图并重置数据块内容。
-<a href=#330 id=330 data-nosnippet>330</a>    ///
-<a href=#331 id=331 data-nosnippet>331</a>    /// ## Arguments
-<a href=#332 id=332 data-nosnippet>332</a>    /// * `block_id` - 要释放的数据块在块设备上的实际块号
-<a href=#333 id=333 data-nosnippet>333</a>    ///
-<a href=#334 id=334 data-nosnippet>334</a>    /// ## 操作过程
-<a href=#335 id=335 data-nosnippet>335</a>    /// 1. 清空数据块的所有字节为 0
-<a href=#336 id=336 data-nosnippet>336</a>    /// 2. 更新数据位图，标记块为可用
-<a href=#337 id=337 data-nosnippet>337</a>    /// 3. 将绝对块号转换为相对块号进行位图操作
-<a href=#338 id=338 data-nosnippet>338</a>    ///
-<a href=#339 id=339 data-nosnippet>339</a>    /// ## 注意事项
-<a href=#340 id=340 data-nosnippet>340</a>    /// - `block_id` 必须是绝对块号（相对于整个块设备）
-<a href=#341 id=341 data-nosnippet>341</a>    /// - 释放操作会清空数据块内容
-<a href=#342 id=342 data-nosnippet>342</a>    /// - 释放后的数据块可以重新分配使用
-<a href=#343 id=343 data-nosnippet>343</a>    </span><span class="kw">pub fn </span>dealloc_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block_id: u32) {
-<a href=#344 id=344 data-nosnippet>344</a>        block_cache(block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
-<a href=#345 id=345 data-nosnippet>345</a>            .lock()
-<a href=#346 id=346 data-nosnippet>346</a>            .modify(<span class="number">0</span>, |data_block: <span class="kw-2">&amp;mut </span>DataBlock| {
-<a href=#347 id=347 data-nosnippet>347</a>                data_block.iter_mut().for_each(|p| {
-<a href=#348 id=348 data-nosnippet>348</a>                    <span class="kw-2">*</span>p = <span class="number">0</span>;
-<a href=#349 id=349 data-nosnippet>349</a>                })
-<a href=#350 id=350 data-nosnippet>350</a>            });
-<a href=#351 id=351 data-nosnippet>351</a>        <span class="self">self</span>.data_bitmap.dealloc(
-<a href=#352 id=352 data-nosnippet>352</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.block_device,
-<a href=#353 id=353 data-nosnippet>353</a>            (block_id - <span class="self">self</span>.data_area_start_block) <span class="kw">as </span>usize,
-<a href=#354 id=354 data-nosnippet>354</a>        )
-<a href=#355 id=355 data-nosnippet>355</a>    }
-<a href=#356 id=356 data-nosnippet>356</a>
-<a href=#357 id=357 data-nosnippet>357</a>    <span class="doccomment">/// 获取文件系统的根目录 inode
-<a href=#358 id=358 data-nosnippet>358</a>    ///
-<a href=#359 id=359 data-nosnippet>359</a>    /// 创建并返回根目录的 inode 对象，提供对根目录的访问接口。
-<a href=#360 id=360 data-nosnippet>360</a>    /// 根目录是文件系统的入口点，所有其他文件和目录都从根目录开始访问。
-<a href=#361 id=361 data-nosnippet>361</a>    ///
-<a href=#362 id=362 data-nosnippet>362</a>    /// ## Arguments
-<a href=#363 id=363 data-nosnippet>363</a>    /// * `efs` - 文件系统实例的引用
-<a href=#364 id=364 data-nosnippet>364</a>    ///
-<a href=#365 id=365 data-nosnippet>365</a>    /// ## Returns
-<a href=#366 id=366 data-nosnippet>366</a>    /// 根目录的 inode 对象
-<a href=#367 id=367 data-nosnippet>367</a>    ///
-<a href=#368 id=368 data-nosnippet>368</a>    /// ## 根目录特性
-<a href=#369 id=369 data-nosnippet>369</a>    /// - 根目录的 inode ID 固定为 0
-<a href=#370 id=370 data-nosnippet>370</a>    /// - 根目录在文件系统创建时自动初始化
-<a href=#371 id=371 data-nosnippet>371</a>    /// - 根目录始终存在且可访问
-<a href=#372 id=372 data-nosnippet>372</a>    /// - 根目录支持子文件和子目录的创建
-<a href=#373 id=373 data-nosnippet>373</a>    ///
-<a href=#374 id=374 data-nosnippet>374</a>    /// ## 使用示例
-<a href=#375 id=375 data-nosnippet>375</a>    /// ```rust
-<a href=#376 id=376 data-nosnippet>376</a>    /// let root = MicroFileSystem::root_inode(&amp;efs);
-<a href=#377 id=377 data-nosnippet>377</a>    /// let file = root.create("test.txt").unwrap();
-<a href=#378 id=378 data-nosnippet>378</a>    /// ```
-<a href=#379 id=379 data-nosnippet>379</a>    </span><span class="kw">pub fn </span>root_inode(efs: <span class="kw-2">&amp;</span>Arc&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt;) -&gt; Inode {
-<a href=#380 id=380 data-nosnippet>380</a>        <span class="kw">let </span>block_device = Arc::clone(<span class="kw-2">&amp;</span>efs.lock().block_device);
-<a href=#381 id=381 data-nosnippet>381</a>        <span class="kw">let </span>(block_id, block_offset) = efs.lock().disk_inode_pos(<span class="number">0</span>);
-<a href=#382 id=382 data-nosnippet>382</a>        Inode::new(block_id, block_offset, Arc::clone(efs), block_device)
-<a href=#383 id=383 data-nosnippet>383</a>    }
-<a href=#384 id=384 data-nosnippet>384</a>}</code></pre></div></section></main></body></html>
+<a href=#307 id=307 data-nosnippet>307</a>    </span><span class="attr">#[allow(unused)]
+<a href=#308 id=308 data-nosnippet>308</a>    </span><span class="kw">pub fn </span>dealloc_inode(<span class="kw-2">&amp;mut </span><span class="self">self</span>, inode_id: u32) {
+<a href=#309 id=309 data-nosnippet>309</a>        <span class="comment">/* TODO: Implement this -&gt; support file delete
+<a href=#310 id=310 data-nosnippet>310</a>        self.inode_bitmap
+<a href=#311 id=311 data-nosnippet>311</a>            .dealloc(&amp;self.block_device, inode_id as usize);
+<a href=#312 id=312 data-nosnippet>312</a>        block_cache(
+<a href=#313 id=313 data-nosnippet>313</a>            self.disk_inode_pos(inode_id).0 as usize,
+<a href=#314 id=314 data-nosnippet>314</a>            Arc::clone(&amp;self.block_device),
+<a href=#315 id=315 data-nosnippet>315</a>        )
+<a href=#316 id=316 data-nosnippet>316</a>        .lock()
+<a href=#317 id=317 data-nosnippet>317</a>        .modify(
+<a href=#318 id=318 data-nosnippet>318</a>            self.disk_inode_pos(inode_id).1,
+<a href=#319 id=319 data-nosnippet>319</a>            |disk_inode: &amp;mut DiskInode| {
+<a href=#320 id=320 data-nosnippet>320</a>                disk_inode.initialize(DiskInodeType::Free);
+<a href=#321 id=321 data-nosnippet>321</a>            },
+<a href=#322 id=322 data-nosnippet>322</a>        );
+<a href=#323 id=323 data-nosnippet>323</a>        */
+<a href=#324 id=324 data-nosnippet>324</a>        </span><span class="kw">return</span>;
+<a href=#325 id=325 data-nosnippet>325</a>    }
+<a href=#326 id=326 data-nosnippet>326</a>
+<a href=#327 id=327 data-nosnippet>327</a>    <span class="doccomment">/// 释放指定的数据块
+<a href=#328 id=328 data-nosnippet>328</a>    ///
+<a href=#329 id=329 data-nosnippet>329</a>    /// 将指定的数据块标记为可用，并清空其内容。
+<a href=#330 id=330 data-nosnippet>330</a>    /// 该操作会更新位图并重置数据块内容。
+<a href=#331 id=331 data-nosnippet>331</a>    ///
+<a href=#332 id=332 data-nosnippet>332</a>    /// ## Arguments
+<a href=#333 id=333 data-nosnippet>333</a>    /// * `block_id` - 要释放的数据块在块设备上的实际块号
+<a href=#334 id=334 data-nosnippet>334</a>    ///
+<a href=#335 id=335 data-nosnippet>335</a>    /// ## 操作过程
+<a href=#336 id=336 data-nosnippet>336</a>    /// 1. 清空数据块的所有字节为 0
+<a href=#337 id=337 data-nosnippet>337</a>    /// 2. 更新数据位图，标记块为可用
+<a href=#338 id=338 data-nosnippet>338</a>    /// 3. 将绝对块号转换为相对块号进行位图操作
+<a href=#339 id=339 data-nosnippet>339</a>    ///
+<a href=#340 id=340 data-nosnippet>340</a>    /// ## 注意事项
+<a href=#341 id=341 data-nosnippet>341</a>    /// - `block_id` 必须是绝对块号（相对于整个块设备）
+<a href=#342 id=342 data-nosnippet>342</a>    /// - 释放操作会清空数据块内容
+<a href=#343 id=343 data-nosnippet>343</a>    /// - 释放后的数据块可以重新分配使用
+<a href=#344 id=344 data-nosnippet>344</a>    </span><span class="kw">pub fn </span>dealloc_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block_id: u32) {
+<a href=#345 id=345 data-nosnippet>345</a>        block_cache(block_id <span class="kw">as </span>usize, Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.block_device))
+<a href=#346 id=346 data-nosnippet>346</a>            .lock()
+<a href=#347 id=347 data-nosnippet>347</a>            .modify(<span class="number">0</span>, |data_block: <span class="kw-2">&amp;mut </span>DataBlock| {
+<a href=#348 id=348 data-nosnippet>348</a>                data_block.iter_mut().for_each(|p| {
+<a href=#349 id=349 data-nosnippet>349</a>                    <span class="kw-2">*</span>p = <span class="number">0</span>;
+<a href=#350 id=350 data-nosnippet>350</a>                })
+<a href=#351 id=351 data-nosnippet>351</a>            });
+<a href=#352 id=352 data-nosnippet>352</a>        <span class="self">self</span>.data_bitmap.dealloc(
+<a href=#353 id=353 data-nosnippet>353</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.block_device,
+<a href=#354 id=354 data-nosnippet>354</a>            (block_id - <span class="self">self</span>.data_area_start_block) <span class="kw">as </span>usize,
+<a href=#355 id=355 data-nosnippet>355</a>        )
+<a href=#356 id=356 data-nosnippet>356</a>    }
+<a href=#357 id=357 data-nosnippet>357</a>
+<a href=#358 id=358 data-nosnippet>358</a>    <span class="doccomment">/// 获取文件系统的根目录 inode
+<a href=#359 id=359 data-nosnippet>359</a>    ///
+<a href=#360 id=360 data-nosnippet>360</a>    /// 创建并返回根目录的 inode 对象，提供对根目录的访问接口。
+<a href=#361 id=361 data-nosnippet>361</a>    /// 根目录是文件系统的入口点，所有其他文件和目录都从根目录开始访问。
+<a href=#362 id=362 data-nosnippet>362</a>    ///
+<a href=#363 id=363 data-nosnippet>363</a>    /// ## Arguments
+<a href=#364 id=364 data-nosnippet>364</a>    /// * `efs` - 文件系统实例的引用
+<a href=#365 id=365 data-nosnippet>365</a>    ///
+<a href=#366 id=366 data-nosnippet>366</a>    /// ## Returns
+<a href=#367 id=367 data-nosnippet>367</a>    /// 根目录的 inode 对象
+<a href=#368 id=368 data-nosnippet>368</a>    ///
+<a href=#369 id=369 data-nosnippet>369</a>    /// ## 根目录特性
+<a href=#370 id=370 data-nosnippet>370</a>    /// - 根目录的 inode ID 固定为 0
+<a href=#371 id=371 data-nosnippet>371</a>    /// - 根目录在文件系统创建时自动初始化
+<a href=#372 id=372 data-nosnippet>372</a>    /// - 根目录始终存在且可访问
+<a href=#373 id=373 data-nosnippet>373</a>    /// - 根目录支持子文件和子目录的创建
+<a href=#374 id=374 data-nosnippet>374</a>    ///
+<a href=#375 id=375 data-nosnippet>375</a>    /// ## 使用示例
+<a href=#376 id=376 data-nosnippet>376</a>    /// ```rust
+<a href=#377 id=377 data-nosnippet>377</a>    /// let root = MicroFileSystem::root_inode(&amp;efs);
+<a href=#378 id=378 data-nosnippet>378</a>    /// let file = root.create("test.txt").unwrap();
+<a href=#379 id=379 data-nosnippet>379</a>    /// ```
+<a href=#380 id=380 data-nosnippet>380</a>    </span><span class="kw">pub fn </span>root_inode(efs: <span class="kw-2">&amp;</span>Arc&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt;) -&gt; Inode {
+<a href=#381 id=381 data-nosnippet>381</a>        <span class="kw">let </span>block_device = Arc::clone(<span class="kw-2">&amp;</span>efs.lock().block_device);
+<a href=#382 id=382 data-nosnippet>382</a>        <span class="kw">let </span>(block_id, block_offset) = efs.lock().disk_inode_pos(<span class="number">0</span>);
+<a href=#383 id=383 data-nosnippet>383</a>        Inode::new(block_id, block_offset, Arc::clone(efs), block_device)
+<a href=#384 id=384 data-nosnippet>384</a>    }
+<a href=#385 id=385 data-nosnippet>385</a>}</code></pre></div></section></main></body></html>

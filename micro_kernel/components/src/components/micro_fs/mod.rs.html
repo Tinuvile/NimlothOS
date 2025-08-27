@@ -85,33 +85,31 @@
 <a href=#85 id=85 data-nosnippet>85</a>//! - 单个文件最大大小：约 8MB
 <a href=#86 id=86 data-nosnippet>86</a>//! - 文件系统最大大小：取决于块设备容量
 <a href=#87 id=87 data-nosnippet>87</a>//! - 并发访问：支持多线程，但需要适当的锁管理
-<a href=#88 id=88 data-nosnippet>88</a>
-<a href=#89 id=89 data-nosnippet>89</a></span><span class="attr">#![no_std]
-<a href=#90 id=90 data-nosnippet>90</a></span><span class="kw">extern crate </span>alloc;
-<a href=#91 id=91 data-nosnippet>91</a>
-<a href=#92 id=92 data-nosnippet>92</a><span class="kw">mod </span>bitmap;
-<a href=#93 id=93 data-nosnippet>93</a><span class="kw">mod </span>block_cache;
-<a href=#94 id=94 data-nosnippet>94</a><span class="kw">mod </span>block_dev;
-<a href=#95 id=95 data-nosnippet>95</a><span class="kw">mod </span>efs;
-<a href=#96 id=96 data-nosnippet>96</a><span class="kw">mod </span>layout;
-<a href=#97 id=97 data-nosnippet>97</a><span class="kw">mod </span>vfs;
-<a href=#98 id=98 data-nosnippet>98</a>
-<a href=#99 id=99 data-nosnippet>99</a><span class="kw">use </span>bitmap::Bitmap;
-<a href=#100 id=100 data-nosnippet>100</a><span class="kw">pub use </span>block_cache::{block_cache, block_cache_sync_all};
-<a href=#101 id=101 data-nosnippet>101</a><span class="kw">pub use </span>block_dev::BlockDevice;
-<a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub use </span>efs::MicroFileSystem;
-<a href=#103 id=103 data-nosnippet>103</a><span class="kw">pub use </span>layout::<span class="kw-2">*</span>;
-<a href=#104 id=104 data-nosnippet>104</a><span class="kw">pub use </span>vfs::Inode;
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a><span class="doccomment">/// 文件系统块大小（字节）
-<a href=#107 id=107 data-nosnippet>107</a>///
-<a href=#108 id=108 data-nosnippet>108</a>/// 每个块包含 512 字节，这是文件系统的基本存储单位。
-<a href=#109 id=109 data-nosnippet>109</a>/// 块大小影响文件系统的空间利用率和 I/O 性能。
+<a href=#88 id=88 data-nosnippet>88</a></span><span class="kw">extern crate </span>alloc;
+<a href=#89 id=89 data-nosnippet>89</a>
+<a href=#90 id=90 data-nosnippet>90</a><span class="kw">mod </span>bitmap;
+<a href=#91 id=91 data-nosnippet>91</a><span class="kw">mod </span>block_cache;
+<a href=#92 id=92 data-nosnippet>92</a><span class="kw">mod </span>block_dev;
+<a href=#93 id=93 data-nosnippet>93</a><span class="kw">mod </span>efs;
+<a href=#94 id=94 data-nosnippet>94</a><span class="kw">mod </span>layout;
+<a href=#95 id=95 data-nosnippet>95</a><span class="kw">mod </span>vfs;
+<a href=#96 id=96 data-nosnippet>96</a>
+<a href=#97 id=97 data-nosnippet>97</a><span class="kw">use </span>bitmap::Bitmap;
+<a href=#98 id=98 data-nosnippet>98</a><span class="kw">pub use </span>block_cache::{block_cache, block_cache_sync_all};
+<a href=#99 id=99 data-nosnippet>99</a><span class="kw">pub use </span>block_dev::BlockDevice;
+<a href=#100 id=100 data-nosnippet>100</a><span class="kw">pub use </span>efs::MicroFileSystem;
+<a href=#101 id=101 data-nosnippet>101</a><span class="kw">pub use </span>layout::<span class="kw-2">*</span>;
+<a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub use </span>vfs::Inode;
+<a href=#103 id=103 data-nosnippet>103</a>
+<a href=#104 id=104 data-nosnippet>104</a><span class="doccomment">/// 文件系统块大小（字节）
+<a href=#105 id=105 data-nosnippet>105</a>///
+<a href=#106 id=106 data-nosnippet>106</a>/// 每个块包含 512 字节，这是文件系统的基本存储单位。
+<a href=#107 id=107 data-nosnippet>107</a>/// 块大小影响文件系统的空间利用率和 I/O 性能。
+<a href=#108 id=108 data-nosnippet>108</a>///
+<a href=#109 id=109 data-nosnippet>109</a>/// ## 选择考虑
 <a href=#110 id=110 data-nosnippet>110</a>///
-<a href=#111 id=111 data-nosnippet>111</a>/// ## 选择考虑
-<a href=#112 id=112 data-nosnippet>112</a>///
-<a href=#113 id=113 data-nosnippet>113</a>/// - **空间利用率**: 较小的块大小减少内部碎片
-<a href=#114 id=114 data-nosnippet>114</a>/// - **I/O 效率**: 较大的块大小提高顺序访问性能
-<a href=#115 id=115 data-nosnippet>115</a>/// - **内存使用**: 块大小影响缓存的内存占用
-<a href=#116 id=116 data-nosnippet>116</a>/// - **兼容性**: 512 字节是常见的块设备扇区大小
-<a href=#117 id=117 data-nosnippet>117</a></span><span class="kw">pub const </span>BLOCK_SZ: usize = <span class="number">512</span>;</code></pre></div></section></main></body></html>
+<a href=#111 id=111 data-nosnippet>111</a>/// - **空间利用率**: 较小的块大小减少内部碎片
+<a href=#112 id=112 data-nosnippet>112</a>/// - **I/O 效率**: 较大的块大小提高顺序访问性能
+<a href=#113 id=113 data-nosnippet>113</a>/// - **内存使用**: 块大小影响缓存的内存占用
+<a href=#114 id=114 data-nosnippet>114</a>/// - **兼容性**: 512 字节是常见的块设备扇区大小
+<a href=#115 id=115 data-nosnippet>115</a></span><span class="kw">pub const </span>BLOCK_SZ: usize = <span class="number">512</span>;</code></pre></div></section></main></body></html>
