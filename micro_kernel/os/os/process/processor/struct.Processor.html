@@ -24,7 +24,7 @@
 │ current=None│Schedule │current=Some │
 └─────────────┘         └──────┬──────┘
       ▲                        │
-      │  Process Complete/Switch  │
+      │ Process Complete/Switch│
       └────────────────────────┘</code></pre></div><h3 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h3><div class="example-wrap"><pre class="language-text"><code>Processor 内存结构:
 ┌─────────────────────────────────────┐
 │           Processor                 │
@@ -33,7 +33,7 @@
 │  └─ Some: Points to Current TCB     │
 │  └─ None: Processor Idle            │
 ├─────────────────────────────────────┤
-│ idle_process_cx: ProcessContext           │
+│ idle_process_cx: ProcessContext     │
 │  └─ ra: Return Address              │
 │  └─ sp: Stack Pointer               │
 │  └─ s0-s11: Saved Registers         │

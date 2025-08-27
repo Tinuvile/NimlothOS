@@ -15,7 +15,7 @@
 <a href=#15 id=15 data-nosnippet>15</a>//! ## 公开接口（re-exports）
 <a href=#16 id=16 data-nosnippet>16</a>//!
 <a href=#17 id=17 data-nosnippet>17</a>//! - 类型：[`ProcessContext`]
-<a href=#18 id=18 data-nosnippet>18</a>//! - 函数：[`add_process`], [`run_processs`], [`schedule`], [`current_process`],
+<a href=#18 id=18 data-nosnippet>18</a>//! - 函数：[`add_process`], [`run_process`], [`schedule`], [`current_process`],
 <a href=#19 id=19 data-nosnippet>19</a>//!   [`current_trap_cx`], [`current_user_token`], [`take_current_process`],
 <a href=#20 id=20 data-nosnippet>20</a>//!   [`add_initproc`], [`suspend_current_and_run_next`], [`exit_current_and_run_next`]
 <a href=#21 id=21 data-nosnippet>21</a>//! - 常量：[`IDLE_PID`], [`INITPROC`]
@@ -23,7 +23,7 @@
 <a href=#23 id=23 data-nosnippet>23</a>//! ## 调度模型
 <a href=#24 id=24 data-nosnippet>24</a>//!
 <a href=#25 id=25 data-nosnippet>25</a>//! - 调度策略：基于就绪队列的 FIFO 调度
-<a href=#26 id=26 data-nosnippet>26</a>//! - 切换路径：`run_processs()` 选择下一个进程 → `__switch` 切到进程 →
+<a href=#26 id=26 data-nosnippet>26</a>//! - 切换路径：`run_process()` 选择下一个进程 → `__switch` 切到进程 →
 <a href=#27 id=27 data-nosnippet>27</a>//!   进程因时间片到期/主动让出/阻塞 → `schedule()` 切回调度器
 <a href=#28 id=28 data-nosnippet>28</a>//!
 <a href=#29 id=29 data-nosnippet>29</a>//! ## 信号（Signals）
@@ -51,7 +51,7 @@
 <a href=#51 id=51 data-nosnippet>51</a>//! - 初始进程：[`INITPROC`]（从内置应用镜像加载 `initproc`）
 <a href=#52 id=52 data-nosnippet>52</a>//! - 空闲进程：PID 为 [`IDLE_PID`]（值为 0）的特殊进程，负责系统空闲时的处理
 <a href=#53 id=53 data-nosnippet>53</a>//! - 启动流程：调用 [`add_initproc()`] 将初始进程加入就绪队列，随后
-<a href=#54 id=54 data-nosnippet>54</a>//!   通过 [`run_processs()`] 进入主调度循环
+<a href=#54 id=54 data-nosnippet>54</a>//!   通过 [`run_process()`] 进入主调度循环
 <a href=#55 id=55 data-nosnippet>55</a>//!
 <a href=#56 id=56 data-nosnippet>56</a>//! ## 进程生命周期管理
 <a href=#57 id=57 data-nosnippet>57</a>//!
@@ -64,7 +64,7 @@
 <a href=#64 id=64 data-nosnippet>64</a>//! ```rust
 <a href=#65 id=65 data-nosnippet>65</a>//! // 启动阶段：注册初始进程并进入调度循环
 <a href=#66 id=66 data-nosnippet>66</a>//! process::add_initproc();
-<a href=#67 id=67 data-nosnippet>67</a>//! // run_processs() 在本工程由处理器模块统一驱动
+<a href=#67 id=67 data-nosnippet>67</a>//! // run_process() 在本工程由处理器模块统一驱动
 <a href=#68 id=68 data-nosnippet>68</a>//! ```
 <a href=#69 id=69 data-nosnippet>69</a>//!
 <a href=#70 id=70 data-nosnippet>70</a></span><span class="kw">use </span><span class="kw">crate</span>::fs::{OpenFlags, open_file};
@@ -85,7 +85,7 @@
 <a href=#85 id=85 data-nosnippet>85</a><span class="kw">pub use </span>context::ProcessContext;
 <a href=#86 id=86 data-nosnippet>86</a><span class="kw">pub use </span>manager::{add_process, pid2process, remove_from_pid2process};
 <a href=#87 id=87 data-nosnippet>87</a><span class="kw">pub use </span>processor::{
-<a href=#88 id=88 data-nosnippet>88</a>    current_process, current_trap_cx, current_user_token, run_processs, schedule,
+<a href=#88 id=88 data-nosnippet>88</a>    current_process, current_trap_cx, current_user_token, run_process, schedule,
 <a href=#89 id=89 data-nosnippet>89</a>    take_current_process,
 <a href=#90 id=90 data-nosnippet>90</a>};
 <a href=#91 id=91 data-nosnippet>91</a><span class="kw">pub use </span>signal::{MAX_SIG, SignalAction, SignalActions, SignalFlags};

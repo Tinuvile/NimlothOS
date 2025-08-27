@@ -23,14 +23,14 @@
 </ul>
 <h3 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h3><div class="example-wrap"><pre class="language-text"><code>全局内存区域:
 ┌────────────────────────────────────────┐
-│              PROCESS_MANAGER              │
+│            PROCESS_MANAGER             │
 ├────────────────────────────────────────┤
-│          UPSafeCell&lt;ProcessManager&gt;       │
+│        UPSafeCell&lt;ProcessManager&gt;      │
 │  ┌───────────────────────────-─────-┐  │
-│  │          ProcessManager             │  │
+│  │          ProcessManager          │  │
 │  │ ┌──────────────────────────────┐ │  │
 │  │ │      VecDeque&lt;Arc&lt;TCB&gt;&gt;      │ │  │
-│  │ │    [Process1][Process2][Process3]...  │ │  │
+│  │ │    [Process1][Process2] ...  │ │  │
 │  │ └──────────────────────────────┘ │  │
 │  └─────────────────────────────-───-┘  │
 └────────────────────────────────────────┘</code></pre></div><h3 id="访问模式"><a class="doc-anchor" href="#访问模式">§</a>访问模式</h3>

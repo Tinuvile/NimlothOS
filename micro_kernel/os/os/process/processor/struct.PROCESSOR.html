@@ -16,20 +16,20 @@
 <li><strong>中断安全</strong>: 在中断处理期间禁用抢占保证原子性</li>
 </ul>
 <h4 id="内存布局"><a class="doc-anchor" href="#内存布局">§</a>内存布局</h4><div class="example-wrap"><pre class="language-text"><code>全局内存区域:
-┌─────────────────────────────────────────┐
-│             PROCESSOR                   │
-│ ┌─────────────────────────────────────┐ │
-│ │        UPSafeCell&lt;Processor&gt;        │ │
-│ │ ┌─────────────────────────────────┐ │ │
-│ │ │         Processor               │ │ │
-│ │ │  ┌───────────────────────────┐  │ │ │
-│ │ │  │ current: Option&lt;Arc&lt;TCB&gt;&gt; │  │ │ │
-│ │ │  ├───────────────────────────┤  │ │ │
+┌──────────────────────────────────------───────┐
+│             PROCESSOR                         │
+│ ┌────────────────────────────────------─────┐ │
+│ │        UPSafeCell&lt;Processor&gt;              │ │
+│ │ ┌────────────────────────────------─────┐ │ │
+│ │ │         Processor                     │ │ │
+│ │ │  ┌─────────────────────────------──┐  │ │ │
+│ │ │  │ current: Option&lt;Arc&lt;TCB&gt;&gt;       │  │ │ │
+│ │ │  ├─────────────────────────------──┤  │ │ │
 │ │ │  │ idle_process_cx: ProcessContext │  │ │ │
-│ │ │  └───────────────────────────┘  │ │ │
-│ │ └─────────────────────────────────┘ │ │
-│ └─────────────────────────────────────┘ │
-└─────────────────────────────────────────┘</code></pre></div><h3 id="访问模式"><a class="doc-anchor" href="#访问模式">§</a>访问模式</h3><h4 id="推荐方式通过全局函数"><a class="doc-anchor" href="#推荐方式通过全局函数">§</a>推荐方式（通过全局函数）</h4>
+│ │ │  └───────────────────────------────┘  │ │ │
+│ │ └────────────────────────────────------─┘ │ │
+│ └───────────────────────────────────------──┘ │
+└───────────────────────────────────────------──┘</code></pre></div><h3 id="访问模式"><a class="doc-anchor" href="#访问模式">§</a>访问模式</h3><h4 id="推荐方式通过全局函数"><a class="doc-anchor" href="#推荐方式通过全局函数">§</a>推荐方式（通过全局函数）</h4>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// 安全的高层接口
 </span><span class="kw">let </span>current_process = current_process();
 <span class="kw">let </span>user_token = current_user_token();</code></pre></div>

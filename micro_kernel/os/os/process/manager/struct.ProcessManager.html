@@ -10,9 +10,9 @@
 <li><strong>内存布局</strong>: 连续内存分配提供良好的缓存局部性</li>
 </ul>
 <h4 id="调度算法"><a class="doc-anchor" href="#调度算法">§</a>调度算法</h4><div class="example-wrap"><pre class="language-text"><code>Schedule Order: Process1 → Process2 → Process3 → Process4
-         ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐
+         ┌──---───┐  ┌────---─┐  ┌─---────┐  ┌───---──┐
 Enqueue ►│Process4│◄─│Process3│◄─│Process2│◄─│Process1│◄─── Dequeue
-         └─────┘  └─────┘  └─────┘  └─────┘
+         └─────---┘  └───---──┘  └────---─┘  └---─────┘
         (最新)                      (最老)</code></pre></div><h4 id="线程安全"><a class="doc-anchor" href="#线程安全">§</a>线程安全</h4>
 <p>虽然 <code>ProcessManager</code> 本身不提供线程安全保证，但通过全局的 <code>UPSafeCell</code>
 包装器确保在单处理器环境下的并发安全访问。</p>
@@ -84,7 +84,7 @@ add(Process1) ──► add(Process2) ──► add(Process3)
      │             │             │
      ▼             ▼             ▼
 ┌─────────┐   ┌─────────┐   ┌─────────┐
-│ Process1   │◄──│ Process2   │◄──│ Process3   │
+│Process1 │◄──│ Process2│◄──│ Process3│
 │ (First) │   │(Second) │   │ (Last)  │
 └─────────┘   └─────────┘   └─────────┘
      ▲                           ▲
@@ -133,7 +133,7 @@ manager.add(process);
 
 调用前:
 ┌─────────┐   ┌─────────┐   ┌─────────┐
-│ Process1   │◄──│ Process2   │◄──│ Process3   │
+│ Process1│◄──│Process2 │◄──│ Process3│
 │(Oldest) │   │         │   │(Latest) │
 └─────────┘   └─────────┘   └─────────┘
      ▲
@@ -141,7 +141,7 @@ manager.add(process);
 
 调用后:
 ┌────---─────┐   ┌─────────┐
-│   Process2    │◄──│ Process3   │
+│  Process2  │◄──│ Process3│
 │(Now Oldest)│   │(Latest) │
 └───────---──┘   └─────────┘</code></pre></div><h6 id="性能特征-2"><a class="doc-anchor" href="#性能特征-2">§</a>性能特征</h6>
 <ul>
