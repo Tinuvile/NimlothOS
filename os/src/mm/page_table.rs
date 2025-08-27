@@ -763,7 +763,7 @@ impl PageTable {
     /// }
     /// ```
     pub fn token(&self) -> usize {
-        8usize << 60 | self.root_ppn.0 // TODO：ASID暂时没有加，进程的时候再加
+        8usize << 60 | self.root_ppn.0
     }
 
     /// 执行虚拟地址到物理地址的转换（带页内偏移）
