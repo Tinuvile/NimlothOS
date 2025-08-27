@@ -83,7 +83,7 @@ global_asm!(include_str!("entry.asm"));
 /// 5. [`process::add_initproc`] - 注册初始用户进程
 /// 6. [`trap::init`] - 初始化陷阱处理系统
 /// 7. [`timer::next_trigger`] - 设置第一次时钟中断
-/// 8. [`process::run_processs`] - 进入主调度循环
+/// 8. [`process::run_process`] - 进入主调度循环
 ///
 /// ## Panics
 ///
@@ -98,7 +98,7 @@ pub fn rust_main() -> ! {
     timer::next_trigger();
     fs::list_apps();
     process::add_initproc();
-    process::run_processs();
+    process::run_process();
 
     panic!("Unreachable in rust_main!");
 }

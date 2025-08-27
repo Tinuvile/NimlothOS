@@ -15,7 +15,7 @@
 //! ## 公开接口（re-exports）
 //!
 //! - 类型：[`ProcessContext`]
-//! - 函数：[`add_process`], [`run_processs`], [`schedule`], [`current_process`],
+//! - 函数：[`add_process`], [`run_process`], [`schedule`], [`current_process`],
 //!   [`current_trap_cx`], [`current_user_token`], [`take_current_process`],
 //!   [`add_initproc`], [`suspend_current_and_run_next`], [`exit_current_and_run_next`]
 //! - 常量：[`IDLE_PID`], [`INITPROC`]
@@ -23,7 +23,7 @@
 //! ## 调度模型
 //!
 //! - 调度策略：基于就绪队列的 FIFO 调度
-//! - 切换路径：`run_processs()` 选择下一个进程 → `__switch` 切到进程 →
+//! - 切换路径：`run_process()` 选择下一个进程 → `__switch` 切到进程 →
 //!   进程因时间片到期/主动让出/阻塞 → `schedule()` 切回调度器
 //!
 //! ## 信号（Signals）
@@ -51,7 +51,7 @@
 //! - 初始进程：[`INITPROC`]（从内置应用镜像加载 `initproc`）
 //! - 空闲进程：PID 为 [`IDLE_PID`]（值为 0）的特殊进程，负责系统空闲时的处理
 //! - 启动流程：调用 [`add_initproc()`] 将初始进程加入就绪队列，随后
-//!   通过 [`run_processs()`] 进入主调度循环
+//!   通过 [`run_process()`] 进入主调度循环
 //!
 //! ## 进程生命周期管理
 //!
@@ -64,7 +64,7 @@
 //! ```rust
 //! // 启动阶段：注册初始进程并进入调度循环
 //! process::add_initproc();
-//! // run_processs() 在本工程由处理器模块统一驱动
+//! // run_process() 在本工程由处理器模块统一驱动
 //! ```
 //!
 use crate::fs::{OpenFlags, open_file};
@@ -85,7 +85,7 @@ mod switch;
 pub use context::ProcessContext;
 pub use manager::{add_process, pid2process, remove_from_pid2process};
 pub use processor::{
-    current_process, current_trap_cx, current_user_token, run_processs, schedule,
+    current_process, current_trap_cx, current_user_token, run_process, schedule,
     take_current_process,
 };
 pub use signal::{MAX_SIG, SignalAction, SignalActions, SignalFlags};
