@@ -78,3 +78,15 @@ pub fn kernel_stack_position(app_id: usize) -> (usize, usize) {
 
 // 从开发板配置中重新导出时钟频率和内存信息
 pub use crate::board::{CLOCK_FREQ, MEMORY_END, MMIO};
+
+/// MLFQ 队列数量
+///
+/// 多级反馈队列的优先级级数，队列 0 为最高优先级，
+/// 队列 3 为最低优先级。
+pub const MLFQ_QUEUE_COUNT: usize = 4;
+
+/// MLFQ 基础时间片 (时钟周期数)
+///
+/// 最高优先级队列的时间片长度，低优先级队列的时间片
+/// 会按倍数递增，保证响应性和吞吐量的平衡。
+pub const MLFQ_BASE_TIME_SLICE: usize = CLOCK_FREQ / 100; // 10ms

@@ -33,9 +33,11 @@
 
 use crate::config::{TRAMPOLINE, TRAP_CONTEXT};
 use crate::process::{
-    SignalFlags, check_signals_error_of_current, current_add_signal, current_trap_cx,
-    current_user_token, exit_current_and_run_next, handle_signals,
+    SignalFlags, check_signals_error_of_current, current_add_signal, current_process,
+    current_trap_cx, current_user_token, exit_current_and_run_next, handle_signals,
+    take_current_process,
 };
+use crate::process::{add_process_with_priority, get_time_slice};
 use crate::syscall::syscall;
 use crate::timer::next_trigger;
 use crate::{println, process::suspend_current_and_run_next};
@@ -214,6 +216,37 @@ pub fn trap_handler() -> ! {
         }
         Trap::Interrupt(Interrupt::SupervisorTimer) => {
             next_trigger();
+
+            // MLFQ 时间片降级逻辑
+            if let Some(process) = current_process() {
+                let mut inner = process.inner_exclusive_access();
+                inner.time_slice_used += 1;
+
+                // 检查是否用完时间片
+                if inner.time_slice_used >= inner.time_slice_limit {
+                    // 时间片用完，需要降级
+                    let current_priority = inner.priority;
+                    use crate::config::MLFQ_QUEUE_COUNT;
+                    let new_priority = if current_priority < MLFQ_QUEUE_COUNT - 1 {
+                        current_priority + 1
+                    } else {
+                        current_priority
+                    };
+
+                    // 更新进程的优先级信息
+                    inner.priority = new_priority;
+                    inner.time_slice_used = 0;
+                    inner.time_slice_limit = get_time_slice(new_priority);
+
+                    drop(inner);
+
+                    // 取出当前进程并重新加入对应优先级队列
+                    if let Some(process) = take_current_process() {
+                        add_process_with_priority(process, new_priority);
+                    }
+                }
+            }
+
             suspend_current_and_run_next();
         }
         _ => {

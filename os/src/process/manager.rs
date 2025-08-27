@@ -1,7 +1,7 @@
 //! # 进程管理器模块
 //!
 //! 提供进程调度和管理的核心功能，实现就绪队列的维护和进程分发。
-//! 采用 FIFO (First In, First Out) 调度策略，确保进程调度的公平性和可预测性。
+//! 采用多级反馈队列 (MLFQ) 调度策略，实现可降低优先级的抢占式调度。
 //!
 //! ## 核心组件
 //!
@@ -14,16 +14,18 @@
 //!
 //! ### 调度策略
 //!
-//! 采用简单而高效的 **先进先出 (FIFO)** 调度算法：
-//! - **公平性**：所有进程按照进入就绪队列的顺序被调度
-//! - **简洁性**：避免复杂的优先级计算和时间片管理
-//! - **可预测性**：调度行为完全可预测，便于调试和测试
+//! 采用 **多级反馈队列 (MLFQ)** 调度算法：
+//! - **优先级分级**：维护多个优先级不同的就绪队列
+//! - **动态降级**：进程用完时间片后降级到低优先级队列
+//! - **响应性优化**：新进程和I/O密集型进程优先调度
+//! - **公平性保证**：避免长期饥饿，底层队列也会被调度
 //!
 //! ### 数据结构选择
 //!
-//! 使用 `VecDeque<Arc<ProcessControlBlock>>` 作为就绪队列：
-//! - **双端队列**：支持高效的队首删除和队尾插入操作
-//! - **引用计数**：`Arc` 允许多个调度器组件共享进程控制块
+//! 使用 `Vec<VecDeque<Arc<ProcessControlBlock>>>` 作为多级就绪队列：
+//! - **多级队列**：每个优先级都有独立的双端队列
+//! - **优先级调度**：总是从最高优先级非空队列取进程
+//! - **动态时间片**：不同优先级队列使用不同的时间片长度
 //! - **时间复杂度**：入队和出队操作均为 O(1)
 //!
 //! ### 并发安全
@@ -86,6 +88,7 @@
 
 use crate::process::process::ProcessControlBlock;
 use crate::sync::UPSafeCell;
+use alloc::vec::Vec;
 use alloc::{
     collections::{BTreeMap, vec_deque::VecDeque},
     sync::Arc,
@@ -137,17 +140,27 @@ use lazy_static::lazy_static;
 /// - **内存开销**: 8 bytes per process (仅存储 Arc 指针)
 /// - **扩容策略**: 按需自动扩容，避免频繁内存分配
 pub struct ProcessManager {
-    /// 就绪进程队列
+    /// 多级就绪进程队列
     ///
-    /// 使用双端队列存储所有处于就绪状态的进程控制块。
-    /// 队列头部是最早加入的进程（下次将被调度），
-    /// 队列尾部是最新加入的进程。
+    /// 使用多个双端队列实现不同优先级的进程调度。
+    /// 索引 0 为最高优先级队列，索引越大优先级越低。
+    /// 调度器总是从最高优先级非空队列取进程执行。
     ///
     /// ## 队列特性
-    /// - **FIFO 顺序**: 先进先出，保证调度公平性
-    /// - **动态大小**: 根据系统负载自动调整容量
-    /// - **高效操作**: 队首删除和队尾插入均为 O(1)
-    ready_queue: VecDeque<Arc<ProcessControlBlock>>,
+    /// - **优先级调度**: 高优先级队列优先被调度
+    /// - **动态降级**: 用完时间片的进程降级到下一队列
+    /// - **时间片分配**: 不同队列有不同的时间片长度
+    /// - **高效操作**: 每个队列的入队和出队均为 O(1)
+    ready_queues: Vec<VecDeque<Arc<ProcessControlBlock>>>,
+
+    /// 每个队列的时间片长度（时钟周期数）
+    ///
+    /// 优先级越高的队列时间片越短，保证响应性；
+    /// 优先级越低的队列时间片越长，提高吞吐量。
+    time_slices: Vec<usize>,
+
+    /// 队列数量
+    queue_count: usize,
 }
 
 impl ProcessManager {
@@ -185,8 +198,22 @@ impl ProcessManager {
     /// `new()` 函数本身是线程安全的，但返回的实例需要通过 `UPSafeCell`
     /// 等同步原语保护才能在多线程环境中安全使用。
     pub fn new() -> Self {
+        use crate::config::{MLFQ_BASE_TIME_SLICE, MLFQ_QUEUE_COUNT};
+
+        let mut ready_queues = Vec::new();
+        let mut time_slices = Vec::new();
+
+        // 初始化多级队列，时间片按优先级递增
+        for i in 0..MLFQ_QUEUE_COUNT {
+            ready_queues.push(VecDeque::new());
+            // 时间片：10ms, 20ms, 40ms, 80ms
+            time_slices.push(MLFQ_BASE_TIME_SLICE * (1 << i));
+        }
+
         Self {
-            ready_queue: VecDeque::new(),
+            ready_queues,
+            time_slices,
+            queue_count: MLFQ_QUEUE_COUNT,
         }
     }
 
@@ -255,8 +282,28 @@ impl ProcessManager {
     /// // 直接使用需要手动同步
     /// PROCESS_MANAGER.exclusive_access().add(process);
     /// ```
-    pub fn add(&mut self, process: Arc<ProcessControlBlock>) {
-        self.ready_queue.push_back(process);
+    /// 向指定优先级队列添加进程
+    ///
+    /// 将进程添加到指定优先级的就绪队列中。如果优先级超出范围，
+    /// 则添加到最低优先级队列。
+    ///
+    /// ## 参数
+    /// * `process` - 要添加的进程控制块
+    /// * `priority` - 目标优先级队列（0为最高优先级）
+    pub fn add(&mut self, process: Arc<ProcessControlBlock>, priority: usize) {
+        let queue_idx = priority.min(self.queue_count - 1);
+        self.ready_queues[queue_idx].push_back(process);
+    }
+
+    /// 向最高优先级队列添加新进程
+    ///
+    /// 新创建的进程默认进入最高优先级队列（队列0），
+    /// 保证新进程的响应性。
+    ///
+    /// ## 参数
+    /// * `process` - 要添加的进程控制块
+    pub fn add_new(&mut self, process: Arc<ProcessControlBlock>) {
+        self.add(process, 0);
     }
 
     /// 从就绪队列获取下一个待调度进程
@@ -342,8 +389,33 @@ impl ProcessManager {
     ///     }
     /// }
     /// ```
+    /// 从最高优先级非空队列获取进程
+    ///
+    /// 按优先级顺序遍历所有队列，从第一个非空队列取出进程。
+    /// 实现严格的优先级调度策略。
+    ///
+    /// ## 返回值
+    /// * `Some(Arc<ProcessControlBlock>)` - 成功获取到进程
+    /// * `None` - 所有队列都为空
     pub fn fetch(&mut self) -> Option<Arc<ProcessControlBlock>> {
-        self.ready_queue.pop_front()
+        for queue in &mut self.ready_queues {
+            if let Some(process) = queue.pop_front() {
+                return Some(process);
+            }
+        }
+        None
+    }
+
+    /// 获取指定优先级队列的时间片长度
+    ///
+    /// ## 参数
+    /// * `priority` - 优先级队列索引
+    ///
+    /// ## 返回值
+    /// 该优先级队列的时间片长度（时钟周期数）
+    pub fn get_time_slice(&self, priority: usize) -> usize {
+        let queue_idx = priority.min(self.queue_count - 1);
+        self.time_slices[queue_idx]
     }
 }
 
@@ -439,11 +511,29 @@ lazy_static! {
 ///
 /// ## 复杂度
 /// - O(1) 摊还时间；队列扩容时可能触发 O(n) 拷贝
-pub fn add_process(process: Arc<ProcessControlBlock>) {
+/// 向指定优先级队列添加进程
+///
+/// 将进程添加到指定优先级的就绪队列中，同时更新 PID 映射。
+///
+/// ## 参数
+/// * `process` - 待加入调度的进程控制块
+/// * `priority` - 目标优先级队列（0为最高优先级）
+pub fn add_process_with_priority(process: Arc<ProcessControlBlock>, priority: usize) {
     PID2TCB
         .exclusive_access()
         .insert(process.getpid(), Arc::clone(&process));
-    PROCESS_MANAGER.exclusive_access().add(process);
+    PROCESS_MANAGER.exclusive_access().add(process, priority);
+}
+
+/// 向最高优先级队列添加新进程
+///
+/// 新创建的进程默认进入最高优先级队列，保证响应性。
+/// 兼容原有的接口，保持向后兼容性。
+///
+/// ## 参数
+/// * `process` - 待加入调度的进程控制块
+pub fn add_process(process: Arc<ProcessControlBlock>) {
+    add_process_with_priority(process, 0);
 }
 
 /// 通过 PID 查询进程控制块
@@ -651,4 +741,34 @@ pub fn remove_from_pid2process(pid: usize) {
 /// ```
 pub fn fetch_process() -> Option<Arc<ProcessControlBlock>> {
     PROCESS_MANAGER.exclusive_access().fetch()
+}
+
+/// 获取指定优先级队列的时间片长度
+///
+/// ## 参数
+/// * `priority` - 优先级队列索引（0为最高优先级）
+///
+/// ## 返回值
+/// 该优先级队列的时间片长度（时钟周期数）
+pub fn get_time_slice(priority: usize) -> usize {
+    PROCESS_MANAGER.exclusive_access().get_time_slice(priority)
+}
+
+/// 提升进程优先级（用于 I/O 操作后）
+///
+/// 当进程完成 I/O 操作或从阻塞状态恢复时，将其提升到最高优先级队列，
+/// 实现 MLFQ 的 I/O 优化策略。
+///
+/// ## 参数
+/// * `process` - 要提升优先级的进程控制块
+pub fn boost_process_priority(process: Arc<ProcessControlBlock>) {
+    // 重置为最高优先级
+    {
+        let mut inner = process.inner_exclusive_access();
+        inner.priority = 0;
+        inner.time_slice_used = 0;
+        inner.time_slice_limit = get_time_slice(0);
+    }
+    // 重新加入最高优先级队列
+    add_process_with_priority(process, 0);
 }

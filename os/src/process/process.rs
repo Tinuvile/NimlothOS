@@ -441,6 +441,25 @@ pub struct ProcessControlBlockInner {
     pub killed: bool,
     pub frozen: bool,
     pub trap_ctx_backup: Option<TrapContext>,
+
+    /// MLFQ 调度优先级
+    ///
+    /// 当前进程在多级反馈队列中的优先级，取值范围 [0, MLFQ_QUEUE_COUNT-1]。
+    /// - 0: 最高优先级（新进程、I/O密集型进程）
+    /// - 数值越大优先级越低（CPU密集型进程会逐渐降级）
+    pub priority: usize,
+
+    /// 当前时间片已使用的时钟周期数
+    ///
+    /// 用于跟踪进程在当前时间片内的CPU使用时间，
+    /// 当达到该优先级队列的时间片限制时，进程将被降级。
+    pub time_slice_used: usize,
+
+    /// 当前优先级队列的时间片限制
+    ///
+    /// 该进程在当前优先级队列中可使用的最大时间片长度，
+    /// 当 time_slice_used >= time_slice_limit 时触发降级。
+    pub time_slice_limit: usize,
 }
 
 /// 进程状态枚举
@@ -875,6 +894,12 @@ impl ProcessControlBlock {
                     killed: false,
                     frozen: false,
                     trap_ctx_backup: None,
+                    priority: 0, // 新进程从最高优先级开始
+                    time_slice_used: 0,
+                    time_slice_limit: {
+                        use crate::config::MLFQ_BASE_TIME_SLICE;
+                        MLFQ_BASE_TIME_SLICE
+                    },
                 })
             },
         };
@@ -1233,6 +1258,10 @@ impl ProcessControlBlock {
                     killed: false,
                     frozen: false,
                     trap_ctx_backup: None,
+                    // 子进程继承父进程的优先级信息
+                    priority: parent_inner.priority,
+                    time_slice_used: 0, // 重置时间片使用计数
+                    time_slice_limit: parent_inner.time_slice_limit,
                 })
             },
         });
