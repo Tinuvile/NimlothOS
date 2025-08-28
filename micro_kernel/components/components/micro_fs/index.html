@@ -1,18 +1,18 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Micro File System (Micro-FS)"><title>components::micro_fs - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="components" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../components/index.html">components</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module micro_<wbr>fs</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#micro-file-system-micro-fs" title="Micro File System (Micro-FS)">Micro File System (Micro-FS)</a><ul><li><a href="#系统架构" title="系统架构">系统架构</a></li><li><a href="#核心模块" title="核心模块">核心模块</a></li><li><a href="#文件系统布局" title="文件系统布局">文件系统布局</a></li><li><a href="#主要特性" title="主要特性">主要特性</a></li><li><a href="#使用示例" title="使用示例">使用示例</a></li><li><a href="#性能特点" title="性能特点">性能特点</a></li><li><a href="#限制说明" title="限制说明">限制说明</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#constants" title="Constants">Constants</a></li><li><a href="#traits" title="Traits">Traits</a></li><li><a href="#functions" title="Functions">Functions</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate components</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">components</a></div><h1>Module <span>micro_fs</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/components/micro_fs/mod.rs.html#1-115">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="micro-file-system-micro-fs"><a class="doc-anchor" href="#micro-file-system-micro-fs">§</a>Micro File System (Micro-FS)</h2>
-<p>一个简单而高效的文件系统实现，专为教学和嵌入式系统设计。
+<p>一个简单的文件系统实现，
 提供了完整的文件系统功能，包括文件管理、目录结构、块缓存等。</p>
 <h3 id="系统架构"><a class="doc-anchor" href="#系统架构">§</a>系统架构</h3><div class="example-wrap"><pre class="language-text"><code>┌─────────────────────────────────────────────────────────────┐
-│                        Micro-FS                              │
+│                        Micro-FS                             │
 ├─────────────────────────────────────────────────────────────┤
-│    VFS Layer    │   EFS Layer   │        Block Layer        │
-│    (vfs.rs)     │   (efs.rs)    │     (block_cache.rs)      │
+│    VFS Layer    │   MFS Layer   │        Block Layer        │
+│    (vfs.rs)     │   (mfs.rs)    │     (block_cache.rs)      │
 ├─────────────────────────────────────────────────────────────┤
 │     Layout      │    Bitmap     │        Block Device       │
 │   (layout.rs)   │  (bitmap.rs)  │      (block_dev.rs)       │
 └─────────────────────────────────────────────────────────────┘</code></pre></div><h3 id="核心模块"><a class="doc-anchor" href="#核心模块">§</a>核心模块</h3>
 <ul>
 <li><strong>VFS Layer</strong>: 虚拟文件系统接口，提供统一的文件操作 API</li>
-<li><strong>EFS Layer</strong>: Micro File System 核心实现，管理文件系统元数据</li>
+<li><strong>MFS Layer</strong>: Micro File System 核心实现，管理文件系统元数据</li>
 <li><strong>Layout</strong>: 文件系统布局定义，包含超级块、inode、目录项等结构</li>
 <li><strong>Bitmap</strong>: 位图管理，用于跟踪数据块和 inode 的分配状态</li>
 <li><strong>Block Cache</strong>: 块缓存管理，提高 I/O 性能</li>
@@ -40,10 +40,10 @@
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>micro_fs::{MicroFileSystem, BlockDevice};
 
 <span class="comment">// 创建文件系统
-</span><span class="kw">let </span>efs = MicroFileSystem::create(block_device, <span class="number">4096</span>, <span class="number">1</span>, <span class="number">4096</span>, <span class="number">4096</span>);
+</span><span class="kw">let </span>mfs = MicroFileSystem::create(block_device, <span class="number">4096</span>, <span class="number">1</span>, <span class="number">4096</span>, <span class="number">4096</span>);
 
 <span class="comment">// 打开根目录
-</span><span class="kw">let </span>root_inode = efs.root_inode();
+</span><span class="kw">let </span>root_inode = mfs.root_inode();
 
 <span class="comment">// 创建文件
 </span><span class="kw">let </span>file = root_inode.create(<span class="string">"test.txt"</span>).unwrap();

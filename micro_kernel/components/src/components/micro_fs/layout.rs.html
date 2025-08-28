@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a><span class="kw">use </span>alloc::{sync::Arc, vec::Vec};
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a><span class="doccomment">/// 文件系统魔数，用于标识 Micro File System
-<a href=#57 id=57 data-nosnippet>57</a></span><span class="kw">const </span>EFS_MAGIC: u32 = <span class="number">0x3b800001</span>;
+<a href=#57 id=57 data-nosnippet>57</a></span><span class="kw">const </span>MFS_MAGIC: u32 = <span class="number">0x3b800001</span>;
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a><span class="doccomment">/// 文件名长度限制（不包括结尾的 null 字符）
 <a href=#60 id=60 data-nosnippet>60</a></span><span class="kw">const </span>NAME_LENGTH_LIMIT: usize = <span class="number">27</span>;
@@ -194,7 +194,7 @@
 <a href=#194 id=194 data-nosnippet>194</a>        data_area_blocks: u32,
 <a href=#195 id=195 data-nosnippet>195</a>    ) {
 <a href=#196 id=196 data-nosnippet>196</a>        <span class="kw-2">*</span><span class="self">self </span>= <span class="self">Self </span>{
-<a href=#197 id=197 data-nosnippet>197</a>            magic: EFS_MAGIC,
+<a href=#197 id=197 data-nosnippet>197</a>            magic: MFS_MAGIC,
 <a href=#198 id=198 data-nosnippet>198</a>            total_blocks,
 <a href=#199 id=199 data-nosnippet>199</a>            inode_bitmap_blocks,
 <a href=#200 id=200 data-nosnippet>200</a>            inode_area_blocks,
@@ -210,7 +210,7 @@
 <a href=#210 id=210 data-nosnippet>210</a>    /// ## Returns
 <a href=#211 id=211 data-nosnippet>211</a>    /// 如果魔数匹配返回 `true`，否则返回 `false`
 <a href=#212 id=212 data-nosnippet>212</a>    </span><span class="kw">pub fn </span>valid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#213 id=213 data-nosnippet>213</a>        <span class="self">self</span>.magic == EFS_MAGIC
+<a href=#213 id=213 data-nosnippet>213</a>        <span class="self">self</span>.magic == MFS_MAGIC
 <a href=#214 id=214 data-nosnippet>214</a>    }
 <a href=#215 id=215 data-nosnippet>215</a>}
 <a href=#216 id=216 data-nosnippet>216</a>
