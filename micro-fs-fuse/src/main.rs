@@ -59,8 +59,8 @@ fn micro_fs_pack() -> std::io::Result<()> {
         f
     })));
     // 16MiB, at most 4095 files
-    let efs = MicroFileSystem::create(block_file, 16 * 2048, 1);
-    let root_inode = Arc::new(MicroFileSystem::root_inode(&efs));
+    let mfs = MicroFileSystem::create(block_file, 16 * 2048, 1);
+    let root_inode = Arc::new(MicroFileSystem::root_inode(&mfs));
     let apps: Vec<_> = read_dir(src_path)
         .unwrap()
         .into_iter()
@@ -116,7 +116,7 @@ fn tree(inode: &Arc<Inode>, name: &str, depth: usize) {
 }
 
 #[test]
-fn efs_test() -> std::io::Result<()> {
+fn mfs_test() -> std::io::Result<()> {
     let block_file = Arc::new(BlockFile(Mutex::new({
         let f = OpenOptions::new()
             .read(true)
@@ -127,8 +127,8 @@ fn efs_test() -> std::io::Result<()> {
         f
     })));
     MicroFileSystem::create(block_file.clone(), 4096, 1);
-    let efs = MicroFileSystem::open(block_file.clone());
-    let root_inode = MicroFileSystem::root_inode(&efs);
+    let mfs = MicroFileSystem::open(block_file.clone());
+    let root_inode = MicroFileSystem::root_inode(&mfs);
     root_inode.create("filea");
     root_inode.create("fileb");
     for name in root_inode.ls() {
@@ -180,7 +180,7 @@ fn efs_test() -> std::io::Result<()> {
 }
 
 #[test]
-fn efs_dir_test() -> std::io::Result<()> {
+fn mfs_dir_test() -> std::io::Result<()> {
     let block_file = Arc::new(BlockFile(Mutex::new({
         let f = OpenOptions::new()
             .read(true)
@@ -191,8 +191,8 @@ fn efs_dir_test() -> std::io::Result<()> {
         f
     })));
     MicroFileSystem::create(block_file.clone(), 4096, 1);
-    let efs = MicroFileSystem::open(block_file.clone());
-    let root = Arc::new(MicroFileSystem::root_inode(&efs));
+    let mfs = MicroFileSystem::open(block_file.clone());
+    let root = Arc::new(MicroFileSystem::root_inode(&mfs));
     root.create("f1");
     root.create("f2");
 

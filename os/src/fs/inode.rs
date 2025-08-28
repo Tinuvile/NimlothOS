@@ -313,8 +313,8 @@ lazy_static! {
     /// }
     /// ```
     pub static ref ROOT_INODE: Arc<Inode> = {
-        let efs = MicroFileSystem::open(BLOCK_DEVICE.clone());
-        Arc::new(MicroFileSystem::root_inode(&efs))
+        let mfs = MicroFileSystem::open(BLOCK_DEVICE.clone());
+        Arc::new(MicroFileSystem::root_inode(&mfs))
     };
 }
 

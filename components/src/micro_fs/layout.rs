@@ -54,7 +54,7 @@ use super::{BLOCK_SZ, BlockDevice, block_cache};
 use alloc::{sync::Arc, vec::Vec};
 
 /// 文件系统魔数，用于标识 Micro File System
-const EFS_MAGIC: u32 = 0x3b800001;
+const MFS_MAGIC: u32 = 0x3b800001;
 
 /// 文件名长度限制（不包括结尾的 null 字符）
 const NAME_LENGTH_LIMIT: usize = 27;
@@ -194,7 +194,7 @@ impl SuperBlock {
         data_area_blocks: u32,
     ) {
         *self = Self {
-            magic: EFS_MAGIC,
+            magic: MFS_MAGIC,
             total_blocks,
             inode_bitmap_blocks,
             inode_area_blocks,
@@ -210,7 +210,7 @@ impl SuperBlock {
     /// ## Returns
     /// 如果魔数匹配返回 `true`，否则返回 `false`
     pub fn valid(&self) -> bool {
-        self.magic == EFS_MAGIC
+        self.magic == MFS_MAGIC
     }
 }
 

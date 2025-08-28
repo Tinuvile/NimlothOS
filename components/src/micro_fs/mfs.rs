@@ -39,13 +39,13 @@
 //! use micro_fs::{MicroFileSystem, BlockDevice};
 //!
 //! // 创建新的文件系统
-//! let efs = MicroFileSystem::create(block_device, 1024, 1);
+//! let mfs = MicroFileSystem::create(block_device, 1024, 1);
 //!
 //! // 打开现有文件系统
-//! let efs = MicroFileSystem::open(block_device);
+//! let mfs = MicroFileSystem::open(block_device);
 //!
 //! // 获取根目录
-//! let root_inode = MicroFileSystem::root_inode(&efs);
+//! let root_inode = MicroFileSystem::root_inode(&mfs);
 //! ```
 //!
 
@@ -126,7 +126,7 @@ impl MicroFileSystem {
             (1 + inode_total_blocks) as usize,
             data_bitmap_blocks as usize,
         );
-        let mut efs = Self {
+        let mut mfs = Self {
             block_device: Arc::clone(&block_device),
             inode_bitmap,
             data_bitmap,
@@ -154,15 +154,15 @@ impl MicroFileSystem {
                 );
             },
         );
-        assert_eq!(efs.alloc_inode(), 0);
-        let (root_inode_block_id, root_inode_offset) = efs.disk_inode_pos(0);
+        assert_eq!(mfs.alloc_inode(), 0);
+        let (root_inode_block_id, root_inode_offset) = mfs.disk_inode_pos(0);
         block_cache(root_inode_block_id as usize, Arc::clone(&block_device))
             .lock()
             .modify(root_inode_offset, |disk_inode: &mut DiskInode| {
                 disk_inode.initialize(DiskInodeType::Dir);
             });
         block_cache_sync_all();
-        Arc::new(Mutex::new(efs))
+        Arc::new(Mutex::new(mfs))
     }
 
     /// 打开现有文件系统
@@ -193,10 +193,10 @@ impl MicroFileSystem {
         block_cache(0, Arc::clone(&block_device))
             .lock()
             .read(0, |super_block: &SuperBlock| {
-                assert!(super_block.valid(), "Error loading EFS!");
+                assert!(super_block.valid(), "Error loading MFS!");
                 let inode_total_blocks =
                     super_block.inode_bitmap_blocks + super_block.inode_area_blocks;
-                let efs = Self {
+                let mfs = Self {
                     block_device,
                     inode_bitmap: Bitmap::new(1, super_block.inode_bitmap_blocks as usize),
                     data_bitmap: Bitmap::new(
@@ -206,7 +206,7 @@ impl MicroFileSystem {
                     inode_area_start_block: 1 + super_block.inode_bitmap_blocks,
                     data_area_start_block: 1 + inode_total_blocks + super_block.data_bitmap_blocks,
                 };
-                Arc::new(Mutex::new(efs))
+                Arc::new(Mutex::new(mfs))
             })
     }
 
@@ -361,7 +361,7 @@ impl MicroFileSystem {
     /// 根目录是文件系统的入口点，所有其他文件和目录都从根目录开始访问。
     ///
     /// ## Arguments
-    /// * `efs` - 文件系统实例的引用
+    /// * `mfs` - 文件系统实例的引用
     ///
     /// ## Returns
     /// 根目录的 inode 对象
@@ -374,12 +374,12 @@ impl MicroFileSystem {
     ///
     /// ## 使用示例
     /// ```rust
-    /// let root = MicroFileSystem::root_inode(&efs);
+    /// let root = MicroFileSystem::root_inode(&mfs);
     /// let file = root.create("test.txt").unwrap();
     /// ```
-    pub fn root_inode(efs: &Arc<Mutex<Self>>) -> Inode {
-        let block_device = Arc::clone(&efs.lock().block_device);
-        let (block_id, block_offset) = efs.lock().disk_inode_pos(0);
-        Inode::new(block_id, block_offset, Arc::clone(efs), block_device)
+    pub fn root_inode(mfs: &Arc<Mutex<Self>>) -> Inode {
+        let block_device = Arc::clone(&mfs.lock().block_device);
+        let (block_id, block_offset) = mfs.lock().disk_inode_pos(0);
+        Inode::new(block_id, block_offset, Arc::clone(mfs), block_device)
     }
 }
