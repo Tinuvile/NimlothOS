@@ -454,7 +454,7 @@ lazy_static! {
     /// │  ┌───────────────────────────-─────-┐  │
     /// │  │          ProcessManager          │  │
     /// │  │ ┌──────────────────────────────┐ │  │
-    /// │  │ │      VecDeque<Arc<TCB>>      │ │  │
+    /// │  │ │      VecDeque<Arc<PCB>>      │ │  │
     /// │  │ │    [Process1][Process2] ...  │ │  │
     /// │  │ └──────────────────────────────┘ │  │
     /// │  └─────────────────────────────-───-┘  │
@@ -498,13 +498,13 @@ lazy_static! {
     pub static ref PROCESS_MANAGER: UPSafeCell<ProcessManager> =
         unsafe { UPSafeCell::new(ProcessManager::new()) };
 
-    pub static ref PID2TCB: UPSafeCell<BTreeMap<usize, Arc<ProcessControlBlock>>> =
+    pub static ref PID2PCB: UPSafeCell<BTreeMap<usize, Arc<ProcessControlBlock>>> =
         unsafe { UPSafeCell::new(BTreeMap::new()) };
 }
 
 /// 向全局就绪队列添加进程
 ///
-/// - 将 `process` 写入 `PID2TCB` 映射，便于通过 PID 查找 TCB
+/// - 将 `process` 写入 `PID2PCB` 映射，便于通过 PID 查找 PCB
 /// - 将进程入队到全局 `PROCESS_MANAGER` 的就绪队列，等待调度
 ///
 /// ## 参数
@@ -520,7 +520,7 @@ lazy_static! {
 /// * `process` - 待加入调度的进程控制块
 /// * `priority` - 目标优先级队列（0为最高优先级）
 pub fn add_process_with_priority(process: Arc<ProcessControlBlock>, priority: usize) {
-    PID2TCB
+    PID2PCB
         .exclusive_access()
         .insert(process.getpid(), Arc::clone(&process));
     PROCESS_MANAGER.exclusive_access().add(process, priority);
@@ -546,11 +546,11 @@ pub fn add_process(process: Arc<ProcessControlBlock>) {
 /// - `Some(Arc<ProcessControlBlock>)`：找到对应进程
 /// - `None`：不存在该 PID 的进程（可能已退出并被回收）
 pub fn pid2process(pid: usize) -> Option<Arc<ProcessControlBlock>> {
-    let map = PID2TCB.exclusive_access();
+    let map = PID2PCB.exclusive_access();
     map.get(&pid).map(Arc::clone)
 }
 
-/// 从全局 PID → TCB 映射中移除进程
+/// 从全局 PID → PCB 映射中移除进程
 ///
 /// 典型调用点：
 /// - 进程退出路径（如 `exit_current_and_run_next` / `waitpid` 回收）
@@ -561,7 +561,7 @@ pub fn pid2process(pid: usize) -> Option<Arc<ProcessControlBlock>> {
 /// ## 行为
 /// - 若不存在该 PID，触发 panic，用于暴露流程一致性问题
 pub fn remove_from_pid2process(pid: usize) {
-    let mut map = PID2TCB.exclusive_access();
+    let mut map = PID2PCB.exclusive_access();
     if map.remove(&pid).is_none() {
         panic!("cannot find pid {} in pid2process!", pid);
     }
@@ -666,7 +666,7 @@ pub fn remove_from_pid2process(pid: usize) {
 /// └─────────────────┘
 ///          │
 ///          ▼
-///   Option<Arc<TCB>>
+///   Option<Arc<PCB>>
 /// ```
 ///
 /// ## 性能特征

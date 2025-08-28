@@ -128,8 +128,8 @@ use lazy_static::lazy_static;
 /// ┌─────────────────────────────────────┐
 /// │           Processor                 │
 /// ├─────────────────────────────────────┤
-/// │ current: Option<Arc<TCB>>           │
-/// │  └─ Some: Points to Current TCB     │
+/// │ current: Option<Arc<PCB>>           │
+/// │  └─ Some: Points to Current PCB     │
 /// │  └─ None: Processor Idle            │
 /// ├─────────────────────────────────────┤
 /// │ idle_process_cx: ProcessContext     │
@@ -369,7 +369,7 @@ lazy_static! {
     /// │ │ ┌────────────────────────────------─────┐ │ │
     /// │ │ │         Processor                     │ │ │
     /// │ │ │  ┌─────────────────────────------──┐  │ │ │
-    /// │ │ │  │ current: Option<Arc<TCB>>       │  │ │ │
+    /// │ │ │  │ current: Option<Arc<PCB>>       │  │ │ │
     /// │ │ │  ├─────────────────────────------──┤  │ │ │
     /// │ │ │  │ idle_process_cx: ProcessContext │  │ │ │
     /// │ │ │  └───────────────────────------────┘  │ │ │
