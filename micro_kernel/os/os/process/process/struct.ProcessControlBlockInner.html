@@ -215,7 +215,7 @@ trap_cx.x[<span class="number">10</span>] = return_value;  <span class="comment"
 <p>返回当前的 <a href="enum.ProcessStatus.html" title="enum os::process::process::ProcessStatus"><code>ProcessStatus</code></a></p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.is_zombie" class="method"><a class="src rightside" href="../../../src/os/process/process.rs.html#673-675">Source</a><h4 class="code-header">pub fn <a href="#method.is_zombie" class="fn">is_zombie</a>(&amp;self) -&gt; bool</h4></section></summary><div class="docblock"><p>检查进程是否为僵尸状态</p>
 <p>判断当前进程是否已经退出但尚未被父进程回收。
-僵尸进程不会被调度执行，但保留 TCB 以供父进程获取退出信息。</p>
+僵尸进程不会被调度执行，但保留 PCB 以供父进程获取退出信息。</p>
 <h6 id="returns-3"><a class="doc-anchor" href="#returns-3">§</a>Returns</h6>
 <ul>
 <li><code>true</code> - 进程为僵尸状态，等待父进程回收</li>

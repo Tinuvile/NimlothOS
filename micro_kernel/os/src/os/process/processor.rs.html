@@ -128,8 +128,8 @@
 <a href=#128 id=128 data-nosnippet>128</a>/// ┌─────────────────────────────────────┐
 <a href=#129 id=129 data-nosnippet>129</a>/// │           Processor                 │
 <a href=#130 id=130 data-nosnippet>130</a>/// ├─────────────────────────────────────┤
-<a href=#131 id=131 data-nosnippet>131</a>/// │ current: Option&lt;Arc&lt;TCB&gt;&gt;           │
-<a href=#132 id=132 data-nosnippet>132</a>/// │  └─ Some: Points to Current TCB     │
+<a href=#131 id=131 data-nosnippet>131</a>/// │ current: Option&lt;Arc&lt;PCB&gt;&gt;           │
+<a href=#132 id=132 data-nosnippet>132</a>/// │  └─ Some: Points to Current PCB     │
 <a href=#133 id=133 data-nosnippet>133</a>/// │  └─ None: Processor Idle            │
 <a href=#134 id=134 data-nosnippet>134</a>/// ├─────────────────────────────────────┤
 <a href=#135 id=135 data-nosnippet>135</a>/// │ idle_process_cx: ProcessContext     │
@@ -369,7 +369,7 @@
 <a href=#369 id=369 data-nosnippet>369</a>    /// │ │ ┌────────────────────────────------─────┐ │ │
 <a href=#370 id=370 data-nosnippet>370</a>    /// │ │ │         Processor                     │ │ │
 <a href=#371 id=371 data-nosnippet>371</a>    /// │ │ │  ┌─────────────────────────------──┐  │ │ │
-<a href=#372 id=372 data-nosnippet>372</a>    /// │ │ │  │ current: Option&lt;Arc&lt;TCB&gt;&gt;       │  │ │ │
+<a href=#372 id=372 data-nosnippet>372</a>    /// │ │ │  │ current: Option&lt;Arc&lt;PCB&gt;&gt;       │  │ │ │
 <a href=#373 id=373 data-nosnippet>373</a>    /// │ │ │  ├─────────────────────────------──┤  │ │ │
 <a href=#374 id=374 data-nosnippet>374</a>    /// │ │ │  │ idle_process_cx: ProcessContext │  │ │ │
 <a href=#375 id=375 data-nosnippet>375</a>    /// │ │ │  └───────────────────────------────┘  │ │ │

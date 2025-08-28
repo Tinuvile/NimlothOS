@@ -3,7 +3,7 @@
     priority: usize,
 )</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>向全局就绪队列添加进程</p>
 <ul>
-<li>将 <code>process</code> 写入 <code>PID2TCB</code> 映射，便于通过 PID 查找 TCB</li>
+<li>将 <code>process</code> 写入 <code>PID2PCB</code> 映射，便于通过 PID 查找 PCB</li>
 <li>将进程入队到全局 <code>PROCESS_MANAGER</code> 的就绪队列，等待调度</li>
 </ul>
 <h3 id="参数"><a class="doc-anchor" href="#参数">§</a>参数</h3>

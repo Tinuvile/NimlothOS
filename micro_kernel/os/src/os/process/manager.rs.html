@@ -454,7 +454,7 @@
 <a href=#454 id=454 data-nosnippet>454</a>    /// │  ┌───────────────────────────-─────-┐  │
 <a href=#455 id=455 data-nosnippet>455</a>    /// │  │          ProcessManager          │  │
 <a href=#456 id=456 data-nosnippet>456</a>    /// │  │ ┌──────────────────────────────┐ │  │
-<a href=#457 id=457 data-nosnippet>457</a>    /// │  │ │      VecDeque&lt;Arc&lt;TCB&gt;&gt;      │ │  │
+<a href=#457 id=457 data-nosnippet>457</a>    /// │  │ │      VecDeque&lt;Arc&lt;PCB&gt;&gt;      │ │  │
 <a href=#458 id=458 data-nosnippet>458</a>    /// │  │ │    [Process1][Process2] ...  │ │  │
 <a href=#459 id=459 data-nosnippet>459</a>    /// │  │ └──────────────────────────────┘ │  │
 <a href=#460 id=460 data-nosnippet>460</a>    /// │  └─────────────────────────────-───-┘  │
@@ -498,13 +498,13 @@
 <a href=#498 id=498 data-nosnippet>498</a>    </span><span class="kw">pub static </span><span class="kw-2">ref </span>PROCESS_MANAGER: UPSafeCell&lt;ProcessManager&gt; =
 <a href=#499 id=499 data-nosnippet>499</a>        <span class="kw">unsafe </span>{ UPSafeCell::new(ProcessManager::new()) };
 <a href=#500 id=500 data-nosnippet>500</a>
-<a href=#501 id=501 data-nosnippet>501</a>    <span class="kw">pub static </span><span class="kw-2">ref </span>PID2TCB: UPSafeCell&lt;BTreeMap&lt;usize, Arc&lt;ProcessControlBlock&gt;&gt;&gt; =
+<a href=#501 id=501 data-nosnippet>501</a>    <span class="kw">pub static </span><span class="kw-2">ref </span>PID2PCB: UPSafeCell&lt;BTreeMap&lt;usize, Arc&lt;ProcessControlBlock&gt;&gt;&gt; =
 <a href=#502 id=502 data-nosnippet>502</a>        <span class="kw">unsafe </span>{ UPSafeCell::new(BTreeMap::new()) };
 <a href=#503 id=503 data-nosnippet>503</a>}
 <a href=#504 id=504 data-nosnippet>504</a>
 <a href=#505 id=505 data-nosnippet>505</a><span class="doccomment">/// 向全局就绪队列添加进程
 <a href=#506 id=506 data-nosnippet>506</a>///
-<a href=#507 id=507 data-nosnippet>507</a>/// - 将 `process` 写入 `PID2TCB` 映射，便于通过 PID 查找 TCB
+<a href=#507 id=507 data-nosnippet>507</a>/// - 将 `process` 写入 `PID2PCB` 映射，便于通过 PID 查找 PCB
 <a href=#508 id=508 data-nosnippet>508</a>/// - 将进程入队到全局 `PROCESS_MANAGER` 的就绪队列，等待调度
 <a href=#509 id=509 data-nosnippet>509</a>///
 <a href=#510 id=510 data-nosnippet>510</a>/// ## 参数
@@ -520,7 +520,7 @@
 <a href=#520 id=520 data-nosnippet>520</a>/// * `process` - 待加入调度的进程控制块
 <a href=#521 id=521 data-nosnippet>521</a>/// * `priority` - 目标优先级队列（0为最高优先级）
 <a href=#522 id=522 data-nosnippet>522</a></span><span class="kw">pub fn </span>add_process_with_priority(process: Arc&lt;ProcessControlBlock&gt;, priority: usize) {
-<a href=#523 id=523 data-nosnippet>523</a>    PID2TCB
+<a href=#523 id=523 data-nosnippet>523</a>    PID2PCB
 <a href=#524 id=524 data-nosnippet>524</a>        .exclusive_access()
 <a href=#525 id=525 data-nosnippet>525</a>        .insert(process.getpid(), Arc::clone(<span class="kw-2">&amp;</span>process));
 <a href=#526 id=526 data-nosnippet>526</a>    PROCESS_MANAGER.exclusive_access().add(process, priority);
@@ -546,11 +546,11 @@
 <a href=#546 id=546 data-nosnippet>546</a>/// - `Some(Arc&lt;ProcessControlBlock&gt;)`：找到对应进程
 <a href=#547 id=547 data-nosnippet>547</a>/// - `None`：不存在该 PID 的进程（可能已退出并被回收）
 <a href=#548 id=548 data-nosnippet>548</a></span><span class="kw">pub fn </span>pid2process(pid: usize) -&gt; <span class="prelude-ty">Option</span>&lt;Arc&lt;ProcessControlBlock&gt;&gt; {
-<a href=#549 id=549 data-nosnippet>549</a>    <span class="kw">let </span>map = PID2TCB.exclusive_access();
+<a href=#549 id=549 data-nosnippet>549</a>    <span class="kw">let </span>map = PID2PCB.exclusive_access();
 <a href=#550 id=550 data-nosnippet>550</a>    map.get(<span class="kw-2">&amp;</span>pid).map(Arc::clone)
 <a href=#551 id=551 data-nosnippet>551</a>}
 <a href=#552 id=552 data-nosnippet>552</a>
-<a href=#553 id=553 data-nosnippet>553</a><span class="doccomment">/// 从全局 PID → TCB 映射中移除进程
+<a href=#553 id=553 data-nosnippet>553</a><span class="doccomment">/// 从全局 PID → PCB 映射中移除进程
 <a href=#554 id=554 data-nosnippet>554</a>///
 <a href=#555 id=555 data-nosnippet>555</a>/// 典型调用点：
 <a href=#556 id=556 data-nosnippet>556</a>/// - 进程退出路径（如 `exit_current_and_run_next` / `waitpid` 回收）
@@ -561,7 +561,7 @@
 <a href=#561 id=561 data-nosnippet>561</a>/// ## 行为
 <a href=#562 id=562 data-nosnippet>562</a>/// - 若不存在该 PID，触发 panic，用于暴露流程一致性问题
 <a href=#563 id=563 data-nosnippet>563</a></span><span class="kw">pub fn </span>remove_from_pid2process(pid: usize) {
-<a href=#564 id=564 data-nosnippet>564</a>    <span class="kw">let </span><span class="kw-2">mut </span>map = PID2TCB.exclusive_access();
+<a href=#564 id=564 data-nosnippet>564</a>    <span class="kw">let </span><span class="kw-2">mut </span>map = PID2PCB.exclusive_access();
 <a href=#565 id=565 data-nosnippet>565</a>    <span class="kw">if </span>map.remove(<span class="kw-2">&amp;</span>pid).is_none() {
 <a href=#566 id=566 data-nosnippet>566</a>        <span class="macro">panic!</span>(<span class="string">"cannot find pid {} in pid2process!"</span>, pid);
 <a href=#567 id=567 data-nosnippet>567</a>    }
@@ -666,7 +666,7 @@
 <a href=#666 id=666 data-nosnippet>666</a>/// └─────────────────┘
 <a href=#667 id=667 data-nosnippet>667</a>///          │
 <a href=#668 id=668 data-nosnippet>668</a>///          ▼
-<a href=#669 id=669 data-nosnippet>669</a>///   Option&lt;Arc&lt;TCB&gt;&gt;
+<a href=#669 id=669 data-nosnippet>669</a>///   Option&lt;Arc&lt;PCB&gt;&gt;
 <a href=#670 id=670 data-nosnippet>670</a>/// ```
 <a href=#671 id=671 data-nosnippet>671</a>///
 <a href=#672 id=672 data-nosnippet>672</a>/// ## 性能特征

@@ -1,12 +1,12 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/process/process.rs`."><title>process.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="os" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (ce36a966c 2025-02-17)" data-channel="nightly" data-search-js="search-f7327375.js" data-settings-js="settings-6dad6058.js" ><script src="../../../static.files/storage-3a5871a4.js"></script><script defer src="../../../static.files/src-script-b8d3f215.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5332ae0c.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">os/process/</div>process.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-4"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! # 进程控制块模块
 <a href=#2 id=2 data-nosnippet>2</a>//!
-<a href=#3 id=3 data-nosnippet>3</a>//! 提供进程控制块 (Process Control Block, TCB) 的实现，管理进程的完整生命周期。
+<a href=#3 id=3 data-nosnippet>3</a>//! 提供进程控制块 (Process Control Block, PCB) 的实现，管理进程的完整生命周期。
 <a href=#4 id=4 data-nosnippet>4</a>//! 支持进程创建、fork、exec、状态管理等核心操作，是操作系统进程管理的核心数据结构。
 <a href=#5 id=5 data-nosnippet>5</a>//!
 <a href=#6 id=6 data-nosnippet>6</a>//! ## 核心组件
 <a href=#7 id=7 data-nosnippet>7</a>//!
 <a href=#8 id=8 data-nosnippet>8</a>//! - [`ProcessControlBlock`] - 进程控制块，包含进程的所有信息
-<a href=#9 id=9 data-nosnippet>9</a>//! - [`ProcessControlBlockInner`] - TCB 内部可变部分，受互斥锁保护
+<a href=#9 id=9 data-nosnippet>9</a>//! - [`ProcessControlBlockInner`] - PCB 内部可变部分，受互斥锁保护
 <a href=#10 id=10 data-nosnippet>10</a>//! - [`ProcessStatus`] - 进程状态枚举，表示进程的运行状态
 <a href=#11 id=11 data-nosnippet>11</a>//!
 <a href=#12 id=12 data-nosnippet>12</a>//! ## 标准文件描述符
@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a>//! ## 设计原理
 <a href=#23 id=23 data-nosnippet>23</a>//!
 <a href=#24 id=24 data-nosnippet>24</a>//! ### 分离设计
-<a href=#25 id=25 data-nosnippet>25</a>//! TCB 采用内外分离的设计模式：
+<a href=#25 id=25 data-nosnippet>25</a>//! PCB 采用内外分离的设计模式：
 <a href=#26 id=26 data-nosnippet>26</a>//! - **不变部分**：PID 和内核栈在进程生命周期内保持不变
 <a href=#27 id=27 data-nosnippet>27</a>//! - **可变部分**：进程状态、内存集合等需要互斥保护的数据
 <a href=#28 id=28 data-nosnippet>28</a>//!
@@ -150,7 +150,7 @@
 <a href=#150 id=150 data-nosnippet>150</a><span class="doccomment">/// 进程控制块 (Process Control Block)
 <a href=#151 id=151 data-nosnippet>151</a>///
 <a href=#152 id=152 data-nosnippet>152</a>/// 操作系统中每个进程的核心数据结构，包含进程运行所需的全部信息。
-<a href=#153 id=153 data-nosnippet>153</a>/// TCB 采用内外分离设计，将不变和可变部分分开管理，提高并发访问效率。
+<a href=#153 id=153 data-nosnippet>153</a>/// PCB 采用内外分离设计，将不变和可变部分分开管理，提高并发访问效率。
 <a href=#154 id=154 data-nosnippet>154</a>///
 <a href=#155 id=155 data-nosnippet>155</a>/// ## 结构组成
 <a href=#156 id=156 data-nosnippet>156</a>///
@@ -204,7 +204,7 @@
 <a href=#204 id=204 data-nosnippet>204</a>///
 <a href=#205 id=205 data-nosnippet>205</a>/// ## 使用模式
 <a href=#206 id=206 data-nosnippet>206</a>///
-<a href=#207 id=207 data-nosnippet>207</a>/// TCB 通常包装在 [`Arc`] 中使用，支持多所有者场景：
+<a href=#207 id=207 data-nosnippet>207</a>/// PCB 通常包装在 [`Arc`] 中使用，支持多所有者场景：
 <a href=#208 id=208 data-nosnippet>208</a>/// - 进程管理器持有引用进行调度
 <a href=#209 id=209 data-nosnippet>209</a>/// - 父进程持有子进程引用进行管理
 <a href=#210 id=210 data-nosnippet>210</a>/// - 处理器持有当前运行进程的引用
@@ -638,7 +638,7 @@
 <a href=#638 id=638 data-nosnippet>638</a>    <span class="doccomment">/// 检查进程是否为僵尸状态
 <a href=#639 id=639 data-nosnippet>639</a>    ///
 <a href=#640 id=640 data-nosnippet>640</a>    /// 判断当前进程是否已经退出但尚未被父进程回收。
-<a href=#641 id=641 data-nosnippet>641</a>    /// 僵尸进程不会被调度执行，但保留 TCB 以供父进程获取退出信息。
+<a href=#641 id=641 data-nosnippet>641</a>    /// 僵尸进程不会被调度执行，但保留 PCB 以供父进程获取退出信息。
 <a href=#642 id=642 data-nosnippet>642</a>    ///
 <a href=#643 id=643 data-nosnippet>643</a>    /// ## Returns
 <a href=#644 id=644 data-nosnippet>644</a>    ///
@@ -1107,7 +1107,7 @@
 <a href=#1107 id=1107 data-nosnippet>1107</a>    ///    │
 <a href=#1108 id=1108 data-nosnippet>1108</a>    ///    │ - 分配新的 PID
 <a href=#1109 id=1109 data-nosnippet>1109</a>    ///    │ - 创建独立的内核栈
-<a href=#1110 id=1110 data-nosnippet>1110</a>    ///    │ - 分配新的 TCB
+<a href=#1110 id=1110 data-nosnippet>1110</a>    ///    │ - 分配新的 PCB
 <a href=#1111 id=1111 data-nosnippet>1111</a>    ///    ▼
 <a href=#1112 id=1112 data-nosnippet>1112</a>    /// 3. 建立父子关系
 <a href=#1113 id=1113 data-nosnippet>1113</a>    ///    │
