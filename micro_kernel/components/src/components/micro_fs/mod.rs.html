@@ -53,10 +53,10 @@
 <a href=#53 id=53 data-nosnippet>53</a>//! ## 使用示例
 <a href=#54 id=54 data-nosnippet>54</a>//!
 <a href=#55 id=55 data-nosnippet>55</a>//! ```rust
-<a href=#56 id=56 data-nosnippet>56</a>//! use micro_fs::{MicroFileSystem, BlockDevice};
+<a href=#56 id=56 data-nosnippet>56</a>//! use micro_fs::{BlockManager, BlockDevice};
 <a href=#57 id=57 data-nosnippet>57</a>//!
 <a href=#58 id=58 data-nosnippet>58</a>//! // 创建文件系统
-<a href=#59 id=59 data-nosnippet>59</a>//! let mfs = MicroFileSystem::create(block_device, 4096, 1, 4096, 4096);
+<a href=#59 id=59 data-nosnippet>59</a>//! let mfs = BlockManager::create(block_device, 4096, 1, 4096, 4096);
 <a href=#60 id=60 data-nosnippet>60</a>//!
 <a href=#61 id=61 data-nosnippet>61</a>//! // 打开根目录
 <a href=#62 id=62 data-nosnippet>62</a>//! let root_inode = mfs.root_inode();
@@ -98,7 +98,7 @@
 <a href=#98 id=98 data-nosnippet>98</a><span class="kw">pub use </span>block_cache::{block_cache, block_cache_sync_all};
 <a href=#99 id=99 data-nosnippet>99</a><span class="kw">pub use </span>block_dev::BlockDevice;
 <a href=#100 id=100 data-nosnippet>100</a><span class="kw">pub use </span>layout::<span class="kw-2">*</span>;
-<a href=#101 id=101 data-nosnippet>101</a><span class="kw">pub use </span>mfs::MicroFileSystem;
+<a href=#101 id=101 data-nosnippet>101</a><span class="kw">pub use </span>mfs::BlockManager;
 <a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub use </span>vfs::Inode;
 <a href=#103 id=103 data-nosnippet>103</a>
 <a href=#104 id=104 data-nosnippet>104</a><span class="doccomment">/// 文件系统块大小（字节）

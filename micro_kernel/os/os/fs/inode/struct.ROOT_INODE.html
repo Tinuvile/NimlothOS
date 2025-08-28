@@ -5,8 +5,8 @@
 该实例在首次访问时初始化，提供对文件系统根目录的访问接口。</p>
 <h3 id="初始化过程"><a class="doc-anchor" href="#初始化过程">§</a>初始化过程</h3>
 <ol>
-<li><strong>文件系统打开</strong>: 通过 <code>MicroFileSystem::open()</code> 打开底层文件系统</li>
-<li><strong>根目录获取</strong>: 调用 <code>MicroFileSystem::root_inode()</code> 获取根目录 inode</li>
+<li><strong>文件系统打开</strong>: 通过 <code>BlockManager::open()</code> 打开底层文件系统</li>
+<li><strong>根目录获取</strong>: 调用 <code>BlockManager::root_inode()</code> 获取根目录 inode</li>
 <li><strong>引用包装</strong>: 将根目录 inode 包装在 <code>Arc</code> 中以支持多线程共享访问</li>
 </ol>
 <h3 id="使用场景"><a class="doc-anchor" href="#使用场景">§</a>使用场景</h3>

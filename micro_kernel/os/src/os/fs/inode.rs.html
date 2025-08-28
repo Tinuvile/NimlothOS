@@ -40,7 +40,7 @@
 <a href=#40 id=40 data-nosnippet>40</a><span class="kw">use </span>alloc::sync::Arc;
 <a href=#41 id=41 data-nosnippet>41</a><span class="kw">use </span>alloc::vec::Vec;
 <a href=#42 id=42 data-nosnippet>42</a><span class="kw">use </span>bitflags::<span class="kw-2">*</span>;
-<a href=#43 id=43 data-nosnippet>43</a><span class="kw">use </span>components::micro_fs::{Inode, MicroFileSystem};
+<a href=#43 id=43 data-nosnippet>43</a><span class="kw">use </span>components::micro_fs::{Inode, BlockManager};
 <a href=#44 id=44 data-nosnippet>44</a><span class="kw">use </span>lazy_static::<span class="kw-2">*</span>;
 <a href=#45 id=45 data-nosnippet>45</a>
 <a href=#46 id=46 data-nosnippet>46</a><span class="doccomment">/// OSInode 的内部状态结构
@@ -275,8 +275,8 @@
 <a href=#275 id=275 data-nosnippet>275</a>    ///
 <a href=#276 id=276 data-nosnippet>276</a>    /// ## 初始化过程
 <a href=#277 id=277 data-nosnippet>277</a>    ///
-<a href=#278 id=278 data-nosnippet>278</a>    /// 1. **文件系统打开**: 通过 `MicroFileSystem::open()` 打开底层文件系统
-<a href=#279 id=279 data-nosnippet>279</a>    /// 2. **根目录获取**: 调用 `MicroFileSystem::root_inode()` 获取根目录 inode
+<a href=#278 id=278 data-nosnippet>278</a>    /// 1. **文件系统打开**: 通过 `BlockManager::open()` 打开底层文件系统
+<a href=#279 id=279 data-nosnippet>279</a>    /// 2. **根目录获取**: 调用 `BlockManager::root_inode()` 获取根目录 inode
 <a href=#280 id=280 data-nosnippet>280</a>    /// 3. **引用包装**: 将根目录 inode 包装在 `Arc` 中以支持多线程共享访问
 <a href=#281 id=281 data-nosnippet>281</a>    ///
 <a href=#282 id=282 data-nosnippet>282</a>    /// ## 使用场景
@@ -313,8 +313,8 @@
 <a href=#313 id=313 data-nosnippet>313</a>    /// }
 <a href=#314 id=314 data-nosnippet>314</a>    /// ```
 <a href=#315 id=315 data-nosnippet>315</a>    </span><span class="kw">pub static </span><span class="kw-2">ref </span>ROOT_INODE: Arc&lt;Inode&gt; = {
-<a href=#316 id=316 data-nosnippet>316</a>        <span class="kw">let </span>mfs = MicroFileSystem::open(BLOCK_DEVICE.clone());
-<a href=#317 id=317 data-nosnippet>317</a>        Arc::new(MicroFileSystem::root_inode(<span class="kw-2">&amp;</span>mfs))
+<a href=#316 id=316 data-nosnippet>316</a>        <span class="kw">let </span>mfs = BlockManager::open(BLOCK_DEVICE.clone());
+<a href=#317 id=317 data-nosnippet>317</a>        Arc::new(BlockManager::root_inode(<span class="kw-2">&amp;</span>mfs))
 <a href=#318 id=318 data-nosnippet>318</a>    };
 <a href=#319 id=319 data-nosnippet>319</a>}
 <a href=#320 id=320 data-nosnippet>320</a>
