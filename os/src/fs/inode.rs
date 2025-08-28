@@ -40,7 +40,7 @@ use crate::sync::UPSafeCell;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use bitflags::*;
-use components::micro_fs::{Inode, MicroFileSystem};
+use components::micro_fs::{Inode, BlockManager};
 use lazy_static::*;
 
 /// OSInode 的内部状态结构
@@ -275,8 +275,8 @@ lazy_static! {
     ///
     /// ## 初始化过程
     ///
-    /// 1. **文件系统打开**: 通过 `MicroFileSystem::open()` 打开底层文件系统
-    /// 2. **根目录获取**: 调用 `MicroFileSystem::root_inode()` 获取根目录 inode
+    /// 1. **文件系统打开**: 通过 `BlockManager::open()` 打开底层文件系统
+    /// 2. **根目录获取**: 调用 `BlockManager::root_inode()` 获取根目录 inode
     /// 3. **引用包装**: 将根目录 inode 包装在 `Arc` 中以支持多线程共享访问
     ///
     /// ## 使用场景
@@ -313,8 +313,8 @@ lazy_static! {
     /// }
     /// ```
     pub static ref ROOT_INODE: Arc<Inode> = {
-        let mfs = MicroFileSystem::open(BLOCK_DEVICE.clone());
-        Arc::new(MicroFileSystem::root_inode(&mfs))
+        let mfs = BlockManager::open(BLOCK_DEVICE.clone());
+        Arc::new(BlockManager::root_inode(&mfs))
     };
 }
 

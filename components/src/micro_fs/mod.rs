@@ -53,10 +53,10 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use micro_fs::{MicroFileSystem, BlockDevice};
+//! use micro_fs::{BlockManager, BlockDevice};
 //!
 //! // 创建文件系统
-//! let mfs = MicroFileSystem::create(block_device, 4096, 1, 4096, 4096);
+//! let mfs = BlockManager::create(block_device, 4096, 1, 4096, 4096);
 //!
 //! // 打开根目录
 //! let root_inode = mfs.root_inode();
@@ -98,7 +98,7 @@ use bitmap::Bitmap;
 pub use block_cache::{block_cache, block_cache_sync_all};
 pub use block_dev::BlockDevice;
 pub use layout::*;
-pub use mfs::MicroFileSystem;
+pub use mfs::BlockManager;
 pub use vfs::Inode;
 
 /// 文件系统块大小（字节）

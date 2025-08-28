@@ -22,7 +22,7 @@
 //!
 //! ## 核心组件
 //!
-//! - [`MicroFileSystem`] - 文件系统主体，管理所有文件系统操作
+//! - [`BlockManager`] - 文件系统主体，管理所有文件系统操作
 //! - 位图管理：inode 位图和数据位图，用于资源分配
 //! - 区域管理：inode 区域和数据区域的位置计算
 //!
@@ -36,16 +36,16 @@
 //! ## 使用示例
 //!
 //! ```rust
-//! use micro_fs::{MicroFileSystem, BlockDevice};
+//! use micro_fs::{BlockManager, BlockDevice};
 //!
 //! // 创建新的文件系统
-//! let mfs = MicroFileSystem::create(block_device, 1024, 1);
+//! let mfs = BlockManager::create(block_device, 1024, 1);
 //!
 //! // 打开现有文件系统
-//! let mfs = MicroFileSystem::open(block_device);
+//! let mfs = BlockManager::open(block_device);
 //!
 //! // 获取根目录
-//! let root_inode = MicroFileSystem::root_inode(&mfs);
+//! let root_inode = BlockManager::root_inode(&mfs);
 //! ```
 //!
 
@@ -75,7 +75,7 @@ use spin::Mutex;
 /// 1. **创建阶段**：格式化块设备，初始化所有数据结构
 /// 2. **运行阶段**：处理文件操作，管理资源分配
 /// 3. **关闭阶段**：同步缓存，确保数据持久化
-pub struct MicroFileSystem {
+pub struct BlockManager {
     pub block_device: Arc<dyn BlockDevice>,
     pub inode_bitmap: Bitmap,
     pub data_bitmap: Bitmap,
@@ -83,7 +83,7 @@ pub struct MicroFileSystem {
     data_area_start_block: u32,
 }
 
-impl MicroFileSystem {
+impl BlockManager {
     /// 创建新的文件系统
     ///
     /// 在指定的块设备上创建并格式化一个新的 Micro File System。
@@ -374,7 +374,7 @@ impl MicroFileSystem {
     ///
     /// ## 使用示例
     /// ```rust
-    /// let root = MicroFileSystem::root_inode(&mfs);
+    /// let root = BlockManager::root_inode(&mfs);
     /// let file = root.create("test.txt").unwrap();
     /// ```
     pub fn root_inode(mfs: &Arc<Mutex<Self>>) -> Inode {

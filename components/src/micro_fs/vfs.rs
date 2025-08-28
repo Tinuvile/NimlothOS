@@ -52,7 +52,7 @@
 //! ```
 
 use super::{
-    BlockDevice, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, MicroFileSystem, block_cache,
+    BlockDevice, BlockManager, DIRENT_SZ, DirEntry, DiskInode, DiskInodeType, block_cache,
     block_cache_sync_all,
 };
 use alloc::{string::String, sync::Arc, vec::Vec};
@@ -91,7 +91,7 @@ use spin::{Mutex, MutexGuard};
 pub struct Inode {
     block_id: usize,
     block_offset: usize,
-    fs: Arc<Mutex<MicroFileSystem>>,
+    fs: Arc<Mutex<BlockManager>>,
     block_device: Arc<dyn BlockDevice>,
 }
 
@@ -118,7 +118,7 @@ impl Inode {
     pub fn new(
         block_id: u32,
         block_offset: usize,
-        fs: Arc<Mutex<MicroFileSystem>>,
+        fs: Arc<Mutex<BlockManager>>,
         block_device: Arc<dyn BlockDevice>,
     ) -> Self {
         Self {
@@ -458,7 +458,7 @@ impl Inode {
         &self,
         new_size: u32,
         disk_inode: &mut DiskInode,
-        fs: &mut MutexGuard<MicroFileSystem>,
+        fs: &mut MutexGuard<BlockManager>,
     ) {
         if new_size < disk_inode.size {
             return;

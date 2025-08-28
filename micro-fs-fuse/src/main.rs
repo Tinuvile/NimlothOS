@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use components::micro_fs::{BlockDevice, Inode, MicroFileSystem};
+use components::micro_fs::{BlockDevice, Inode, BlockManager};
 use std::fs::{File, OpenOptions, read_dir};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
@@ -30,7 +30,7 @@ fn main() {
 }
 
 fn micro_fs_pack() -> std::io::Result<()> {
-    let matches = App::new("MicroFileSystem packer")
+    let matches = App::new("BlockManager packer")
         .arg(
             Arg::with_name("source")
                 .short("s")
@@ -59,8 +59,8 @@ fn micro_fs_pack() -> std::io::Result<()> {
         f
     })));
     // 16MiB, at most 4095 files
-    let mfs = MicroFileSystem::create(block_file, 16 * 2048, 1);
-    let root_inode = Arc::new(MicroFileSystem::root_inode(&mfs));
+    let mfs = BlockManager::create(block_file, 16 * 2048, 1);
+    let root_inode = Arc::new(BlockManager::root_inode(&mfs));
     let apps: Vec<_> = read_dir(src_path)
         .unwrap()
         .into_iter()
@@ -126,9 +126,9 @@ fn mfs_test() -> std::io::Result<()> {
         f.set_len(100 * 1024 * 1024).unwrap();
         f
     })));
-    MicroFileSystem::create(block_file.clone(), 4096, 1);
-    let mfs = MicroFileSystem::open(block_file.clone());
-    let root_inode = MicroFileSystem::root_inode(&mfs);
+    BlockManager::create(block_file.clone(), 4096, 1);
+    let mfs = BlockManager::open(block_file.clone());
+    let root_inode = BlockManager::root_inode(&mfs);
     root_inode.create("filea");
     root_inode.create("fileb");
     for name in root_inode.ls() {
@@ -190,9 +190,9 @@ fn mfs_dir_test() -> std::io::Result<()> {
         f.set_len(8192 * 512).unwrap();
         f
     })));
-    MicroFileSystem::create(block_file.clone(), 4096, 1);
-    let mfs = MicroFileSystem::open(block_file.clone());
-    let root = Arc::new(MicroFileSystem::root_inode(&mfs));
+    BlockManager::create(block_file.clone(), 4096, 1);
+    let mfs = BlockManager::open(block_file.clone());
+    let root = Arc::new(BlockManager::root_inode(&mfs));
     root.create("f1");
     root.create("f2");
 
