@@ -12,18 +12,18 @@ use user_lib::{close, fork, pipe, read, time, wait, write};
 const LENGTH: usize = 3000;
 #[unsafe(no_mangle)]
 pub fn main() -> i32 {
-    // create pipes
-    // parent write to child
+    // 创建管道
+    // 父进程写到子进程
     let mut down_pipe_fd = [0usize; 2];
-    // child write to parent
+    // 子进程写到父进程
     let mut up_pipe_fd = [0usize; 2];
     pipe(&mut down_pipe_fd);
     pipe(&mut up_pipe_fd);
     let mut random_str = [0u8; LENGTH];
     if fork() == 0 {
-        // close write end of down pipe
+        // 关闭写端
         close(down_pipe_fd[1]);
-        // close read end of up pipe
+        // 关闭读端
         close(up_pipe_fd[0]);
         assert_eq!(read(down_pipe_fd[0], &mut random_str) as usize, LENGTH);
         close(down_pipe_fd[0]);
@@ -35,29 +35,29 @@ pub fn main() -> i32 {
         println!("Child process exited!");
         0
     } else {
-        // close read end of down pipe
+        // 关闭读端
         close(down_pipe_fd[0]);
-        // close write end of up pipe
+        // 关闭写端
         close(up_pipe_fd[1]);
-        // generate a long random string
+        // 生成一个长随机字符串
         for ch in random_str.iter_mut() {
             *ch = time() as u8;
         }
-        // send it
+        // 发送
         assert_eq!(
             write(down_pipe_fd[1], &random_str) as usize,
             random_str.len()
         );
-        // close write end of down pipe
+        // 关闭写端
         close(down_pipe_fd[1]);
         // calculate sum(parent)
         let sum: usize = random_str.iter().map(|v| *v as usize).sum::<usize>();
         println!("sum = {}(parent)", sum);
-        // recv sum(child)
+        // 接收子进程的sum
         let mut child_result = [0u8; 32];
         let result_len = read(up_pipe_fd[0], &mut child_result) as usize;
         close(up_pipe_fd[0]);
-        // check
+        // 检查
         assert_eq!(
             sum,
             str::parse::<usize>(core::str::from_utf8(&child_result[..result_len]).unwrap())

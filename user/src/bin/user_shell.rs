@@ -550,9 +550,6 @@ fn test_system_info() {
 fn builtin_ls() {
     println!("{}", colored("Directory Contents:", &format!("{}", C_BOLD)));
 
-    // 由于我们的文件系统比较简单，这里模拟显示根目录的内容
-    // 实际的 ls 实现需要文件系统的目录遍历支持
-
     println!("\n{}:", colored("Files in current directory (/)", C_CYAN));
 
     // 检查是否存在通过测试创建的文件

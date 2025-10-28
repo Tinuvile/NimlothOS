@@ -190,7 +190,9 @@ pub fn trap_handler() -> ! {
             let mut cx = current_trap_cx();
             cx.sepc += 4;
             let result = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]);
+            // 重新获取上下文
             cx = current_trap_cx();
+            // 结果写回a0
             cx.x[10] = result as usize;
         }
         Trap::Exception(Exception::StoreFault)
