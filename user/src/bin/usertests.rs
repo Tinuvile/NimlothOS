@@ -12,7 +12,7 @@ static SUCC_TESTS: &[(&str, &str, &str, &str, i32)] = &[
     ("filetest_simple\0", "\0", "\0", "\0", 0),
     ("cat\0", "filea\0", "\0", "\0", 0),
     ("cmdline_args\0", "1\0", "2\0", "3\0", 0),
-    ("exit\0", "\0", "\0", "\0", 0),
+    ("exit_test\0", "\0", "\0", "\0", 0),
     ("fantastic_text\0", "\0", "\0", "\0", 0),
     ("forktest_simple\0", "\0", "\0", "\0", 0),
     ("forktest\0", "\0", "\0", "\0", 0),
